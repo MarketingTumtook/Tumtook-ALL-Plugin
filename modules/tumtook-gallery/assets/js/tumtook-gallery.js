@@ -1,6 +1,5 @@
 document.addEventListener('DOMContentLoaded', function () {
 	var shells = document.querySelectorAll('.ttg-gallery-shell');
-	var rowSize = 8;
 	var lightboxState = {
 		items: [],
 		index: 0,
@@ -231,7 +230,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
 	function resizeMasonryItems(gallery, cards) {
 		var galleryStyles = window.getComputedStyle(gallery);
-		var rowGap = parseFloat(galleryStyles.getPropertyValue('gap')) || 0;
+		var rowGap = parseFloat(galleryStyles.getPropertyValue('row-gap')) || parseFloat(galleryStyles.getPropertyValue('gap')) || 0;
+		var rowSize = parseFloat(galleryStyles.getPropertyValue('grid-auto-rows')) || 8;
 
 		cards.forEach(function (card) {
 			card.style.gridRowEnd = '';

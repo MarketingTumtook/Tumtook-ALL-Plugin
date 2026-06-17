@@ -483,7 +483,7 @@ final class Tumtook_Gallery_Plugin {
 			array(
 				'limit'    => 0,
 				'columns'  => 6,
-				'gap'      => 18,
+				'gap'      => 12,
 				'endpoint' => '',
 			),
 			$atts,
