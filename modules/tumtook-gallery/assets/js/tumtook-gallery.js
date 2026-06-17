@@ -325,6 +325,19 @@ document.addEventListener('DOMContentLoaded', function () {
 		return Math.max(columns * 2, 12);
 	}
 
+	function shuffleArray(items) {
+		var shuffled = items.slice();
+
+		for (var i = shuffled.length - 1; i > 0; i -= 1) {
+			var j = Math.floor(Math.random() * (i + 1));
+			var temp = shuffled[i];
+			shuffled[i] = shuffled[j];
+			shuffled[j] = temp;
+		}
+
+		return shuffled;
+	}
+
 	shells.forEach(function (shell) {
 		var gallery = shell.querySelector('.ttg-gallery');
 		var loader = shell.querySelector('.ttg-loader');
@@ -376,14 +389,15 @@ document.addEventListener('DOMContentLoaded', function () {
 				})
 				.then(function (data) {
 					var items = Array.isArray(data.items) ? data.items : [];
+					var randomizedItems = shuffleArray(items);
 
-					if (!items.length && page === 1) {
+					if (!randomizedItems.length && page === 1) {
 						complete = true;
 						setLoaderState(TumtookGalleryData.strings.empty, false);
 						return;
 					}
 
-					var newCards = items.map(createCard);
+					var newCards = randomizedItems.map(createCard);
 					var fragment = document.createDocumentFragment();
 
 					newCards.forEach(function (card) {
