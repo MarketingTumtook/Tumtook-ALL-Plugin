@@ -27,7 +27,6 @@ final class API_Catalog_Images_Plugin
 		add_action('save_post_page', array($this, 'save_page_settings'));
 		add_action('wp_ajax_tumtook_catalog_images_preview', array($this, 'ajax_preview_page_images'));
 		add_action('admin_enqueue_scripts', array($this, 'enqueue_admin_assets'));
-		add_action('wp_enqueue_scripts', array($this, 'enqueue_frontend_assets'));
 		add_shortcode(self::SHORTCODE, array($this, 'render_shortcode'));
 	}
 
@@ -154,6 +153,8 @@ final class API_Catalog_Images_Plugin
 
 	public function render_shortcode($atts)
 	{
+		$this->enqueue_frontend_assets();
+
 		$settings = $this->get_effective_settings_for_shortcode();
 		$atts = shortcode_atts(
 			array(

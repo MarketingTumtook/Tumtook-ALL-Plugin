@@ -26,12 +26,10 @@ final class Video_Howtoknow_Slider_Plugin
 		add_action('add_meta_boxes', array($this, 'register_meta_boxes'));
 		add_action('save_post_page', array($this, 'save_page_meta'));
 		add_action('admin_enqueue_scripts', array($this, 'enqueue_admin_assets'));
-		add_action('wp_enqueue_scripts', array($this, 'register_front_assets'));
 		add_filter('the_content', array($this, 'append_slider_to_page_content'));
 		add_action('wp_footer', array($this, 'render_footer_fallback'), 20);
 		add_shortcode('video_how_to_slider', array($this, 'render_shortcode'));
 		add_shortcode('tumtook_video_how_to_slider', array($this, 'render_shortcode'));
-		add_shortcode('tumtook_video_how_to_youtube', array($this, 'render_youtube_shortcode'));
 		add_shortcode('tumtook_video_how_to_recommended_products', array($this, 'render_recommended_products_shortcode'));
 	}
 
@@ -41,15 +39,6 @@ final class Video_Howtoknow_Slider_Plugin
 			'tumtook-video-rollup-slider-page',
 			__('สไลด์วิดีโอและรูปภาพ', 'tumtook-video-rollup-slider'),
 			array($this, 'render_page_meta_box'),
-			'page',
-			'normal',
-			'default'
-		);
-
-		add_meta_box(
-			'tumtook-video-rollup-slider-youtube',
-			__('ส่วนที่ 2: คลิป YouTube', 'tumtook-video-rollup-slider'),
-			array($this, 'render_youtube_meta_box'),
 			'page',
 			'normal',
 			'default'
@@ -817,33 +806,6 @@ final class Video_Howtoknow_Slider_Plugin
 		update_post_meta($post_id, self::META_KEY, $sanitized);
 	}
 
-	private function render_recommended_product_slide($card)
-	{
-		$image = !empty($card['image_url']) ? $card['image_url'] : 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==';
-		?>
-		<article class="video-rollup-slide video-rollup-slide--product" data-slide>
-			<div class="video-rollup-slide__content">
-				<a class="video-rollup-product-card" href="<?php echo esc_url($card['url']); ?>">
-					<div class="video-rollup-product-card__media">
-						<img class="video-rollup-product-card__image" src="<?php echo esc_url($image); ?>"
-							alt="<?php echo esc_attr($card['title']); ?>" />
-					</div>
-					<div class="video-rollup-product-card__body">
-						<h3 class="video-rollup-product-card__title"><?php echo esc_html($card['title']); ?></h3>
-						<div class="video-rollup-product-card__footer">
-							<?php if (!empty($card['price'])): ?>
-								<span class="video-rollup-product-card__price"><?php echo esc_html($card['price']); ?></span>
-							<?php endif; ?>
-							<span
-								class="video-rollup-product-card__cta"><?php esc_html_e('ดูรายละเอียด', 'tumtook-video-rollup-slider'); ?></span>
-						</div>
-					</div>
-				</a>
-			</div>
-		</article>
-		<?php
-	}
-
 	private function resolve_page_id($atts)
 	{
 		if (!empty($atts['page_id'])) {
@@ -861,9 +823,9 @@ final class Video_Howtoknow_Slider_Plugin
 	{
 		$type = isset($slide['type']) ? $slide['type'] : 'image';
 		?>
-		<article class="video-rollup-slide" data-slide>
-			<div class="video-rollup-slide__content">
-				<div class="video-rollup-slide__media">
+		<article class="video-rollup-media-item" data-slide>
+			<div class="video-rollup-media-item__content">
+				<div class="video-rollup-media-item__media">
 					<div
 						class="video-rollup-video-card<?php echo 'image' === $type ? ' video-rollup-video-card--image' : ''; ?><?php echo 'youtube' === $type ? ' video-rollup-video-card--youtube' : ''; ?>">
 						<?php if ('video' === $type): ?>
@@ -933,6 +895,8 @@ final class Video_Howtoknow_Slider_Plugin
 
 	private function build_slider_markup($slides, $atts, $modifier = '')
 	{
+		$this->register_front_assets();
+
 		$atts = shortcode_atts(
 			array(
 				'title' => __('ทำความรู้จักกับ how to', 'tumtook-video-rollup-slider'),
@@ -992,6 +956,8 @@ final class Video_Howtoknow_Slider_Plugin
 
 	private function build_recommended_products_markup($cards, $atts)
 	{
+		$this->register_front_assets();
+
 		$atts = shortcode_atts(
 			array(
 				'title' => __('สินค้าแนะนำ', 'tumtook-video-rollup-slider'),
@@ -1023,12 +989,6 @@ final class Video_Howtoknow_Slider_Plugin
 				<?php endif; ?>
 			</div>
 
-			<div class="video-rollup-slider__viewport" data-slider-track>
-				<?php foreach ($cards as $card): ?>
-					<?php $this->render_recommended_product_slide($card); ?>
-				<?php endforeach; ?>
-			</div>
-
 			<div class="video-rollup-slider__nav"
 				aria-label="<?php esc_attr_e('Recommended product controls', 'tumtook-video-rollup-slider'); ?>">
 				<div class="video-rollup-slider__dots" data-slider-dots></div>
@@ -1055,6 +1015,8 @@ final class Video_Howtoknow_Slider_Plugin
 
 	public function render_shortcode($atts)
 	{
+		$this->register_front_assets();
+
 		$atts = shortcode_atts(
 			array(
 				'title' => __('ทำความรู้จักกับ how to', 'tumtook-video-rollup-slider'),
@@ -1081,40 +1043,10 @@ final class Video_Howtoknow_Slider_Plugin
 		return $this->build_slider_markup($slides, $atts);
 	}
 
-	public function render_youtube_shortcode($atts)
-	{
-		$atts = shortcode_atts(
-			array(
-				'title' => '',
-				'page_id' => 0,
-			),
-			$atts,
-			'tumtook_video_how_to_youtube'
-		);
-
-		$page_id = $this->resolve_page_id($atts);
-
-		if (!$page_id) {
-			return '';
-		}
-
-		$youtube_section = $this->get_youtube_slides_for_page($page_id);
-
-		if (empty($youtube_section['slides'])) {
-			return '';
-		}
-
-		return $this->build_slider_markup(
-			$youtube_section['slides'],
-			array(
-				'title' => !empty($atts['title']) ? $atts['title'] : $youtube_section['title'],
-			),
-			'video-rollup-slider--youtube'
-		);
-	}
-
 	public function render_recommended_products_shortcode($atts)
 	{
+		$this->register_front_assets();
+
 		$atts = shortcode_atts(
 			array(
 				'title' => __('สินค้าแนะนำ', 'tumtook-video-rollup-slider'),

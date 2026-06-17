@@ -23,7 +23,6 @@ final class Tumtook_Brand_Showcase_Plugin {
 		add_action( 'add_meta_boxes', array( $this, 'register_meta_boxes' ) );
 		add_action( 'save_post_page', array( $this, 'save_page_meta' ) );
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_admin_assets' ) );
-		add_action( 'wp_enqueue_scripts', array( $this, 'register_front_assets' ) );
 		add_shortcode( self::SHORTCODE, array( $this, 'render_shortcode' ) );
 		add_shortcode( 'tumtook_brand_showCase', array( $this, 'render_shortcode' ) );
 	}
@@ -451,6 +450,8 @@ final class Tumtook_Brand_Showcase_Plugin {
 	}
 
 	public function render_shortcode( $atts ) {
+		$this->register_front_assets();
+
 		$atts = shortcode_atts(
 			array(
 				'page_id'        => 0,

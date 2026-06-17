@@ -15,7 +15,7 @@ final class Tumtook_Gallery_Plugin {
 	const OPTION_KEY = 'tumtook_gallery_settings';
 	const SHORTCODE  = 'tumtook_gallery';
 	const META_KEY   = '_tumtook_gallery_settings';
-	const VERSION    = '1.0.0';
+	const VERSION    = '1.0.2';
 	const FONT_HANDLE = 'tumtook-kanit-font';
 
 	public function __construct() {
@@ -23,7 +23,6 @@ final class Tumtook_Gallery_Plugin {
 		add_action( 'save_post_page', array( $this, 'save_page_settings' ) );
 		add_action( 'wp_ajax_ttg_preview_items', array( $this, 'ajax_preview_items' ) );
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_admin_assets' ) );
-		add_action( 'wp_enqueue_scripts', array( $this, 'register_assets' ) );
 		add_action( 'rest_api_init', array( $this, 'register_rest_routes' ) );
 		add_shortcode( self::SHORTCODE, array( $this, 'render_shortcode' ) );
 	}
@@ -476,12 +475,14 @@ final class Tumtook_Gallery_Plugin {
 	}
 
 	public function render_shortcode( $atts ) {
+		$this->register_assets();
+
 		$page_id  = get_the_ID();
 		$settings = $this->get_page_settings( $page_id );
 		$atts     = shortcode_atts(
 			array(
 				'limit'    => 0,
-				'columns'  => 4,
+				'columns'  => 6,
 				'gap'      => 18,
 				'endpoint' => '',
 			),
@@ -497,7 +498,7 @@ final class Tumtook_Gallery_Plugin {
 		wp_enqueue_style( 'tumtook-gallery' );
 		wp_enqueue_script( 'tumtook-gallery' );
 
-		$columns = min( 6, max( 1, absint( $atts['columns'] ) ) );
+		$columns = min( 12, max( 6, absint( $atts['columns'] ) ) );
 		$gap     = max( 0, absint( $atts['gap'] ) );
 		$limit   = absint( $atts['limit'] );
 
@@ -553,7 +554,7 @@ final class Tumtook_Gallery_Plugin {
 	}
 
 	private function get_gallery_items( $endpoint, $settings, $limit, $page_id = 0 ) {
-		$cache_key = 'ttg_' . md5( $endpoint . wp_json_encode( $settings ) . $limit );
+		$cache_key = 'ttg_' . md5( $endpoint . wp_json_encode( $settings ) . $limit . self::VERSION . '_shuffle' );
 		$cached    = get_transient( $cache_key );
 
 		if ( false !== $cached ) {
@@ -651,9 +652,24 @@ final class Tumtook_Gallery_Plugin {
 			}
 		}
 
+		if ( count( $gallery_items ) > 1 ) {
+			$gallery_items = $this->shuffle_gallery_items( $gallery_items );
+		}
+
 		set_transient( $cache_key, $gallery_items, max( 1, absint( $settings['cache_minutes'] ) ) * MINUTE_IN_SECONDS );
 
 		return $gallery_items;
+	}
+
+	private function shuffle_gallery_items( $items ) {
+		$items = array_values( $items );
+		if ( count( $items ) <= 1 ) {
+			return $items;
+		}
+
+		// Keep random visual order while preserving item structure for page pagination.
+		shuffle( $items );
+		return $items;
 	}
 
 	private function get_page_settings( $page_id ) {

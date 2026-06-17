@@ -13,10 +13,12 @@ if (!defined('ABSPATH')) {
 
 final class Tumtook_Page_Product_Recommendations
 {
+	const VERSION = '1.1.1';
 	const META_KEY = '_tt_page_product_recommendations';
 	const PAGE_PRICE_META = '_ttpr_page_price';
 	const PAGE_BADGE_META = '_ttpr_page_badge';
 	const PAGE_IMAGE_META = '_ttpr_page_image_id';
+	const CACHE_VERSION_OPTION = '_ttpr_cache_version';
 	const SHORTCODE = 'tumtook_recommended_products';
 	const FONT_HANDLE = 'tumtook-kanit-font';
 
@@ -27,7 +29,6 @@ final class Tumtook_Page_Product_Recommendations
 		add_action('add_meta_boxes', array($this, 'register_meta_box'));
 		add_action('save_post_page', array($this, 'save_meta'));
 		add_action('admin_enqueue_scripts', array($this, 'enqueue_admin_assets'));
-		add_action('wp_enqueue_scripts', array($this, 'register_front_assets'));
 		add_shortcode(self::SHORTCODE, array($this, 'render_shortcode'));
 		add_filter('the_content', array($this, 'append_to_content'));
 	}
@@ -87,8 +88,8 @@ final class Tumtook_Page_Product_Recommendations
 	private function get_default_settings()
 	{
 		return array(
-			'enabled' => '0',
-			'auto_display' => '0',
+			'enabled' => '1',
+			'auto_display' => '1',
 			'title' => __('สินค้าแนะนำ', 'tumtook-page-product-recommendations'),
 			'view_all_label' => __('สินค้าสร้างรายได้', 'tumtook-page-product-recommendations'),
 			'view_all_url' => '',
@@ -143,6 +144,12 @@ final class Tumtook_Page_Product_Recommendations
 		$settings['related_page_ids'] = sanitize_text_field($settings['related_page_ids']);
 
 		return $settings;
+	}
+
+	private function has_saved_settings($post_id)
+	{
+		$saved = get_post_meta($post_id, self::META_KEY, true);
+		return is_array($saved) && ! empty($saved);
 	}
 
 	private function get_page_card_meta($post_id)
@@ -488,6 +495,7 @@ final class Tumtook_Page_Product_Recommendations
 		}
 		update_post_meta($post_id, self::PAGE_BADGE_META, $badge);
 		update_post_meta($post_id, self::PAGE_IMAGE_META, isset($page_meta['image_id']) ? absint($page_meta['image_id']) : 0);
+		$this->bump_cache_version();
 	}
 
 	public function append_to_content($content)
@@ -509,6 +517,8 @@ final class Tumtook_Page_Product_Recommendations
 
 	public function render_shortcode($atts = array(), $content = '', $tag = '')
 	{
+		$this->register_front_assets();
+
 		$is_editor_preview = $this->is_editor_preview_context();
 
 		$atts = shortcode_atts(
@@ -534,13 +544,14 @@ final class Tumtook_Page_Product_Recommendations
 		}
 
 		$settings = $this->get_settings($post_id);
+		$has_saved_settings = $this->has_saved_settings($post_id);
 
-		if ('1' !== $settings['enabled']) {
+		if ('1' !== $settings['enabled'] && $has_saved_settings) {
 			return $is_editor_preview ? $this->render_section($post_id, $settings, true) : '';
 		}
 
-		if ('1' !== $settings['enabled'] && !$is_editor_preview) {
-			return '';
+		if (!$post_id && !$has_saved_settings) {
+			return $this->render_section(0, $this->get_default_settings(), true);
 		}
 
 		return $this->render_section($post_id, $settings, $is_editor_preview);
@@ -548,17 +559,15 @@ final class Tumtook_Page_Product_Recommendations
 
 	private function render_section($post_id, $settings, $force_placeholder = false)
 	{
+		$this->register_front_assets();
+
 		$items = $this->get_recommended_pages($settings);
 		$using_placeholders = false;
 
-		if (empty($items)) {
-			if (!$force_placeholder) {
-				return '';
+			if (empty($items)) {
+				$items = $this->get_placeholder_items($settings);
+				$using_placeholders = true;
 			}
-
-			$items = $this->get_placeholder_items($settings);
-			$using_placeholders = true;
-		}
 
 		$this->rendered_posts[] = $post_id;
 
@@ -658,6 +667,12 @@ final class Tumtook_Page_Product_Recommendations
 	{
 		$page_ids = $this->parse_id_list($settings['related_page_ids']);
 		$limit = isset($settings['limit']) ? absint($settings['limit']) : 0;
+		$cache_key = 'ttpr_pages_' . md5(wp_json_encode($settings) . '|' . $limit . '|' . self::VERSION . '|' . $this->get_cache_version());
+		$cached = get_transient($cache_key);
+
+		if (false !== $cached) {
+			return $cached;
+		}
 
 		if ($limit > 0) {
 			$page_ids = array_slice($page_ids, 0, $limit);
@@ -692,6 +707,8 @@ final class Tumtook_Page_Product_Recommendations
 				'badge_type' => $meta['badge'] ? $meta['badge'] : 'new',
 			);
 		}
+
+		set_transient($cache_key, $items, 10 * MINUTE_IN_SECONDS);
 
 		return $items;
 	}
@@ -753,12 +770,25 @@ final class Tumtook_Page_Product_Recommendations
 
 		if (class_exists('\Elementor\Plugin')) {
 			$elementor = \Elementor\Plugin::$instance;
-			if ($elementor->editor->is_edit_mode() || $elementor->preview->is_preview_mode()) {
+			if ($elementor && isset($elementor->editor, $elementor->preview) && ($elementor->editor->is_edit_mode() || $elementor->preview->is_preview_mode())) {
 				return true;
 			}
 		}
 
 		return false;
+	}
+
+	private function get_cache_version()
+	{
+		return (string) max(1, absint(get_option(self::CACHE_VERSION_OPTION, 1)));
+	}
+
+	private function bump_cache_version()
+	{
+		$version = absint(get_option(self::CACHE_VERSION_OPTION, 1));
+		$version = $version > 0 ? $version + 1 : 2;
+
+		update_option(self::CACHE_VERSION_OPTION, $version, false);
 	}
 }
 
