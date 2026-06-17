@@ -1,16 +1,17 @@
 .ttg-gallery-shell {
 	position: relative;
 	font-family: "Kanit", sans-serif;
-	padding-block: 4px;
+	padding: min(var(--ttg-gap, 18px), 18px);
+	padding-inline: calc(min(var(--ttg-gap, 18px), 18px) + 24px);
 }
 
 .ttg-gallery-shell .ttg-gallery {
 	display: grid;
 	grid-template-columns: repeat(var(--ttg-columns, 6), minmax(0, 1fr));
-	column-gap: min(var(--ttg-gap, 14px), 14px);
-	row-gap: min(var(--ttg-gap, 14px), 14px);
+	column-gap: min(var(--ttg-gap, 18px), 20px);
+	row-gap: min(var(--ttg-gap, 18px), 25px);
 	grid-auto-flow: row;
-	grid-auto-rows: 1px;
+	grid-auto-rows: 3px;
 	align-items: start;
 	min-height: 40vh;
 }
@@ -58,9 +59,9 @@
 .ttg-gallery-shell .ttg-card.ttg-card-visible:hover,
 .ttg-gallery-shell .ttg-card.ttg-card-visible:focus-within,
 .ttg-gallery-shell .ttg-card.ttg-card-visible:active {
-	transform: translateY(-3px) scale(1.02);
-	filter: saturate(1.02) contrast(1.02);
-	box-shadow: 0 18px 36px rgba(15, 23, 42, 0.14);
+	transform: translateY(0);
+	filter: saturate(1);
+	box-shadow: 0 14px 30px rgba(15, 23, 42, 0.08);
 }
 
 .ttg-gallery-shell .ttg-card.ttg-card-visible:focus-within {
@@ -156,13 +157,8 @@
 
 .ttg-gallery-shell .ttg-media img {
 	cursor: zoom-in;
-	transition: transform 0.2s ease, filter 0.2s ease;
-}
-
-.ttg-gallery-shell .ttg-media img:hover,
-.ttg-gallery-shell .ttg-media img:focus-visible {
-	filter: brightness(0.96);
-	outline: 0;
+	transform: none !important;
+	transition: filter 0.2s ease;
 }
 
 .ttg-lightbox-open {
@@ -271,8 +267,7 @@
 .ttg-gallery-shell .ttg-lightbox-close:active,
 .ttg-gallery-shell .ttg-lightbox-nav:hover,
 .ttg-gallery-shell .ttg-lightbox-nav:focus-visible,
-.ttg-gallery-shell .ttg-lightbox-nav:active,
-.ttg-gallery-shell .ttg-media img:active {
+.ttg-gallery-shell .ttg-lightbox-nav:active {
 	filter: brightness(1.05);
 }
 
@@ -387,7 +382,8 @@
 
 @media (max-width: 767px) {
 	.ttg-gallery-shell {
-		padding-block: 2px;
+		padding: 10px;
+		padding-inline: 12px;
 	}
 
 	.ttg-gallery-shell .ttg-gallery {
@@ -445,7 +441,8 @@
 
 @media (max-width: 479px) {
 	.ttg-gallery-shell {
-		padding-block: 0;
+		padding: 8px;
+		padding-inline: 10px;
 	}
 
 	.ttg-gallery-shell .ttg-gallery {
