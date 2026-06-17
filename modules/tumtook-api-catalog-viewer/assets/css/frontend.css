@@ -103,7 +103,8 @@
 }
 
 .aiv-accordion {
-	padding: 0 15px;
+	padding: 8px 18px 0;
+	border-top: 1px solid #ececec;
 }
 
 .aiv-accordion-toggle {
@@ -111,10 +112,12 @@
 	align-items: center;
 	justify-content: space-between;
 	width: 100%;
-	padding: 0;
+	min-height: 35px;
+	padding: 10px 0 6px;
 	border: 0;
 	background: transparent;
 	cursor: pointer;
+	border-top: 1px solid #ececec;
 	text-align: left;
 }
 
@@ -146,21 +149,22 @@
 	display: flex;
 	align-items: center;
 	font-weight: 500;
-	font-size: 16px;
-	color: #666666;
+	font-size: 18px;
+	line-height: 1.35;
+	color: #4a4a4a;
 }
 
 .aiv-accordion-icon {
 	display: inline-flex;
-	width: 8px;
-	height: 8px;
-	border-right: 2px solid #8a8a8a;
-	border-bottom: 2px solid #8a8a8a;
+	width: 7px;
+	height: 7px;
+	border-right: 2px solid #555555;
+	border-bottom: 2px solid #555555;
 	transform: rotate(45deg);
 	transition: transform 220ms ease;
 	flex-shrink: 0;
 	margin-left: 12px;
-	margin-right: 20px;
+	margin-right: 2px;
 }
 
 .aiv-accordion-toggle[aria-expanded="true"] .aiv-accordion-icon {
@@ -179,7 +183,7 @@
 
 .aiv-accordion-panel.is-open {
 	grid-template-rows: 1fr;
-  padding-top: 10px;
+	padding-top: 8px;
 }
 
 .aiv-accordion-panel-inner {
