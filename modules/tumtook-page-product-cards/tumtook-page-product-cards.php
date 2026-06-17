@@ -318,7 +318,7 @@ final class Tumtook_Page_Product_Cards {
 		$post_id  = get_the_ID();
 		$settings = $this->get_settings( $post_id );
 
-		if ( '1' !== $settings['enabled'] || '1' !== $settings['auto_display'] || in_array( $post_id, $this->rendered_posts, true ) ) {
+		if ( ! $this->has_saved_settings( $post_id ) || '1' !== $settings['enabled'] || '1' !== $settings['auto_display'] || in_array( $post_id, $this->rendered_posts, true ) ) {
 			return $content;
 		}
 
@@ -356,12 +356,12 @@ final class Tumtook_Page_Product_Cards {
 		$settings = $this->get_settings( $post_id );
 		$has_saved_settings = $this->has_saved_settings( $post_id );
 
-		if ( '1' !== $settings['enabled'] && $has_saved_settings ) {
+		if ( ! $has_saved_settings ) {
 			return $is_editor_preview ? $this->render_section( $post_id, $settings, true ) : '';
 		}
 
-		if ( ! $post_id && ! $has_saved_settings ) {
-			return $this->render_section( 0, $this->get_default_settings(), true );
+		if ( '1' !== $settings['enabled'] ) {
+			return $is_editor_preview ? $this->render_section( $post_id, $settings, true ) : '';
 		}
 
 		return $this->render_section( $post_id, $settings, $is_editor_preview );

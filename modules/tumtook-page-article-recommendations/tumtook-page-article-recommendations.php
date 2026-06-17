@@ -333,7 +333,7 @@ final class Tumtook_Page_Article_Recommendations
 			$post_id = get_the_ID();
 			$settings = $this->get_settings($post_id);
 
-			if ('1' !== $settings['enabled'] || '1' !== $settings['auto_display'] || in_array($post_id, $this->rendered_posts, true)) {
+			if (!$this->has_saved_settings($post_id) || '1' !== $settings['enabled'] || '1' !== $settings['auto_display'] || in_array($post_id, $this->rendered_posts, true)) {
 				return $content;
 			}
 
@@ -380,7 +380,11 @@ final class Tumtook_Page_Article_Recommendations
 				$settings['limit'] = (string) max(1, min(10, absint($atts['limit'])));
 			}
 
-			if ('1' !== $settings['enabled'] && $this->has_saved_settings($post_id)) {
+			if (!$this->has_saved_settings($post_id)) {
+				return $is_editor_preview ? $this->render_section($post_id, $settings, true) : '';
+			}
+
+			if ('1' !== $settings['enabled']) {
 				return $is_editor_preview ? $this->render_section($post_id, $settings, true) : '';
 			}
 
