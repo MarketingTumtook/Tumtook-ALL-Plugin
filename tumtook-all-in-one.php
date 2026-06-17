@@ -74,11 +74,6 @@ function tumtook_aio_get_modules()
 {
 	return array(
 		array(
-			'name' => 'Tumtook API Catalog Viewer',
-			'file' => 'tumtook-api-catalog-viewer/api-catalog-viewer.php',
-			'guard' => array('type' => 'class', 'name' => 'API_Catalog_Images_Plugin'),
-		),
-		array(
 			'name' => 'Tumtook Brand Showcase',
 			'file' => 'tumtook-brand-showcase/tumtook-brand-showcase.php',
 			'guard' => array('type' => 'class', 'name' => 'Tumtook_Brand_Showcase_Plugin'),
@@ -166,10 +161,6 @@ add_action('plugins_loaded', 'tumtook_aio_load_modules', 1);
 function tumtook_aio_activate()
 {
 	tumtook_aio_load_modules();
-
-	if (class_exists('API_Catalog_Images_Plugin', false) && method_exists('API_Catalog_Images_Plugin', 'activate')) {
-		API_Catalog_Images_Plugin::activate();
-	}
 
 	if (class_exists('Tumtook_Gallery_Plugin', false) && method_exists('Tumtook_Gallery_Plugin', 'activate')) {
 		Tumtook_Gallery_Plugin::activate();
