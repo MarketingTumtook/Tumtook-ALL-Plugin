@@ -235,11 +235,15 @@
 }
 
 .ttpr-badge--new {
-  background: #ff2e13;
+  background: #2A93F5;
 }
 
 .ttpr-badge--best {
   background: #ff2e13;
+}
+
+.ttpr-badge--recommended {
+  background: #00C28B;
 }
 
 .ttpr-card-body {

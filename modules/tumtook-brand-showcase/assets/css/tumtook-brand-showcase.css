@@ -109,7 +109,6 @@
 .ttbs-showcase__slide {
   background: transparent;
   box-shadow: none;
-  /* min-height: 590px; */
   min-width: 0;
   overflow: hidden;
   padding: 0; 
@@ -125,10 +124,9 @@
   height: 100%;
   justify-content: center;
   max-width: none;
-  /* min-height: 552px; */
   padding: 0;
   position: relative;
-  border-radius: 30px;
+  border-radius: 33px;
   overflow: hidden;
   width: 100%;
 }
@@ -147,40 +145,39 @@
 }
 
 .ttbs-showcase__card-link {
-  align-items: center;
-  background:
-    linear-gradient(135deg, rgba(255, 255, 255, 0.62), rgba(255, 255, 255, 0.18)),
-    rgba(44, 44, 44, 0.48);
-  border: 1px solid rgba(255, 255, 255, 0.26);
-  border-radius: 18px;
-  bottom: 30px;
-  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.22);
-  display: inline-flex;
-  height: 72px;
-  justify-content: center;
-  position: absolute;
-  right: 30px;
-  text-decoration: none;
-  transition: transform 0.2s ease, background-color 0.2s ease;
-  width: 72px;
-  z-index: 3;
-}
+    position: absolute;
+    right: 22px;
+    bottom: 22px;
+    z-index: 3;
+    height: 52px;
+    width: 52px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    border-radius: 12px;
+    background: #f7f7f7;
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, .18), inset 0 1px 1px rgba(255, 255, 255, .35), inset 0 -1px 1px rgba(255, 255, 255, .05) !important;
+  }
 
 .ttbs-showcase__card-link:hover,
 .ttbs-showcase__card-link:focus-visible {
-  background:
-    linear-gradient(135deg, rgba(255, 255, 255, 0.52), rgba(255, 255, 255, 0.14)),
-    rgba(28, 28, 28, 0.68);
+    background: rgba(217, 217, 217, 0.5);
+    backdrop-filter: blur(2px) saturate(100%);
   outline: none;
-  transform: translateY(-2px);
 }
 
 .ttbs-showcase__card-link-icon {
   background: url("../images/arrow-click.svg") center / contain no-repeat;
   display: block;
-  filter: brightness(0) invert(1);
-  height: 30px;
-  width: 30px;
+  filter: brightness(0) saturate(100%) invert(75%) sepia(0%) saturate(0%) hue-rotate(180deg) brightness(95%) contrast(88%);
+  height: 14px;
+  width: 14px;
+}
+
+.ttbs-showcase__card-link:hover .ttbs-showcase__card-link-icon{
+   filter: brightness(0) invert(1);
 }
 
 /* Elementor can reset img radius to 0; keep the showcase radius inside Elementor. */
@@ -261,7 +258,7 @@
   align-items: center;
   appearance: none;
   background: transparent;
-  background-color: transparent;
+  background-color: #fff !important;
   border: 1px solid rgba(63, 53, 45, 0.14);
   border-radius: 999px;
   box-shadow: none;
@@ -361,19 +358,16 @@
   }
 
   .ttbs-showcase__slide {
-    /* min-height: 560px */
     padding: 0;
     scroll-snap-align: center;
   }
 
   .ttbs-showcase__card {
     border-radius: 30px;
-    /* min-height: 560px; */
   }
 
   .ttbs-showcase__image {
     border-radius: 30px;
-    /* min-height: 560px; */
   }
 
   .ttbs-showcase__card-link {
@@ -390,13 +384,10 @@
 }
 
 @media (max-width: 640px) {
-  /* .ttbs-showcase__card {
-    min-height: 520px;
-  }
 
   .ttbs-showcase__image {
     min-height: 520px;
-  } */
+  } 
 
   .ttbs-showcase__nav {
     gap: 14px;

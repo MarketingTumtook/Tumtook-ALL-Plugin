@@ -335,6 +335,9 @@ final class Tumtook_Page_Product_Recommendations
 							<option value="best" <?php selected($page_meta['badge'], 'best'); ?>>
 								<?php esc_html_e('ขายดี', 'tumtook-page-product-recommendations'); ?>
 							</option>
+							<option value="recommended" <?php selected($page_meta['badge'], 'recommended'); ?>>
+								<?php esc_html_e('แนะนำ', 'tumtook-page-product-recommendations'); ?>
+							</option>
 						</select>
 					</div>
 					<div class="ttpr-admin-field ttpr-admin-field--full">
@@ -494,7 +497,7 @@ final class Tumtook_Page_Product_Recommendations
 		update_post_meta($post_id, self::PAGE_PRICE_META, isset($page_meta['price']) ? sanitize_text_field($page_meta['price']) : '');
 
 		$badge = isset($page_meta['badge']) ? sanitize_key($page_meta['badge']) : '';
-		if (!in_array($badge, array('', 'new', 'best'), true)) {
+		if (!in_array($badge, array('', 'new', 'best', 'recommended'), true)) {
 			$badge = '';
 		}
 		update_post_meta($post_id, self::PAGE_BADGE_META, $badge);
@@ -605,9 +608,11 @@ final class Tumtook_Page_Product_Recommendations
 						<?php foreach ($items as $item): ?>
 							<article class="ttpr-card">
 								<div class="ttpr-card-media">
-									<div class="ttpr-image-link<?php echo empty($item['image']) ? ' ttpr-image-link--missing' : ''; ?>">
+									<div
+										class="ttpr-image-link<?php echo empty($item['image']) ? ' ttpr-image-link--missing' : ''; ?>">
 										<?php if (!empty($item['badge'])): ?>
-											<span class="ttpr-badge ttpr-badge--<?php echo esc_attr($item['badge_type']); ?>"><?php echo esc_html($item['badge']); ?></span>
+											<span
+												class="ttpr-badge ttpr-badge--<?php echo esc_attr($item['badge_type']); ?>"><?php echo esc_html($item['badge']); ?></span>
 										<?php endif; ?>
 										<?php if (!empty($item['image'])): ?>
 											<img class="ttpr-image" src="<?php echo esc_url($item['image']); ?>"
@@ -634,7 +639,8 @@ final class Tumtook_Page_Product_Recommendations
 											<div class="ttpr-price"><?php echo esc_html($item['price']); ?></div>
 											<a class="ttpr-button" href="<?php echo esc_url($item['url']); ?>">
 												<span class="ttpr-button-arrow" aria-hidden="true"></span>
-												<span class="ttpr-button-label"><?php echo esc_html($settings['button_label']); ?></span>
+												<span
+													class="ttpr-button-label"><?php echo esc_html($settings['button_label']); ?></span>
 											</a>
 										</div>
 									</div>
@@ -701,6 +707,7 @@ final class Tumtook_Page_Product_Recommendations
 			$badge_map = array(
 				'new' => __('ใหม่', 'tumtook-page-product-recommendations'),
 				'best' => __('ขายดี', 'tumtook-page-product-recommendations'),
+				'recommended' => __('แนะนำ', 'tumtook-page-product-recommendations'),
 			);
 
 			$items[] = array(

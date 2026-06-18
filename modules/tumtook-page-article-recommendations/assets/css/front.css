@@ -10,8 +10,9 @@
   --ttar-dot: rgba(74, 64, 56, 0.18);
   --ttar-badge: #35b879;
   --ttar-first-card-inset: max(0px, calc((100vw - var(--container-max-width, 1920px)) / 2));
-  --ttar-gap: 24px;
+  --ttar-gap: 15px;
   --ttar-slides-per-view: 6.20;
+  --ttar-accentdot: #f80000;
 }
 
 .ttar-shell {
@@ -254,7 +255,7 @@
 .ttar-article-title {
   margin: 0;
   color: #5a5a5a;
-  font-size: 19px;
+  font-size: 18px;
   font-weight: 500;
   line-height: 1.3;
   letter-spacing: -0.02em;
@@ -276,8 +277,8 @@
   box-sizing: border-box;
   margin-top: 10px;
   color: var(--ttar-accent) !important;
-  font-size: 16px;
-  font-weight: 700;
+  font-size: 20px;
+  font-weight: 600;
   line-height: 1;
   text-decoration: none !important;
   box-shadow: none !important;
@@ -310,7 +311,7 @@
   display: block;
   fill: none;
   stroke: currentColor;
-  stroke-width: 2.8;
+  stroke-width: 3.2;
   stroke-linecap: round;
   stroke-linejoin: round;
 }
