@@ -105,17 +105,21 @@
   display: grid;
   grid-template-rows: auto 1fr;
   border: 1px solid #ccc;
-  border-radius: 18px;
+  border-radius: 22px;
   overflow: hidden;
   box-shadow: none;
   scroll-snap-align: start;
   scroll-snap-stop: always;
 }
 
+.ttpr-card-media {
+  display: block;
+}
+
 .ttpr-image-link {
   position: relative;
   display: block;
-  aspect-ratio: 1 / 1.1;
+  aspect-ratio: 4 / 5;
   background: linear-gradient(180deg, #fafafa 0%, #efefef 100%);
   overflow: hidden;
 }
@@ -238,29 +242,34 @@
   background: #ff2e13;
 }
 
+.ttpr-card-body {
+  background-color: #fff;
+  display: flex;
+}
+
 .ttpr-content {
-  display: grid;
   box-sizing: border-box;
-  grid-template-columns: minmax(0, 1fr) 65px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   grid-template-rows: auto auto;
   column-gap: 14px;
   row-gap: 0;
   align-items: center;
-  padding: 7px 11px 10px;
-  background-color: #fff;
+  width: 100%;
+  min-width: 0;
+  padding: 15px 15px;
 }
 
 .ttpr-product-title {
-  grid-column: 1;
-  grid-row: 1;
   margin: 0;
   min-height: 0;
   color: #313131;
   font-family: inherit;
   font-size: 20px;
   font-weight: 400;
-  line-height: 1.12;
-  letter-spacing: -0.02em;
+  line-height: 130%;
+  grid-column: 1;
+  grid-row: 1;
   white-space: nowrap;
   word-break: normal;
   display: block;
@@ -280,7 +289,7 @@
   font-size: 16px;
   font-weight: 600;
   line-height: 1;
-  padding-bottom: 0;
+  margin-top: 0;
   min-width: 0;
   white-space: nowrap;
 }
@@ -294,15 +303,15 @@
   align-items: center;
   justify-content: center;
   gap: 0;
-  width: 65px;
-  height: 65px;
-  min-width: 65px;
-  min-height: 65px;
-  max-width: 65px;
-  flex: 0 0 65px;
+  width: 46px;
+  height: 46px;
+  min-width: 46px;
+  min-height: 46px;
+  max-width: 46px;
+  flex: 0 0 46px;
   padding: 0;
   border: 0;
-  border-radius: 16px;
+  border-radius: 12px;
   background: var(--ttpr-accent);
   color: #fff;
   font-family: inherit;
@@ -347,9 +356,9 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 20px;
-  height: 20px;
-  flex: 0 0 20px;
+  width: 14px;
+  height: 14px;
+  flex: 0 0 14px;
   background: url("../images/arrow-click.svg") center / contain no-repeat;
 }
 
@@ -500,8 +509,8 @@
 .ttpr-section .ttpr-button,
 .ttpr-section .ttpr-button:link,
 .ttpr-section .ttpr-button:visited {
-  background:#ececec !important;
-  background-color:#ececec !important;
+  background:#F7F7F7 !important;
+  background-color:#F7F7F7 !important;
   border-color: transparent !important;
   box-shadow: none !important;
   color: #888 !important;
@@ -595,9 +604,12 @@
   }
 
   .ttpr-section[data-ttpr-slider] {
-    --ttpr-gap: 15px;
+    --ttpr-gap: 10px;
+    --ttpr-card-width: 320px;
+    --ttpr-card-radius: 12px;
+    --ttpr-media-radius: 20px;
     --ttpr-slides-per-view: 1;
-    --ttpr-mobile-peek: 34px;
+    --ttpr-mobile-peek: 0px;
   }
 
   .ttpr-track {
@@ -612,83 +624,51 @@
   }
 
   .ttpr-card {
-    border: 1px solid #ccc;
-    border-radius: 18px;
+    border: 1px solid var(--ttpr-border);
+    border-radius: var(--ttpr-card-radius);
     box-shadow: none;
   }
 
   .ttpr-image-link {
-    aspect-ratio: 1 / 1.1;
+    aspect-ratio: 4/5;
+    border-width: 1px;
+  }
+
+  .ttpr-card-body {
+    padding: 10px;
   }
 
   .ttpr-content {
-    box-sizing: border-box;
-    grid-template-columns: minmax(0, 1fr) 34px;
-    grid-template-rows: auto auto;
-    column-gap: 8px;
-    row-gap: 0;
-    align-items: center;
-    min-height: 65px;
-    padding: 11px 10px 12px;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 5px;
+    padding: 0;
   }
 
   .ttpr-product-title {
-    grid-column: 1;
-    grid-row: 1;
-    min-height: 0;
     font-size: 16px;
-    font-weight: 600;
+    font-weight: 500;
     line-height: 1.2;
-    display: block;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
   }
 
-  .ttpr-footer {
-    display: contents;
-  }
-
-  .ttpr-footer > * {
-    min-width: 0;
+  .ttpr-card-info {
+    gap: 6px;
   }
 
   .ttpr-price {
-    grid-column: 1;
-    grid-row: 2;
     font-size: 16px;
     font-weight: 600;
-    padding-bottom: 0;
-    flex: 1 1 auto;
-    min-width: 0;
-    white-space: nowrap;
   }
 
   .ttpr-button,
   .ttpr-button:link,
   .ttpr-button:visited {
-    grid-column: 2;
-    grid-row: 1 / span 2;
-    width: 34px !important;
-    height: 34px !important;
-    min-width: 34px;
-    min-height: 34px !important;
-    max-width: 34px;
-    padding: 0 !important;
-    border-radius: 10px !important;
-    font-size: 0 !important;
-    gap: 0;
-    flex: 0 0 34px;
-    justify-content: center;
+    display: none !important;
   }
 
   .ttpr-button-arrow {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 16px;
-    height: 16px;
-    flex: 0 0 16px;
+    width: 22px;
+    height: 22px;
+    flex: 0 0 22px;
   }
 
   .ttpr-button-label {
@@ -696,13 +676,13 @@
   }
 
   .ttpr-badge {
-    top: 10px;
-    left: 10px;
-    min-width: 42px;
-    padding: 5px 9px;
+    top: 14px;
+    left: 14px;
+    min-width: 60px;
+    min-height: 26px;
     border-radius: 999px;
     background: #ff2e13;
-    font-size: 14px;
+    font-size: 16px;
     font-weight: 600;
   }
 
@@ -751,23 +731,23 @@
   .ttpr-button,
   .ttpr-button:link,
   .ttpr-button:visited {
-    width: 30px !important;
-    height: 30px !important;
-    min-width: 30px;
-    min-height: 30px !important;
-    max-width: 30px;
-    flex-basis: 30px;
+    width: 50px !important;
+    height: 50px !important;
+    min-width: 50px;
+    min-height: 50px !important;
+    max-width: 50px;
+    flex-basis: 50px;
     border-radius: 9px !important;
   }
 
   .ttpr-button-arrow {
-    width: 14px;
-    height: 14px;
-    flex-basis: 14px;
+    width: 18px;
+    height: 18px;
+    flex-basis: 18px;
   }
 
   .ttpr-badge {
-    min-width: 38px;
-    font-size: 13px;
+    min-width: 58px;
+    font-size: 18px;
   }
 }

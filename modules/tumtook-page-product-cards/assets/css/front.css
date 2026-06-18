@@ -486,8 +486,8 @@
   }
 
   .ttpc-section[data-ttpc-slider] {
-    --ttpc-gap: 15px;
-    --ttpc-slides-per-view: 2;
+    --ttpc-gap: 10px;
+    --ttpc-slides-per-view: 2.05;
   }
 
   .ttpc-track {
@@ -505,7 +505,7 @@
   }
 
   .ttpc-content {
-    grid-template-columns: minmax(0, 1fr) 44px;
+    grid-template-columns: minmax(0, 1fr);
     gap: 10px;
     min-height: 78px;
     padding: 12px 12px 14px;
@@ -526,12 +526,7 @@
   .ttpc-button,
   .ttpc-button:link,
   .ttpc-button:visited {
-    width: 44px;
-    height: 44px;
-    min-width: 44px;
-    min-height: 44px !important;
-    border-radius: 12px;
-    padding: 0 !important;
+    display: none !important;
   }
 
   .ttpc-button-arrow {

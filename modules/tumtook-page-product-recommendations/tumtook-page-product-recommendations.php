@@ -149,7 +149,7 @@ final class Tumtook_Page_Product_Recommendations
 	private function has_saved_settings($post_id)
 	{
 		$saved = get_post_meta($post_id, self::META_KEY, true);
-		return is_array($saved) && ! empty($saved);
+		return is_array($saved) && !empty($saved);
 	}
 
 	private function get_page_card_meta($post_id)
@@ -327,11 +327,14 @@ final class Tumtook_Page_Product_Recommendations
 							for="ttpr-page-badge"><?php esc_html_e('ป้ายสถานะ', 'tumtook-page-product-recommendations'); ?></label>
 						<select id="ttpr-page-badge" name="ttpr_page_meta[badge]">
 							<option value="" <?php selected($page_meta['badge'], ''); ?>>
-								<?php esc_html_e('ไม่มี', 'tumtook-page-product-recommendations'); ?></option>
+								<?php esc_html_e('ไม่มี', 'tumtook-page-product-recommendations'); ?>
+							</option>
 							<option value="new" <?php selected($page_meta['badge'], 'new'); ?>>
-								<?php esc_html_e('ใหม่', 'tumtook-page-product-recommendations'); ?></option>
+								<?php esc_html_e('ใหม่', 'tumtook-page-product-recommendations'); ?>
+							</option>
 							<option value="best" <?php selected($page_meta['badge'], 'best'); ?>>
-								<?php esc_html_e('ขายดี', 'tumtook-page-product-recommendations'); ?></option>
+								<?php esc_html_e('ขายดี', 'tumtook-page-product-recommendations'); ?>
+							</option>
 						</select>
 					</div>
 					<div class="ttpr-admin-field ttpr-admin-field--full">
@@ -421,7 +424,8 @@ final class Tumtook_Page_Product_Recommendations
 							</option>
 							<?php foreach ($available_pages as $available_page): ?>
 								<option value="<?php echo esc_attr($available_page->ID); ?>">
-									<?php echo esc_html(get_the_title($available_page->ID)); ?></option>
+									<?php echo esc_html(get_the_title($available_page->ID)); ?>
+								</option>
 							<?php endforeach; ?>
 						</select>
 						<div class="ttpr-selected-pages" id="ttpr-selected-pages">
@@ -564,10 +568,10 @@ final class Tumtook_Page_Product_Recommendations
 		$items = $this->get_recommended_pages($settings);
 		$using_placeholders = false;
 
-			if (empty($items)) {
-				$items = $this->get_placeholder_items($settings);
-				$using_placeholders = true;
-			}
+		if (empty($items)) {
+			$items = $this->get_placeholder_items($settings);
+			$using_placeholders = true;
+		}
 
 		$this->rendered_posts[] = $post_id;
 
@@ -600,38 +604,39 @@ final class Tumtook_Page_Product_Recommendations
 					<div class="ttpr-track" data-ttpr-track>
 						<?php foreach ($items as $item): ?>
 							<article class="ttpr-card">
-								<div
-									class="ttpr-image-link<?php echo empty($item['image']) ? ' ttpr-image-link--missing' : ''; ?>">
-									<?php if (!empty($item['badge'])): ?>
-										<span
-											class="ttpr-badge ttpr-badge--<?php echo esc_attr($item['badge_type']); ?>"><?php echo esc_html($item['badge']); ?></span>
-									<?php endif; ?>
-									<?php if (!empty($item['image'])): ?>
-										<img class="ttpr-image" src="<?php echo esc_url($item['image']); ?>"
-											alt="<?php echo esc_attr($item['title']); ?>" loading="lazy"
-											onerror="this.style.display='none';this.parentNode.classList.add('ttpr-image-link--missing');" />
-									<?php endif; ?>
-									<div class="ttpr-image ttpr-image--placeholder" aria-hidden="true">
-										<div class="ttpr-image-fallback">
-											<span class="ttpr-image-fallback-badge">NO IMAGE</span>
-											<div class="ttpr-image-fallback-box"></div>
-											<div class="ttpr-image-fallback-lines">
-												<span></span>
-												<span></span>
-												<span></span>
+								<div class="ttpr-card-media">
+									<div class="ttpr-image-link<?php echo empty($item['image']) ? ' ttpr-image-link--missing' : ''; ?>">
+										<?php if (!empty($item['badge'])): ?>
+											<span class="ttpr-badge ttpr-badge--<?php echo esc_attr($item['badge_type']); ?>"><?php echo esc_html($item['badge']); ?></span>
+										<?php endif; ?>
+										<?php if (!empty($item['image'])): ?>
+											<img class="ttpr-image" src="<?php echo esc_url($item['image']); ?>"
+												alt="<?php echo esc_attr($item['title']); ?>" loading="lazy"
+												onerror="this.style.display='none';this.parentNode.classList.add('ttpr-image-link--missing');" />
+										<?php endif; ?>
+										<div class="ttpr-image ttpr-image--placeholder" aria-hidden="true">
+											<div class="ttpr-image-fallback">
+												<span class="ttpr-image-fallback-badge">NO IMAGE</span>
+												<div class="ttpr-image-fallback-box"></div>
+												<div class="ttpr-image-fallback-lines">
+													<span></span>
+													<span></span>
+													<span></span>
+												</div>
 											</div>
 										</div>
 									</div>
 								</div>
-								<div class="ttpr-content">
-									<h3 class="ttpr-product-title"><?php echo esc_html($item['title']); ?></h3>
-									<div class="ttpr-footer">
-										<div class="ttpr-price"><?php echo esc_html($item['price']); ?></div>
-										<a class="ttpr-button" href="<?php echo esc_url($item['url']); ?>">
-											<span class="ttpr-button-arrow" aria-hidden="true"></span>
-											<span
-												class="ttpr-button-label"><?php echo esc_html($settings['button_label']); ?></span>
-										</a>
+								<div class="ttpr-card-body">
+									<div class="ttpr-content">
+										<h3 class="ttpr-product-title"><?php echo esc_html($item['title']); ?></h3>
+										<div class="ttpr-footer">
+											<div class="ttpr-price"><?php echo esc_html($item['price']); ?></div>
+											<a class="ttpr-button" href="<?php echo esc_url($item['url']); ?>">
+												<span class="ttpr-button-arrow" aria-hidden="true"></span>
+												<span class="ttpr-button-label"><?php echo esc_html($settings['button_label']); ?></span>
+											</a>
+										</div>
 									</div>
 								</div>
 							</article>

@@ -217,7 +217,7 @@ section:has(.video-rollup-slider),
 .elementor .video-rollup-video-card,
 .elementor .video-rollup-video-card__video,
 .elementor .video-rollup-video-card__overlay {
-  border-radius: 18px !important;
+  border-radius: 33px !important;
 }
 
 .elementor .video-rollup-youtube-card,
