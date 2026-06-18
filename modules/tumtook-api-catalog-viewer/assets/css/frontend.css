@@ -289,10 +289,6 @@
 		padding: 0 15px 5px 15px !important;
 	}
 
-	.aiv-accordion-panel {
-		padding-bottom: 10px;
-	}
-
 	.aiv-spec-row {
 		grid-template-columns: minmax(120px, 42%) minmax(0, 1fr);
 		gap: 14px;
