@@ -89,6 +89,11 @@ function tumtook_aio_get_modules()
 			'guard' => array('type' => 'class', 'name' => 'Tumtook_Gallery_Plugin'),
 		),
 		array(
+			'name' => 'Tumtook Page FAQ',
+			'file' => 'tumtook-page-faq/tumtook-page-faq.php',
+			'guard' => array('type' => 'class', 'name' => 'Tumtook_Page_FAQ'),
+		),
+		array(
 			'name' => 'Tumtook Page Article Recommendations',
 			'file' => 'tumtook-page-article-recommendations/tumtook-page-article-recommendations.php',
 			'guard' => array('type' => 'class', 'name' => 'Tumtook_Page_Article_Recommendations'),
