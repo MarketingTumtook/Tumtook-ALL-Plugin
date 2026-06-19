@@ -226,7 +226,7 @@
 
 .ttfaq-button--primary {
   background: #11c738;
-  color: #fff;
+  color: #fff !important;
 }
 
 .ttfaq-button--primary:hover,
