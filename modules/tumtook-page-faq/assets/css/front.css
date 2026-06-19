@@ -157,9 +157,9 @@
   gap: 20px 18px;
   align-items: start;
   margin-top: 26px;
-  padding: 22px px;
+  padding: 22px 15px;
   border-radius: 18px;
-  background: #f7f7f8;
+  background: #F7F7F7;
 }
 
 .ttfaq-support-icon {
@@ -276,6 +276,7 @@
 @media (max-width: 767px) {
   .ttfaq-section {
     margin: 28px 0;
+    padding: 0 14px;
   }
 
   .ttfaq-list {
@@ -305,7 +306,7 @@
     grid-template-columns: 1fr;
     gap: 12px;
     margin-top: 24px;
-    padding: 18px 0;
+    padding: 18px 14px;
     border-radius: 18px;
   }
 
