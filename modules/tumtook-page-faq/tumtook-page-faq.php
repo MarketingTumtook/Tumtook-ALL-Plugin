@@ -554,7 +554,8 @@ final class Tumtook_Page_FAQ
 						aria-label="<?php esc_attr_e('ลากเพื่อเรียงลำดับ', 'tumtook-page-faq'); ?>"
 						title="<?php esc_attr_e('ลากเพื่อเรียงลำดับ', 'tumtook-page-faq'); ?>">
 						<svg viewBox="0 0 20 20" aria-hidden="true" focusable="false">
-							<path fill="currentColor" d="M7 4a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0Zm0 6a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0Zm0 6a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0Zm9-12a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0Zm0 6a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0Zm0 6a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0Z" />
+							<path fill="currentColor"
+								d="M7 4a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0Zm0 6a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0Zm0 6a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0Zm9-12a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0Zm0 6a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0Zm0 6a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0Z" />
 						</svg>
 					</span>
 					<div class="ttfq-admin-item-title"><?php esc_html_e('คำถาม FAQ', 'tumtook-page-faq'); ?></div>
@@ -725,12 +726,12 @@ final class Tumtook_Page_FAQ
 		?>
 		<section class="ttfaq-section" id="<?php echo esc_attr($instance_id); ?>" data-ttfaq>
 			<div class="ttfaq-shell">
-				<header class="ttfaq-header">
+				<div class="ttfaq-header">
 					<h2 class="ttfaq-title"><?php echo esc_html($settings['title']); ?></h2>
 					<?php if (!empty($settings['subtitle'])): ?>
 						<p class="ttfaq-subtitle"><?php echo esc_html($settings['subtitle']); ?></p>
 					<?php endif; ?>
-				</header>
+				</div>
 
 				<div class="ttfaq-meta">
 					<span
@@ -772,7 +773,9 @@ final class Tumtook_Page_FAQ
 						<?php if (!empty($settings['contact_button_label'])): ?>
 							<a class="ttfaq-button ttfaq-button--primary"
 								href="<?php echo esc_url(!empty($settings['contact_button_url']) ? $settings['contact_button_url'] : '#'); ?>">
-								<span class="ttfaq-button-icon" aria-hidden="true"><img src="<?php echo esc_url(plugin_dir_url(__FILE__) . 'assets/images/icon-line.svg'); ?>" alt="" /></span>
+								<span class="ttfaq-button-icon" aria-hidden="true"><img
+										src="<?php echo esc_url(plugin_dir_url(__FILE__) . 'assets/images/icon-line.svg'); ?>"
+										alt="" /></span>
 								<span><?php echo esc_html($settings['contact_button_label']); ?></span>
 							</a>
 						<?php endif; ?>
@@ -781,7 +784,8 @@ final class Tumtook_Page_FAQ
 
 				<?php if ($using_placeholders && $this->is_editor_preview_context()): ?>
 					<p class="ttfaq-preview-note">
-						<?php esc_html_e('กำลังแสดงตัวอย่าง FAQ เพราะหน้านี้ยังไม่ได้เพิ่มคำถามจริง', 'tumtook-page-faq'); ?></p>
+						<?php esc_html_e('กำลังแสดงตัวอย่าง FAQ เพราะหน้านี้ยังไม่ได้เพิ่มคำถามจริง', 'tumtook-page-faq'); ?>
+					</p>
 				<?php endif; ?>
 			</div>
 		</section>
