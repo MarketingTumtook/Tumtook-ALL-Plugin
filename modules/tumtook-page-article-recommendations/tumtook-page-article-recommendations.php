@@ -123,7 +123,7 @@ final class Tumtook_Page_Article_Recommendations
 		$settings = wp_parse_args(is_array($saved) ? $saved : array(), $this->get_default_settings());
 
 		$settings['enabled'] = !empty($settings['enabled']) ? '1' : '0';
-		$settings['auto_display'] = !empty($settings['auto_display']) ? '1' : '0';
+		$settings['auto_display'] = '0';
 		$settings['title'] = sanitize_text_field($settings['title']);
 		$settings['view_all_label'] = sanitize_text_field($settings['view_all_label']);
 		$settings['view_all_url'] = esc_url_raw($settings['view_all_url']);
