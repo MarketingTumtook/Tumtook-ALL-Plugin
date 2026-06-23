@@ -157,7 +157,7 @@
   gap: 20px 18px;
   align-items: start;
   margin-top: 26px;
-  padding: 22px 15px;
+  padding: 22px 25px;
   border-radius: 18px;
   background: #F7F7F7;
 }
@@ -181,7 +181,7 @@
 .ttfaq-support-title {
   margin: 0;
   color: var(--ttfaq-text-strong);
-  font-size: 20px;
+  font-size: 24px;
   font-weight: 700;
   line-height: 1.15;
 }
@@ -189,7 +189,7 @@
 .ttfaq-support-text {
   margin: 6px 0 0;
   color: #9a9ba0;
-  font-size: 14px;
+  font-size: 16px;
   line-height: 1.45;
 }
 
