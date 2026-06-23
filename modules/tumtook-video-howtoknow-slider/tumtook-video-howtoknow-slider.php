@@ -26,8 +26,6 @@ final class Video_Howtoknow_Slider_Plugin
 		add_action('add_meta_boxes', array($this, 'register_meta_boxes'));
 		add_action('save_post_page', array($this, 'save_page_meta'));
 		add_action('admin_enqueue_scripts', array($this, 'enqueue_admin_assets'));
-		add_filter('the_content', array($this, 'append_slider_to_page_content'));
-		add_action('wp_footer', array($this, 'render_footer_fallback'), 20);
 		add_shortcode('video_how_to_slider', array($this, 'render_shortcode'));
 		add_shortcode('tumtook_video_how_to_slider', array($this, 'render_shortcode'));
 		add_shortcode('tumtook_video_how_to_recommended_products', array($this, 'render_recommended_products_shortcode'));

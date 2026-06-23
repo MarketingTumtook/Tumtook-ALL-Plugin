@@ -26,7 +26,6 @@ final class Tumtook_Page_Product_Cards {
 		add_action( 'save_post_page', array( $this, 'save_meta' ) );
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_admin_assets' ) );
 		add_shortcode( self::SHORTCODE, array( $this, 'render_shortcode' ) );
-		add_filter( 'the_content', array( $this, 'append_to_content' ) );
 	}
 
 	public function register_meta_box() {
@@ -81,7 +80,7 @@ final class Tumtook_Page_Product_Cards {
 	private function get_default_settings() {
 		return array(
 			'enabled'          => '1',
-			'auto_display'     => '1',
+			'auto_display'     => '0',
 			'title'            => __( 'สินค้าเพิ่มเติม', 'tumtook-page-product-cards' ),
 			'view_all_label'   => __( 'สินค้าสร้างรายได้', 'tumtook-page-product-cards' ),
 			'view_all_url'     => '',
@@ -210,7 +209,6 @@ final class Tumtook_Page_Product_Cards {
 
 				<div class="ttpc-admin-checklist" style="margin-top:16px">
 					<label><input type="checkbox" name="ttpc_settings[enabled]" value="1" <?php checked( $settings['enabled'], '1' ); ?> /> <?php esc_html_e( 'เปิดใช้งาน section นี้', 'tumtook-page-product-cards' ); ?></label>
-					<label><input type="checkbox" name="ttpc_settings[auto_display]" value="1" <?php checked( $settings['auto_display'], '1' ); ?> /> <?php esc_html_e( 'แสดงท้ายเนื้อหา page อัตโนมัติ', 'tumtook-page-product-cards' ); ?></label>
 				</div>
 
 				<div class="ttpc-admin-grid" style="margin-top:16px">
@@ -292,7 +290,7 @@ final class Tumtook_Page_Product_Cards {
 
 		$settings = $this->get_default_settings();
 		$settings['enabled']          = ! empty( $raw['enabled'] ) ? '1' : '0';
-		$settings['auto_display']     = ! empty( $raw['auto_display'] ) ? '1' : '0';
+		$settings['auto_display']     = '0';
 		$settings['title']            = isset( $raw['title'] ) ? sanitize_text_field( $raw['title'] ) : $settings['title'];
 		$settings['view_all_label']   = isset( $raw['view_all_label'] ) ? sanitize_text_field( $raw['view_all_label'] ) : $settings['view_all_label'];
 		$settings['view_all_url']     = isset( $raw['view_all_url'] ) ? esc_url_raw( $raw['view_all_url'] ) : '';

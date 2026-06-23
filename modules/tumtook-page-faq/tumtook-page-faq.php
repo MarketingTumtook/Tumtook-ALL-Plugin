@@ -24,7 +24,6 @@ final class Tumtook_Page_FAQ
 		add_action('save_post_page', array($this, 'save_meta'));
 		add_action('admin_enqueue_scripts', array($this, 'enqueue_admin_assets'));
 		add_shortcode(self::SHORTCODE, array($this, 'render_shortcode'));
-		add_filter('the_content', array($this, 'append_to_content'));
 	}
 
 	public function register_meta_box()
@@ -75,7 +74,7 @@ final class Tumtook_Page_FAQ
 	{
 		return array(
 			'enabled' => '1',
-			'auto_display' => '1',
+			'auto_display' => '0',
 			'title' => __('คำถามที่พบบ่อย', 'tumtook-page-faq'),
 			'subtitle' => __('คำตอบก่อนสั่งผลิต กระชับ อ่านง่าย ตัดสินใจไว', 'tumtook-page-faq'),
 			'empty_title' => __('ยังไม่เจอคำตอบ?', 'tumtook-page-faq'),
@@ -376,8 +375,6 @@ final class Tumtook_Page_FAQ
 
 				<div class="ttfq-admin-checklist" style="margin-top:16px">
 					<label><input type="checkbox" name="ttfq_settings[enabled]" value="1" <?php checked($settings['enabled'], '1'); ?> /> <?php esc_html_e('เปิดใช้งาน section นี้', 'tumtook-page-faq'); ?></label>
-					<label><input type="checkbox" name="ttfq_settings[auto_display]" value="1" <?php checked($settings['auto_display'], '1'); ?> />
-						<?php esc_html_e('แสดงท้ายเนื้อหา page อัตโนมัติ', 'tumtook-page-faq'); ?></label>
 				</div>
 
 				<div class="ttfq-admin-grid" style="margin-top:16px">
@@ -603,7 +600,7 @@ final class Tumtook_Page_FAQ
 
 		$clean = $this->get_default_settings();
 		$clean['enabled'] = !empty($settings['enabled']) ? '1' : '0';
-		$clean['auto_display'] = !empty($settings['auto_display']) ? '1' : '0';
+		$clean['auto_display'] = '0';
 		$clean['title'] = sanitize_text_field(isset($settings['title']) ? $settings['title'] : '');
 		$clean['subtitle'] = sanitize_text_field(isset($settings['subtitle']) ? $settings['subtitle'] : '');
 		$clean['empty_title'] = sanitize_text_field(isset($settings['empty_title']) ? $settings['empty_title'] : '');
