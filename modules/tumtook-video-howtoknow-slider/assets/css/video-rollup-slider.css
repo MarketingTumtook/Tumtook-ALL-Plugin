@@ -873,6 +873,22 @@ section:has(.video-rollup-slider),
 
 }
 
+@media (min-width: 768px) and (max-width: 1024px) {
+  .video-rollup-slider {
+    --video-rollup-slides-per-view: 2.55;
+  }
+
+  .video-rollup-slider--recommended,
+  .video-rollup-slider--youtube {
+    --video-rollup-slides-per-view: 2.25;
+  }
+
+  .video-rollup-slider__viewport {
+    padding-right: 24px;
+    scroll-padding-right: 24px;
+  }
+}
+
 @media (max-width: 767px) {
   .tumtook-video-rollup-slider-fallback {
     padding: 18px 14px 48px;
@@ -1051,4 +1067,6 @@ section:has(.video-rollup-slider),
 .video-rollup-slider--youtube .video-rollup-video-card__video {
   min-height: 0;
 }
+}
+.video-rollup-slider {
 }

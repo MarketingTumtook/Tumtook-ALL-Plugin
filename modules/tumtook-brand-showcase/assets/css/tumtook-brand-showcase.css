@@ -385,8 +385,15 @@
 
 @media (max-width: 640px) {
 
+  .ttbs-showcase__card {
+    height: clamp(300px, 108vw, 420px);
+  }
+
   .ttbs-showcase__image {
-    min-height: 520px;
+    height: 100%;
+    max-height: 100%;
+    min-height: 0;
+    width: 100%;
   } 
 
   .ttbs-showcase__nav {
