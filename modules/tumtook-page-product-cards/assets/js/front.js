@@ -622,6 +622,12 @@
 
   document.addEventListener("DOMContentLoaded", function () {
     var sliders = document.querySelectorAll(selectors.root);
+
+    if (sliders.length) {
+      document.documentElement.classList.add("ttpc-slider-page");
+      document.body.classList.add("ttpc-slider-page");
+    }
+
     Array.prototype.forEach.call(sliders, setupSlider);
   });
 })();

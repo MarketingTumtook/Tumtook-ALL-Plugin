@@ -1,5 +1,15 @@
 .ttar-section {
   font-family: "Kanit", sans-serif;
+  box-sizing: border-box;
+  max-width: 100%;
+  overflow-x: hidden;
+  overflow-x: clip;
+}
+
+html.ttar-slider-page,
+body.ttar-slider-page {
+  max-width: 100%;
+  overflow-x: hidden;
 }
 
 .ttar-section[data-ttar-slider] {
@@ -17,8 +27,9 @@
 
 .ttar-shell {
   width: 100%;
-  max-width: none;
+  max-width: 100%;
   margin: 0 auto;
+  box-sizing: border-box;
   font-family: inherit;
 }
 
@@ -332,6 +343,8 @@
   gap: 16px;
   margin-top: 20px;
   flex-wrap: nowrap;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .ttar-pagination {
@@ -451,9 +464,30 @@
     --ttar-slides-per-view: 3.25;
   }
 
+  .ttar-track-wrap {
+    width: 100%;
+    max-width: 100%;
+    margin-left: 0;
+    margin-right: 0;
+  }
+
   .ttar-track {
+    padding-left: 24px;
     padding-right: 24px;
+    scroll-padding-left: 24px;
     scroll-padding-right: 24px;
+  }
+
+  .ttar-controls {
+    justify-content: space-between;
+    width: 100%;
+    margin-inline: 0;
+    padding-inline: 24px;
+  }
+
+  .ttar-pagination {
+    flex: 1 1 auto;
+    overflow: hidden;
   }
 }
 

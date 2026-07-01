@@ -2,6 +2,16 @@
 /*   margin: 40px 0 52px; */
   margin-bottom:52px;
   font-family: "Kanit", sans-serif;
+  box-sizing: border-box;
+  max-width: 100%;
+  overflow-x: hidden;
+  overflow-x: clip;
+}
+
+html.ttpc-slider-page,
+body.ttpc-slider-page {
+  max-width: 100%;
+  overflow-x: hidden;
 }
 
 .ttpc-section[data-ttpc-slider] {
@@ -21,6 +31,8 @@
 .ttpc-shell {
   margin: 0 auto;
   background: transparent;
+  box-sizing: border-box;
+  max-width: 100%;
   font-family: inherit;
 }
 
@@ -455,6 +467,26 @@
     height: 56px;
     min-width: 56px;
     min-height: 56px !important;
+  }
+
+  .ttpc-controls {
+    justify-content: space-between;
+    gap: 12px;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    margin-inline: 0;
+    padding-inline: 24px;
+  }
+
+  .ttpc-pagination {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .ttpc-arrows {
+    flex: 0 0 auto;
   }
 }
 

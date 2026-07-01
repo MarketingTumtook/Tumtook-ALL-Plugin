@@ -635,6 +635,12 @@
 
   document.addEventListener("DOMContentLoaded", function () {
     var sliders = document.querySelectorAll(selectors.root);
+
+    if (sliders.length) {
+      document.documentElement.classList.add("ttar-slider-page");
+      document.body.classList.add("ttar-slider-page");
+    }
+
     Array.prototype.forEach.call(sliders, setupSlider);
   });
 })();
