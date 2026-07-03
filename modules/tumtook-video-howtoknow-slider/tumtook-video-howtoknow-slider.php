@@ -61,6 +61,10 @@ final class Video_Howtoknow_Slider_Plugin
 			$this->get_asset_version('assets/js/admin.js'),
 			true
 		);
+		wp_add_inline_script(
+			'video-rollup-slider-admin',
+			'jQuery(function($){$(document).off("click.videoRollupClearInline",".video-rollup-clear").on("click.videoRollupClearInline",".video-rollup-clear",function(event){event.preventDefault();var wrapper=$(this).closest(".video-rollup-admin-field");wrapper.find(".video-rollup-media-id").val("");wrapper.find(".video-rollup-media-url").val("");wrapper.find(".video-rollup-image-preview").attr("src","").hide();});});'
+		);
 	}
 
 	public function register_front_assets()
