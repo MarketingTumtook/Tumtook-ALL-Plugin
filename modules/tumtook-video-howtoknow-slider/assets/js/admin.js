@@ -30,6 +30,20 @@
 
       frame.open();
     });
+
+    context.find(".video-rollup-clear").off("click").on("click", function (event) {
+      event.preventDefault();
+
+      const wrapper = $(this).closest(".video-rollup-admin-field");
+      wrapper.find(".video-rollup-media-id").val("");
+      wrapper.find(".video-rollup-media-url").val("");
+
+      const preview = wrapper.find(".video-rollup-image-preview");
+
+      if (preview.length) {
+        preview.attr("src", "").hide();
+      }
+    });
   }
 
   $(function () {

@@ -413,10 +413,13 @@ final class Video_Howtoknow_Slider_Plugin
 						<p class="description"><?php echo esc_html($args['help']); ?></p>
 					<?php endif; ?>
 				</div>
-				<div>
+				<div class="video-rollup-admin-actions">
 					<button type="button" class="button button-secondary video-rollup-upload"
 						data-media-type="<?php echo esc_attr($args['media_type']); ?>">
 						<?php echo esc_html('video' === $args['media_type'] ? __('เลือกวิดีโอ', 'tumtook-video-rollup-slider') : __('เลือกรูปภาพ', 'tumtook-video-rollup-slider')); ?>
+					</button>
+					<button type="button" class="button button-link-delete video-rollup-clear">
+						<?php esc_html_e('ล้างค่า', 'tumtook-video-rollup-slider'); ?>
 					</button>
 				</div>
 			</div>
@@ -543,6 +546,14 @@ final class Video_Howtoknow_Slider_Plugin
 				grid-template-columns: minmax(0, 1fr) auto;
 				gap: 10px;
 				align-items: start
+			}
+
+			.video-rollup-admin-actions {
+				align-items: center;
+				display: flex;
+				flex-wrap: wrap;
+				gap: 8px;
+				justify-content: flex-start
 			}
 
 			.video-rollup-admin-preview {
