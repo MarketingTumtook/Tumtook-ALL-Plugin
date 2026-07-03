@@ -126,6 +126,7 @@ final class Video_Howtoknow_Slider_Plugin
 	private function get_default_image_item($index = 0)
 	{
 		return array(
+			'heading' => '',
 			'image_id' => 0,
 			'image_url' => '',
 		);
@@ -189,6 +190,7 @@ final class Video_Howtoknow_Slider_Plugin
 		for ($index = 0; $index < 6; $index++) {
 			$image = isset($data['images'][$index]) && is_array($data['images'][$index]) ? $data['images'][$index] : array();
 			$image = wp_parse_args($image, $this->get_default_image_item($index));
+			$image['heading'] = isset($image['heading']) ? sanitize_textarea_field($image['heading']) : '';
 			$image['image_url'] = $this->normalize_media_url($image['image_id'], $image['image_url']);
 			$images[] = $image;
 		}
@@ -374,6 +376,7 @@ final class Video_Howtoknow_Slider_Plugin
 
 			$slides[] = array(
 				'type' => 'image',
+				'heading' => $image['heading'],
 				'image_url' => $image['image_url'],
 			);
 		}
@@ -634,6 +637,12 @@ final class Video_Howtoknow_Slider_Plugin
 					</summary>
 					<div class="video-rollup-page-section__body">
 						<div class="video-rollup-page-grid">
+							<div class="video-rollup-admin-field video-rollup-admin-field--full">
+								<label><?php echo esc_html(sprintf(__('ข้อความหัวการ์ด รูปภาพ %d', 'tumtook-video-rollup-slider'), $index + 1)); ?></label>
+								<textarea name="tumtook_video_howtoknow_data[images][<?php echo esc_attr($index); ?>][heading]" rows="2"
+									placeholder="<?php esc_attr_e('ข้อความที่จะโชว์บนรูปภาพนี้', 'tumtook-video-rollup-slider'); ?>"><?php echo esc_textarea($image['heading']); ?></textarea>
+							</div>
+
 							<?php
 							$this->render_media_picker_field(
 								array(
@@ -766,6 +775,7 @@ final class Video_Howtoknow_Slider_Plugin
 			$image = isset($raw_images[$index]) && is_array($raw_images[$index]) ? $raw_images[$index] : array();
 
 			$sanitized['images'][] = array(
+				'heading' => sanitize_textarea_field(isset($image['heading']) ? $image['heading'] : ''),
 				'image_id' => absint(isset($image['image_id']) ? $image['image_id'] : 0),
 				'image_url' => esc_url_raw(isset($image['image_url']) ? $image['image_url'] : ''),
 			);
@@ -820,6 +830,7 @@ final class Video_Howtoknow_Slider_Plugin
 	private function render_media_slide($slide)
 	{
 		$type = isset($slide['type']) ? $slide['type'] : 'image';
+		$heading = isset($slide['heading']) ? trim((string) $slide['heading']) : '';
 		?>
 		<article class="video-rollup-media-item" data-slide>
 			<div class="video-rollup-media-item__content">
@@ -883,6 +894,9 @@ final class Video_Howtoknow_Slider_Plugin
 							<img class="video-rollup-video-card__video video-rollup-video-card__image"
 								src="<?php echo esc_url($slide['image_url']); ?>" alt="" />
 							<div class="video-rollup-video-card__overlay"></div>
+							<?php if ('' !== $heading): ?>
+								<div class="video-rollup-video-card__heading"><?php echo nl2br(esc_html($heading)); ?></div>
+							<?php endif; ?>
 						<?php endif; ?>
 					</div>
 				</div>
