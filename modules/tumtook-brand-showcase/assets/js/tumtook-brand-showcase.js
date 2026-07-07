@@ -17,8 +17,20 @@
       slide.classList.toggle("is-active", slideRealIndex === index);
     });
 
-    root.querySelectorAll(".ttbs-showcase__dot").forEach((dot, dotIndex) => {
-      dot.classList.toggle("is-active", dotIndex === index);
+    const dots = [...root.querySelectorAll(".ttbs-showcase__dot")];
+    let activeDotIndex = 0;
+
+    dots.forEach((dot, dotIndex) => {
+      const dotSlideIndex =
+        Number.parseInt(dot.dataset.slideIndex || dotIndex.toString(), 10) || 0;
+
+      if (dotSlideIndex <= index) {
+        activeDotIndex = dotIndex;
+      }
+    });
+
+    dots.forEach((dot, dotIndex) => {
+      dot.classList.toggle("is-active", dotIndex === activeDotIndex);
     });
   };
 
@@ -154,6 +166,72 @@
       );
     };
 
+    const getReachableIndexes = () => {
+      const positions = [];
+
+      slides.forEach((slide, index) => {
+        const left = getSlideScrollLeft(slide);
+        const isDuplicate = positions.some((position) => Math.abs(position.left - left) < 2);
+
+        if (!isDuplicate) {
+          positions.push({ index, left });
+        }
+      });
+
+      return positions.map((position) => position.index);
+    };
+
+    const getCurrentPageIndex = (reachableIndexes) => {
+      let bestPageIndex = 0;
+      let bestDistance = Number.POSITIVE_INFINITY;
+
+      reachableIndexes.forEach((slideIndex, pageIndex) => {
+        const slide = findSlideByRealIndex(slideIndex);
+        const distance = Math.abs((slide ? getSlideScrollLeft(slide) : 0) - track.scrollLeft);
+
+        if (distance < bestDistance) {
+          bestDistance = distance;
+          bestPageIndex = pageIndex;
+        }
+      });
+
+      return bestPageIndex;
+    };
+
+    const renderPagination = () => {
+      const reachableIndexes = getReachableIndexes();
+      const canScroll = reachableIndexes.length > 1;
+
+      if (dotsWrap) {
+        dotsWrap.innerHTML = "";
+        dotsWrap.hidden = !canScroll;
+      }
+
+      if (prev) {
+        prev.hidden = !canScroll;
+      }
+
+      if (next) {
+        next.hidden = !canScroll;
+      }
+
+      if (!dotsWrap || !canScroll) {
+        return;
+      }
+
+      reachableIndexes.forEach((slideIndex, pageIndex) => {
+        const dot = document.createElement("button");
+        dot.type = "button";
+        dot.className = `ttbs-showcase__dot${pageIndex === 0 ? " is-active" : ""}`;
+        dot.dataset.slideIndex = slideIndex.toString();
+        dot.setAttribute("aria-label", `Go to slide group ${pageIndex + 1}`);
+        dot.addEventListener("click", () => {
+          scrollToSlideIndex(slideIndex);
+        });
+        dotsWrap.appendChild(dot);
+      });
+    };
+
     const getNearestSlide = () => {
       const currentLeft = track.scrollLeft;
       let nearestSlide = slides[0] || null;
@@ -217,28 +295,19 @@
         return;
       }
 
-      const targetIndex = Math.max(0, Math.min(totalSlides - 1, currentIndex + direction));
+      const reachableIndexes = getReachableIndexes();
+      const currentPageIndex = getCurrentPageIndex(reachableIndexes);
+      const targetPageIndex = Math.max(0, Math.min(reachableIndexes.length - 1, currentPageIndex + direction));
+      const targetIndex = reachableIndexes[targetPageIndex];
 
-      if (targetIndex === currentIndex) {
+      if (targetIndex === undefined || targetPageIndex === currentPageIndex) {
         return;
       }
 
       scrollToSlideIndex(targetIndex, behavior);
     };
 
-    if (dotsWrap) {
-      dotsWrap.innerHTML = "";
-      slides.forEach((_, index) => {
-        const dot = document.createElement("button");
-        dot.type = "button";
-        dot.className = `ttbs-showcase__dot${index === 0 ? " is-active" : ""}`;
-        dot.setAttribute("aria-label", `Go to slide ${index + 1}`);
-        dot.addEventListener("click", () => {
-          scrollToSlideIndex(index);
-        });
-        dotsWrap.appendChild(dot);
-      });
-    }
+    renderPagination();
 
     const observer = new IntersectionObserver(
       (entries) => {
@@ -286,11 +355,13 @@
       "resize",
       () => {
         syncDesktopContainerInset();
+        renderPagination();
         scrollToSlideIndex(currentIndex, "auto");
       },
       { passive: true }
     );
 
+    renderPagination();
     setCurrentIndex(0);
   };
 

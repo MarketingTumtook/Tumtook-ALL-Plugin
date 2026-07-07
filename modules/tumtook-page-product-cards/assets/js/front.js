@@ -16,8 +16,19 @@
       slide.classList.toggle("is-active", slideRealIndex === index);
     });
 
-    root.querySelectorAll(".ttpc-dot").forEach(function (dot, dotIndex) {
-      dot.classList.toggle("is-active", dotIndex === index);
+    var dots = Array.prototype.slice.call(root.querySelectorAll(".ttpc-dot"));
+    var activeDotIndex = 0;
+
+    dots.forEach(function (dot, dotIndex) {
+      var dotSlideIndex = parseInt(dot.getAttribute("data-slide-index") || String(dotIndex), 10) || 0;
+
+      if (dotSlideIndex <= index) {
+        activeDotIndex = dotIndex;
+      }
+    });
+
+    dots.forEach(function (dot, dotIndex) {
+      dot.classList.toggle("is-active", dotIndex === activeDotIndex);
     });
   }
 
@@ -149,13 +160,95 @@
       return slide.offsetLeft - track.offsetLeft - getTrackStartInset();
     }
 
+    function getClampedSlideTargetLeft(slide) {
+      return Math.max(0, Math.min(getSlideTargetLeft(slide), Math.max(track.scrollWidth - track.clientWidth, 0)));
+    }
+
+    function getReachableIndexes() {
+      var maxScrollLeft = Math.max(track.scrollWidth - track.clientWidth, 0);
+      var positions = [];
+
+      slides.forEach(function (slide, index) {
+        var targetLeft = Math.max(0, Math.min(getSlideTargetLeft(slide), maxScrollLeft));
+        var isDuplicate = positions.some(function (position) {
+          return Math.abs(position.left - targetLeft) < 2;
+        });
+
+        if (!isDuplicate) {
+          positions.push({
+            index: index,
+            left: targetLeft
+          });
+        }
+      });
+
+      return positions.map(function (position) {
+        return position.index;
+      });
+    }
+
+    function getCurrentPageIndex(reachableIndexes) {
+      var currentLeft = track.scrollLeft;
+      var bestPageIndex = 0;
+      var bestDistance = Number.POSITIVE_INFINITY;
+
+      reachableIndexes.forEach(function (slideIndex, pageIndex) {
+        var slide = findSlideByRealIndex(slideIndex);
+        var targetLeft = slide
+          ? Math.max(0, Math.min(getSlideTargetLeft(slide), Math.max(track.scrollWidth - track.clientWidth, 0)))
+          : 0;
+        var distance = Math.abs(targetLeft - currentLeft);
+
+        if (distance < bestDistance) {
+          bestDistance = distance;
+          bestPageIndex = pageIndex;
+        }
+      });
+
+      return bestPageIndex;
+    }
+
+    function renderPagination() {
+      var reachableIndexes = getReachableIndexes();
+      var canScroll = reachableIndexes.length > 1;
+
+      if (dotsWrap) {
+        dotsWrap.innerHTML = "";
+        dotsWrap.hidden = !canScroll;
+      }
+
+      if (prev) {
+        prev.hidden = !canScroll;
+      }
+
+      if (next) {
+        next.hidden = !canScroll;
+      }
+
+      if (!dotsWrap || !canScroll) {
+        return;
+      }
+
+      reachableIndexes.forEach(function (slideIndex, pageIndex) {
+        var dot = document.createElement("button");
+        dot.type = "button";
+        dot.className = "ttpc-dot" + (pageIndex === 0 ? " is-active" : "");
+        dot.setAttribute("aria-label", "Go to product group " + (pageIndex + 1));
+        dot.setAttribute("data-slide-index", String(slideIndex));
+        dot.addEventListener("click", function () {
+          scrollToSlideIndex(slideIndex);
+        });
+        dotsWrap.appendChild(dot);
+      });
+    }
+
     function getNearestSlide() {
       var currentLeft = track.scrollLeft;
       var nearestSlide = slides[0] || null;
       var nearestDistance = Number.POSITIVE_INFINITY;
 
       slides.forEach(function (slide) {
-        var targetLeft = getSlideTargetLeft(slide);
+        var targetLeft = getClampedSlideTargetLeft(slide);
         var distance = Math.abs(targetLeft - currentLeft);
 
         if (distance < nearestDistance) {
@@ -378,18 +471,7 @@
       setActiveSlide(root, currentIndex);
     }
 
-    slides.forEach(function (_, index) {
-      var dot = document.createElement("button");
-      dot.type = "button";
-      dot.className = "ttpc-dot" + (index === 0 ? " is-active" : "");
-      dot.setAttribute("aria-label", "Go to product " + (index + 1));
-      dot.addEventListener("click", function () {
-        scrollToSlideIndex(index);
-      });
-      if (dotsWrap) {
-        dotsWrap.appendChild(dot);
-      }
-    });
+    renderPagination();
 
     function scrollToSlide(direction) {
       if (isProgrammaticScroll || pendingReorder) {
@@ -400,9 +482,12 @@
         return;
       }
 
-      var targetIndex = Math.max(0, Math.min(totalSlides - 1, currentIndex + direction));
+      var reachableIndexes = getReachableIndexes();
+      var currentPageIndex = getCurrentPageIndex(reachableIndexes);
+      var targetPageIndex = Math.max(0, Math.min(reachableIndexes.length - 1, currentPageIndex + direction));
+      var targetIndex = reachableIndexes[targetPageIndex];
 
-      if (targetIndex === currentIndex) {
+      if (targetIndex === undefined || targetPageIndex === currentPageIndex) {
         return;
       }
 
@@ -501,10 +586,12 @@
 
     window.addEventListener("resize", function () {
       syncDesktopContainerInset();
+      renderPagination();
       scrollToSlideIndex(currentIndex, "auto");
     });
 
     syncDesktopContainerInset();
+    renderPagination();
     setCurrentIndex(0);
   }
 
