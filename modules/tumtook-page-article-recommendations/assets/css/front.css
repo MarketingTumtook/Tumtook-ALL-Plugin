@@ -115,7 +115,7 @@ body.ttar-slider-page {
   padding: 6px 0 14px var(--ttar-first-card-inset);
   scroll-padding-left: var(--ttar-first-card-inset);
   scroll-padding-right: 0;
-  scroll-snap-type: x mandatory;
+  scroll-snap-type: x proximity;
   scrollbar-width: none;
   overscroll-behavior-x: contain;
   overscroll-behavior-y: auto;
@@ -135,7 +135,7 @@ body.ttar-slider-page {
   overflow: hidden;
   box-shadow: 0 4px 18px rgba(17, 24, 39, 0.04);
   scroll-snap-align: start;
-  scroll-snap-stop: always;
+  scroll-snap-stop: normal;
 }
 
 .ttar-image-link {

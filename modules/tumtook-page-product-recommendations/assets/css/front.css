@@ -93,7 +93,7 @@
   padding: 6px 0 16px var(--ttpr-first-card-inset);
   scroll-padding-left: var(--ttpr-first-card-inset);
   scroll-padding-right: 0;
-  scroll-snap-type: x mandatory;
+  scroll-snap-type: x proximity;
   scrollbar-width: none;
   overscroll-behavior-x: contain;
   overscroll-behavior-y: auto;
@@ -112,7 +112,7 @@
   overflow: hidden;
   box-shadow: none;
   scroll-snap-align: start;
-  scroll-snap-stop: always;
+  scroll-snap-stop: normal;
 }
 
 .ttpr-card-media {

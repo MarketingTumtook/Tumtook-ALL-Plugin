@@ -114,7 +114,7 @@ section:has(.video-rollup-slider),
   overscroll-behavior-y: auto;
   padding-bottom: 6px;
   scroll-padding-inline: 0;
-  scroll-snap-type: x mandatory;
+  scroll-snap-type: x proximity;
   scrollbar-width: none;
   touch-action: pan-x pan-y;
 }
@@ -131,7 +131,7 @@ section:has(.video-rollup-slider),
   overflow: hidden;
   padding: 0;
   scroll-snap-align: start;
-  scroll-snap-stop: always;
+  scroll-snap-stop: normal;
 }
 
 .video-rollup-media-item__content,

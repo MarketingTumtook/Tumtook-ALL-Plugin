@@ -107,7 +107,7 @@ body.ttpc-slider-page {
   padding: 5px 0 15px var(--ttpc-first-card-inset);
   scroll-padding-left: var(--ttpc-first-card-inset);
   scroll-padding-right: 0;
-  scroll-snap-type: x mandatory;
+  scroll-snap-type: x proximity;
   scrollbar-width: none;
   overscroll-behavior-x: contain;
   overscroll-behavior-y: auto;
@@ -128,7 +128,7 @@ body.ttpc-slider-page {
   overflow: hidden;
   box-shadow: none;
   scroll-snap-align: start;
-  scroll-snap-stop: always;
+  scroll-snap-stop: normal;
 }
 
 .ttpc-image-link {
