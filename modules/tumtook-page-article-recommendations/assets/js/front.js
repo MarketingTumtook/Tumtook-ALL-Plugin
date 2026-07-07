@@ -505,6 +505,10 @@
     }
 
     track.addEventListener("wheel", function (event) {
+      if (Math.abs(event.deltaY) > Math.abs(event.deltaX)) {
+        return;
+      }
+
       var primaryDelta =
         Math.abs(event.deltaX) >= Math.abs(event.deltaY) ? event.deltaX : event.deltaY;
       var direction = Math.sign(primaryDelta);
