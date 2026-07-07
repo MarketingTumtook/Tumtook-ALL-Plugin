@@ -62,7 +62,7 @@
     }
 
     var totalSlides = slides.length;
-    var loopEnabled = false;
+    var loopEnabled = totalSlides > 1;
 
     slides.forEach(function (slide, index) {
       slide.setAttribute("data-real-index", String(index));
@@ -495,11 +495,7 @@
 
     if (next) {
       next.addEventListener("click", function () {
-        if (currentIndex >= totalSlides - 1) {
-          scrollToSlideIndex(0);
-        } else {
-          scrollToSlide(1);
-        }
+        scrollToSlide(1);
         startAutoAdvance();
       });
     }

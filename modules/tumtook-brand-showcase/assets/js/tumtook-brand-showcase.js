@@ -24,7 +24,7 @@
 
   const setupSlider = (root) => {
     const track = root.querySelector(selectors.track);
-    const slides = [...root.querySelectorAll(selectors.slide)];
+    let slides = [...root.querySelectorAll(selectors.slide)];
     const dotsWrap = root.querySelector(selectors.dots);
     const prev = root.querySelector(selectors.prev);
     const next = root.querySelector(selectors.next);
@@ -38,6 +38,10 @@
     }
 
     const totalSlides = slides.length;
+
+    const refreshSlides = () => {
+      slides = [...track.querySelectorAll(selectors.slide)];
+    };
 
     const getPixelValue = (value) => {
       const parsed = Number.parseFloat(value || "");
@@ -150,6 +154,35 @@
       );
     };
 
+    const getNearestSlide = () => {
+      const currentLeft = track.scrollLeft;
+      let nearestSlide = slides[0] || null;
+      let nearestDistance = Number.POSITIVE_INFINITY;
+
+      slides.forEach((slide) => {
+        const distance = Math.abs(getSlideScrollLeft(slide) - currentLeft);
+
+        if (distance < nearestDistance) {
+          nearestDistance = distance;
+          nearestSlide = slide;
+        }
+      });
+
+      return nearestSlide;
+    };
+
+    const preserveViewportWhile = (mutateSlides) => {
+      const anchorSlide = findSlideByRealIndex(currentIndex) || getNearestSlide();
+      const anchorOffset = anchorSlide ? getSlideRawScrollLeft(anchorSlide) : 0;
+
+      mutateSlides();
+      refreshSlides();
+
+      if (anchorSlide) {
+        track.scrollLeft += getSlideRawScrollLeft(anchorSlide) - anchorOffset;
+      }
+    };
+
     const setCurrentIndex = (targetIndex) => {
       currentIndex = ((targetIndex % totalSlides) + totalSlides) % totalSlides;
       setActiveSlide(root, currentIndex);
@@ -173,6 +206,63 @@
           behavior,
         });
       }
+
+      programmaticScrollTimer = window.setTimeout(() => {
+        isProgrammaticScroll = false;
+      }, 500);
+    };
+
+    const scrollToSlide = (direction, behavior = "smooth") => {
+      if (!direction || totalSlides < 2) {
+        return;
+      }
+
+      let anchorSlide = findSlideByRealIndex(currentIndex) || getNearestSlide();
+
+      if (!anchorSlide) {
+        return;
+      }
+
+      if (direction > 0 && !anchorSlide.nextElementSibling) {
+        const firstSlide = track.firstElementChild;
+
+        if (firstSlide) {
+          preserveViewportWhile(() => {
+            track.appendChild(firstSlide);
+          });
+          anchorSlide = findSlideByRealIndex(currentIndex) || getNearestSlide();
+        }
+      } else if (direction < 0 && !anchorSlide.previousElementSibling) {
+        const lastSlide = track.lastElementChild;
+
+        if (lastSlide) {
+          preserveViewportWhile(() => {
+            track.insertBefore(lastSlide, track.firstElementChild);
+          });
+          anchorSlide = findSlideByRealIndex(currentIndex) || getNearestSlide();
+        }
+      }
+
+      const targetSlide = direction > 0
+        ? anchorSlide.nextElementSibling || slides[0] || null
+        : anchorSlide.previousElementSibling || slides[slides.length - 1] || null;
+
+      if (!targetSlide) {
+        return;
+      }
+
+      isProgrammaticScroll = true;
+      if (programmaticScrollTimer) {
+        window.clearTimeout(programmaticScrollTimer);
+      }
+
+      currentIndex = getRealIndexFromSlide(targetSlide);
+      setActiveSlide(root, currentIndex);
+
+      track.scrollTo({
+        left: getSlideScrollLeft(targetSlide),
+        behavior,
+      });
 
       programmaticScrollTimer = window.setTimeout(() => {
         isProgrammaticScroll = false;
@@ -228,11 +318,11 @@
     slides.forEach((slide) => observer.observe(slide));
 
     prev?.addEventListener("click", () => {
-      scrollToSlideIndex(currentIndex - 1);
+      scrollToSlide(-1);
     });
 
     next?.addEventListener("click", () => {
-      scrollToSlideIndex(currentIndex + 1);
+      scrollToSlide(1);
     });
 
     window.addEventListener(
