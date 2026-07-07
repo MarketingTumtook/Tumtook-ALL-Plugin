@@ -51,9 +51,6 @@
     var pendingReorder = null;
     var lastManualDirection = 0;
     var lastScrollLeft = 0;
-    var wheelLockUntil = 0;
-    var wheelGestureDirection = 0;
-    var wheelGestureTimer = null;
     var autoAdvanceTimer = null;
     var skipBoundaryLoopOnSettle = false;
 
@@ -417,73 +414,21 @@
     });
 
     function scrollToSlide(direction) {
-      var stepSize;
-      var maxScrollLeft;
-      var anchorSlide;
-      var targetSlide;
-
       if (isProgrammaticScroll || pendingReorder) {
         interruptProgrammaticScroll();
       }
 
-      stepSize = getStepSize();
-
-      if (!stepSize || totalSlides < 2 || !direction) {
+      if (totalSlides < 2 || !direction) {
         return;
       }
 
-      if (!loopEnabled) {
-        var targetIndex = currentIndex + direction;
+      var targetIndex = Math.max(0, Math.min(totalSlides - 1, currentIndex + direction));
 
-        if (targetIndex < 0 || targetIndex >= totalSlides) {
-          return;
-        }
-
-        scrollToSlideIndex(targetIndex);
+      if (targetIndex === currentIndex) {
         return;
       }
 
-      maxScrollLeft = Math.max(track.scrollWidth - track.clientWidth, 0);
-      anchorSlide = findSlideByRealIndex(currentIndex) || getSettledSlide(direction) || getNearestSlide();
-
-      if (!anchorSlide) {
-        return;
-      }
-
-      if (direction > 0 && maxScrollLeft - track.scrollLeft < stepSize) {
-        var firstSlide = track.firstElementChild;
-        if (firstSlide) {
-          preserveViewportWhile(function () {
-            track.appendChild(firstSlide);
-          });
-        }
-      } else if (direction < 0 && track.scrollLeft < stepSize) {
-        var lastSlide = track.lastElementChild;
-        if (lastSlide) {
-          preserveViewportWhile(function () {
-            track.insertBefore(lastSlide, track.firstElementChild);
-          });
-        }
-      }
-
-      refreshSlides();
-      anchorSlide = findSlideByRealIndex(currentIndex) || getSettledSlide(direction) || getNearestSlide();
-      targetSlide = direction > 0
-        ? anchorSlide && anchorSlide.nextElementSibling || slides[0] || null
-        : anchorSlide && anchorSlide.previousElementSibling || slides[slides.length - 1] || null;
-
-      if (!targetSlide) {
-        return;
-      }
-
-      isProgrammaticScroll = true;
-      skipBoundaryLoopOnSettle = true;
-      lastManualDirection = direction;
-      setCurrentIndex(getRealIndexFromSlide(targetSlide));
-      track.scrollTo({
-        left: getSlideTargetLeft(targetSlide),
-        behavior: "smooth"
-      });
+      scrollToSlideIndex(targetIndex);
     }
 
     if (prev) {
@@ -499,57 +444,6 @@
         startAutoAdvance();
       });
     }
-
-    track.addEventListener("wheel", function (event) {
-      if (Math.abs(event.deltaY) > Math.abs(event.deltaX)) {
-        return;
-      }
-
-      var primaryDelta =
-        Math.abs(event.deltaX) >= Math.abs(event.deltaY) ? event.deltaX : event.deltaY;
-      var direction = Math.sign(primaryDelta);
-      var now;
-
-      if (Math.abs(primaryDelta) < 6) {
-        return;
-      }
-
-      if (!direction) {
-        return;
-      }
-
-      if (wheelGestureDirection && direction !== wheelGestureDirection) {
-        event.preventDefault();
-        if (wheelGestureTimer) {
-          window.clearTimeout(wheelGestureTimer);
-        }
-        wheelGestureTimer = window.setTimeout(function () {
-          wheelGestureDirection = 0;
-          wheelGestureTimer = null;
-        }, 180);
-        return;
-      }
-
-      wheelGestureDirection = direction;
-      if (wheelGestureTimer) {
-        window.clearTimeout(wheelGestureTimer);
-      }
-      wheelGestureTimer = window.setTimeout(function () {
-        wheelGestureDirection = 0;
-        wheelGestureTimer = null;
-      }, 180);
-
-      now = window.performance.now();
-      if (now < wheelLockUntil) {
-        event.preventDefault();
-        return;
-      }
-
-      wheelLockUntil = now + 380;
-      event.preventDefault();
-      scrollToSlide(direction);
-      startAutoAdvance();
-    }, { passive: false });
 
     track.addEventListener("pointerdown", function () {
       isPointerDown = true;
@@ -599,13 +493,6 @@
             finalizeReorder();
           } else {
             isProgrammaticScroll = false;
-          }
-
-          if (loopEnabled && !shouldSkipBoundaryLoop && !pendingReorder && lastManualDirection !== 0 && isAtLoopBoundary(lastManualDirection)) {
-            var didReorder = prepareLoopEdge(lastManualDirection);
-            if (didReorder) {
-              nearestSlide = getSettledSlide(lastManualDirection);
-            }
           }
 
           if (shouldSkipBoundaryLoop) {

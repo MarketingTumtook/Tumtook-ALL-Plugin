@@ -109,9 +109,9 @@ section:has(.video-rollup-slider),
   overscroll-behavior-y: auto;
   padding-bottom: 6px;
   scroll-padding-inline: 0;
-  scroll-snap-type: x proximity;
+  scroll-snap-type: none;
   scrollbar-width: none;
-  touch-action: pan-x pan-y;
+  touch-action: auto;
 }
 
 .video-rollup-slider__viewport::-webkit-scrollbar {
@@ -125,7 +125,7 @@ section:has(.video-rollup-slider),
   min-height: 400px;
   overflow: hidden;
   padding: 0;
-  scroll-snap-align: start;
+  scroll-snap-align: none;
   scroll-snap-stop: normal;
 }
 
@@ -153,7 +153,7 @@ section:has(.video-rollup-slider),
 
 .video-rollup-slider--youtube .video-rollup-media-item {
   min-height: 0;
-  scroll-snap-align: center;
+  scroll-snap-align: none;
 }
 
 .video-rollup-slider--youtube .video-rollup-media-item__content,
@@ -975,7 +975,7 @@ section:has(.video-rollup-slider),
 .video-rollup-recommended-item {
   min-height: 340px;
   padding: 0;
-  scroll-snap-align: center;
+  scroll-snap-align: none;
 }
 
 .video-rollup-slider--recommended .video-rollup-recommended-item {

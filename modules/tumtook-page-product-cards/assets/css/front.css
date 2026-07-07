@@ -101,11 +101,11 @@
   padding: 5px 0 15px var(--ttpc-first-card-inset);
   scroll-padding-left: var(--ttpc-first-card-inset);
   scroll-padding-right: 0;
-  scroll-snap-type: x proximity;
+  scroll-snap-type: none;
   scrollbar-width: none;
   overscroll-behavior-x: contain;
   overscroll-behavior-y: auto;
-  touch-action: pan-x pan-y;
+  touch-action: auto;
 }
 
 .ttpc-track::-webkit-scrollbar {
@@ -121,7 +121,7 @@
   border-radius: 22px;
   overflow: hidden;
   box-shadow: none;
-  scroll-snap-align: start;
+  scroll-snap-align: none;
   scroll-snap-stop: normal;
 }
 

@@ -319,56 +319,13 @@
         return;
       }
 
-      let anchorSlide = findSlideByRealIndex(currentIndex) || getNearestSlide();
+      const targetIndex = Math.max(0, Math.min(totalSlides - 1, currentIndex + direction));
 
-      if (!anchorSlide) {
+      if (targetIndex === currentIndex) {
         return;
       }
 
-      if (direction > 0 && !anchorSlide.nextElementSibling) {
-        const firstSlide = track.firstElementChild;
-
-        if (firstSlide) {
-          preserveViewportWhile(() => {
-            track.appendChild(firstSlide);
-          });
-          anchorSlide = findSlideByRealIndex(currentIndex) || getNearestSlide();
-        }
-      } else if (direction < 0 && !anchorSlide.previousElementSibling) {
-        const lastSlide = track.lastElementChild;
-
-        if (lastSlide) {
-          preserveViewportWhile(() => {
-            track.insertBefore(lastSlide, track.firstElementChild);
-          });
-          anchorSlide = findSlideByRealIndex(currentIndex) || getNearestSlide();
-        }
-      }
-
-      const targetSlide = direction > 0
-        ? anchorSlide.nextElementSibling || slides[0] || null
-        : anchorSlide.previousElementSibling || slides[slides.length - 1] || null;
-
-      if (!targetSlide) {
-        return;
-      }
-
-      isProgrammaticScroll = true;
-      if (programmaticScrollTimer) {
-        window.clearTimeout(programmaticScrollTimer);
-      }
-
-      currentIndex = getRealIndexFromSlide(targetSlide);
-      setActiveSlide(root, currentIndex);
-
-      track.scrollTo({
-        left: getSlideScrollLeft(targetSlide),
-        behavior,
-      });
-
-      programmaticScrollTimer = window.setTimeout(() => {
-        isProgrammaticScroll = false;
-      }, 500);
+      scrollToSlideIndex(targetIndex, behavior);
     };
 
     // Render Dot Navigation
