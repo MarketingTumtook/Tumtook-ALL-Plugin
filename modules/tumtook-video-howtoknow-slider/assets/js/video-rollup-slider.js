@@ -553,6 +553,10 @@
           return;
         }
 
+        if (event.pointerType === "touch") {
+          return;
+        }
+
         openVolumeControls();
         isDraggingVolume = true;
 
@@ -600,11 +604,12 @@
         }
 
         openVolumeControls();
-        isDraggingVolume = true;
-        event.preventDefault();
 
         const rect = volumeShell.getBoundingClientRect();
         const travel = Math.max(rect.height - 32, 1);
+        const startX = touch.clientX;
+        const startY = touch.clientY;
+        let hasLockedVolumeDrag = false;
 
         const updateFromClientY = (clientY) => {
           const offsetFromBottom = rect.bottom - clientY - 16;
@@ -612,13 +617,29 @@
           applyVolume(nextVolume);
         };
 
-        updateFromClientY(touch.clientY);
-
         const handleTouchMove = (moveEvent) => {
           const nextTouch = moveEvent.touches && moveEvent.touches[0];
 
           if (!nextTouch) {
             return;
+          }
+
+          const deltaX = Math.abs(nextTouch.clientX - startX);
+          const deltaY = Math.abs(nextTouch.clientY - startY);
+
+          if (!hasLockedVolumeDrag) {
+            if (deltaY < 8 && deltaX < 8) {
+              return;
+            }
+
+            if (deltaY > deltaX + 4) {
+              handleTouchEnd();
+              return;
+            }
+
+            hasLockedVolumeDrag = true;
+            isDraggingVolume = true;
+            updateFromClientY(startY);
           }
 
           moveEvent.preventDefault();
@@ -702,6 +723,10 @@
       });
 
       progressTrack?.addEventListener("pointerdown", (event) => {
+        if (event.pointerType === "touch") {
+          return;
+        }
+
         isDraggingProgress = true;
         event.preventDefault();
         clearAutoAdvance();
