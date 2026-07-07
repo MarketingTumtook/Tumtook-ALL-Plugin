@@ -8,12 +8,6 @@
   overflow-x: clip;
 }
 
-html.ttpc-slider-page,
-body.ttpc-slider-page {
-  max-width: 100%;
-  overflow-x: hidden;
-}
-
 .ttpc-section[data-ttpc-slider] {
   --ttpc-accent: #f80000;
   --ttpc-accent-hover: #f80000;

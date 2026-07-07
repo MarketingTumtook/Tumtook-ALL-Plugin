@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Tumtook All-in-One Modules
  * Description: Combined Tumtook page modules: API catalog viewer, brand showcase, PDF catalog, gallery, article recommendations, product cards, product recommendations, and video how-to slider.
- * Version: 1.0.2
+ * Version: 1.0.3
  * Author: Tumtook
  * Text Domain: tumtook-all-in-one
  */
@@ -12,7 +12,7 @@ if (!defined('ABSPATH')) {
 }
 
 if (!defined('TUMTOOK_AIO_VERSION')) {
-	define('TUMTOOK_AIO_VERSION', '1.0.2');
+	define('TUMTOOK_AIO_VERSION', '1.0.3');
 }
 
 if (!defined('TUMTOOK_AIO_PLUGIN_FILE')) {

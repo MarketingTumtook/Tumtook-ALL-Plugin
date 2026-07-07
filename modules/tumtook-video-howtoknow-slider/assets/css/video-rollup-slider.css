@@ -1,8 +1,3 @@
-/* Ensure no horizontal scrolling at the body/html level when the slider is present */
-html, body {
-  overflow-x: hidden !important;
-}
-
 /* Reset parent container padding/margin dynamically using :has() to make the breakout section perfectly full-bleed without layout shifts */
 div:has(> .video-rollup-slider),
 section:has(.video-rollup-slider),

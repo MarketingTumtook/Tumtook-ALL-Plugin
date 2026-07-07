@@ -6,12 +6,6 @@
   overflow-x: clip;
 }
 
-html.ttar-slider-page,
-body.ttar-slider-page {
-  max-width: 100%;
-  overflow-x: hidden;
-}
-
 .ttar-section[data-ttar-slider] {
   --ttar-accent: #f80000;
   --ttar-accent-hover: #f80000;
