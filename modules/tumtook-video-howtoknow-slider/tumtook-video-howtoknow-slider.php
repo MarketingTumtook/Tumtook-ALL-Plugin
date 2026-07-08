@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Tumtook Video How To Slider
  * Description: Add page-level promo media fields and display a rounded promo slider with one video plus six image slides.
- * Version: 1.2.6
+ * Version: 1.3.3
  * Author: Tumtook
  * Text Domain: tumtook-video-rollup-slider
  */
@@ -16,7 +16,7 @@ final class Video_Howtoknow_Slider_Plugin
 	const META_KEY = '_tumtook_video_howtoknow_data';
 	const PRODUCT_PRICE_META_KEY = '_tumtook_recommended_price';
 	const PRODUCT_RECOMMENDED_META_KEY = '_tumtook_recommended_enabled';
-	const VERSION = '1.2.6';
+	const VERSION = '1.3.3';
 	const FONT_HANDLE = 'tumtook-kanit-font';
 
 	private $rendered_page_ids = array();
@@ -852,8 +852,8 @@ final class Video_Howtoknow_Slider_Plugin
 				<div class="video-rollup-media-item__media">
 					<div
 						class="video-rollup-video-card<?php echo 'image' === $type ? ' video-rollup-video-card--image' : ''; ?><?php echo 'youtube' === $type ? ' video-rollup-video-card--youtube' : ''; ?>">
-						<?php if ('video' === $type): ?>
-							<video class="video-rollup-video-card__video" playsinline preload="auto" muted <?php echo !empty($slide['poster_url']) ? 'poster="' . esc_url($slide['poster_url']) . '"' : ''; ?>>
+							<?php if ('video' === $type): ?>
+								<video class="video-rollup-video-card__video" playsinline webkit-playsinline x5-playsinline preload="metadata" muted <?php echo !empty($slide['poster_url']) ? 'poster="' . esc_url($slide['poster_url']) . '"' : ''; ?>>
 								<source src="<?php echo esc_url($slide['video_url']); ?>" type="video/mp4">
 							</video>
 							<button type="button" class="video-rollup-video-card__play" data-play-toggle

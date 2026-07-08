@@ -6,6 +6,15 @@
   overflow-x: clip;
 }
 
+.ttar-dot,
+.ttar-arrow {
+  touch-action: manipulation;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
 .ttar-section[data-ttar-slider] {
   --ttar-accent: #f80000;
   --ttar-accent-hover: #f80000;

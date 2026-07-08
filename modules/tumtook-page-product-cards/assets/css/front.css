@@ -8,6 +8,15 @@
   overflow-x: clip;
 }
 
+.ttpc-dot,
+.ttpc-arrow {
+  touch-action: manipulation;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
 .ttpc-section[data-ttpc-slider] {
   --ttpc-accent: #f80000;
   --ttpc-accent-hover: #f80000;

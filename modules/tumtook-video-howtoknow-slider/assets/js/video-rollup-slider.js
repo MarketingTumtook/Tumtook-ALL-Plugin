@@ -478,10 +478,13 @@
       const volumeShell = card?.querySelector(selectors.volumeShell);
       const volumeToggle = card?.querySelector(selectors.volumeToggle);
       const controls = card?.querySelector(".video-rollup-video-card__controls");
+      let currentVolume = 0;
       let previousVolume = 0.6;
       let volumeOpenTimer = null;
       let isDraggingVolume = false;
       let isDraggingProgress = false;
+      let suppressVolumeToggleClick = false;
+      let videoTouchStart = null;
 
       if (!video || !card) {
         return;
@@ -518,7 +521,14 @@
       const applyVolume = (nextVolume) => {
         const safeVolume = Math.max(0, Math.min(1, Number(nextVolume || 0)));
 
-        video.volume = safeVolume;
+        currentVolume = safeVolume;
+
+        try {
+          video.volume = safeVolume;
+        } catch (error) {
+          // Some mobile browsers ignore programmatic media volume.
+        }
+
         video.muted = safeVolume === 0;
 
         if (safeVolume > 0) {
@@ -613,6 +623,10 @@
 
         const handlePointerUp = () => {
           isDraggingVolume = false;
+          suppressVolumeToggleClick = true;
+          window.setTimeout(() => {
+            suppressVolumeToggleClick = false;
+          }, 0);
           window.removeEventListener("pointermove", handlePointerMove);
           window.removeEventListener("pointerup", handlePointerUp);
           closeVolumeControls(220);
@@ -638,18 +652,19 @@
         }
 
         openVolumeControls();
+        event.preventDefault();
 
         const rect = volumeShell.getBoundingClientRect();
         const travel = Math.max(rect.height - 32, 1);
-        const startX = touch.clientX;
-        const startY = touch.clientY;
-        let hasLockedVolumeDrag = false;
 
         const updateFromClientY = (clientY) => {
           const offsetFromBottom = rect.bottom - clientY - 16;
           const nextVolume = Math.max(0, Math.min(1, offsetFromBottom / travel));
           applyVolume(nextVolume);
         };
+
+        isDraggingVolume = true;
+        updateFromClientY(touch.clientY);
 
         const handleTouchMove = (moveEvent) => {
           const nextTouch = moveEvent.touches && moveEvent.touches[0];
@@ -658,30 +673,16 @@
             return;
           }
 
-          const deltaX = Math.abs(nextTouch.clientX - startX);
-          const deltaY = Math.abs(nextTouch.clientY - startY);
-
-          if (!hasLockedVolumeDrag) {
-            if (deltaY < 8 && deltaX < 8) {
-              return;
-            }
-
-            if (deltaY > deltaX + 4) {
-              handleTouchEnd();
-              return;
-            }
-
-            hasLockedVolumeDrag = true;
-            isDraggingVolume = true;
-            updateFromClientY(startY);
-          }
-
           moveEvent.preventDefault();
           updateFromClientY(nextTouch.clientY);
         };
 
         const handleTouchEnd = () => {
           isDraggingVolume = false;
+          suppressVolumeToggleClick = true;
+          window.setTimeout(() => {
+            suppressVolumeToggleClick = false;
+          }, 0);
           window.removeEventListener("touchmove", handleTouchMove);
           window.removeEventListener("touchend", handleTouchEnd);
           window.removeEventListener("touchcancel", handleTouchEnd);
@@ -694,6 +695,12 @@
       };
 
       video.muted = true;
+      video.defaultMuted = true;
+      video.playsInline = true;
+      video.preload = "metadata";
+      video.setAttribute("playsinline", "");
+      video.setAttribute("webkit-playsinline", "");
+      video.setAttribute("x5-playsinline", "");
       video.controls = false;
       applyVolume(0);
       updateProgress();
@@ -708,12 +715,27 @@
         syncPlayingState,
       };
 
+      const playCurrentVideo = () => {
+        autoplayDisabled = false;
+        clearAutoAdvance();
+        pauseAllVideos(root, video);
+
+        if (video.networkState === HTMLMediaElement.NETWORK_EMPTY) {
+          video.load();
+        }
+
+        return video.play().then(() => {
+          card.classList.remove("has-play-error");
+          syncPlayingState();
+        }).catch(() => {
+          card.classList.add("has-play-error");
+          syncPlayingState();
+        });
+      };
+
       playButton?.addEventListener("click", () => {
         if (video.paused) {
-          autoplayDisabled = false;
-          clearAutoAdvance();
-          pauseAllVideos(root, video);
-          video.play().catch(() => {});
+          playCurrentVideo();
         } else {
           autoplayDisabled = true;
           video.pause();
@@ -721,6 +743,11 @@
         }
         syncPlayingState();
       });
+
+      playButton?.addEventListener("touchend", (event) => {
+        event.preventDefault();
+        playButton.click();
+      }, { passive: false });
 
       volumeSlider?.addEventListener("input", () => {
         openVolumeControls();
@@ -735,6 +762,11 @@
       volumeSlider?.addEventListener("touchstart", openVolumeControls, { passive: true });
       volumeShell?.addEventListener("pointerdown", startVolumeDrag);
       volumeShell?.addEventListener("touchstart", startTouchVolumeDrag, { passive: false });
+      volumeShell?.addEventListener("click", (event) => {
+        event.preventDefault();
+        openVolumeControls();
+        applyVolumeFromPointer(event.clientY);
+      });
       controls?.addEventListener("mouseenter", openVolumeControls);
       controls?.addEventListener("mouseleave", () => {
         closeVolumeControls(140);
@@ -745,7 +777,11 @@
       });
 
       volumeToggle?.addEventListener("click", () => {
-        if (video.muted || video.volume === 0) {
+        if (suppressVolumeToggleClick) {
+          return;
+        }
+
+        if (video.muted || currentVolume === 0) {
           applyVolume(previousVolume || 0.6);
         } else {
           applyVolume(0);
@@ -809,6 +845,30 @@
         playButton?.click();
       });
 
+      video.addEventListener("touchstart", (event) => {
+        const touch = event.touches && event.touches[0];
+        videoTouchStart = touch ? { x: touch.clientX, y: touch.clientY } : null;
+      }, { passive: true });
+
+      video.addEventListener("touchend", (event) => {
+        const touch = event.changedTouches && event.changedTouches[0];
+
+        if (!touch || !videoTouchStart) {
+          return;
+        }
+
+        const deltaX = Math.abs(touch.clientX - videoTouchStart.x);
+        const deltaY = Math.abs(touch.clientY - videoTouchStart.y);
+        videoTouchStart = null;
+
+        if (deltaX > 10 || deltaY > 10) {
+          return;
+        }
+
+        event.preventDefault();
+        playButton?.click();
+      }, { passive: false });
+
       video.addEventListener("play", () => {
         clearAutoAdvance();
         pauseAllVideos(root, video);
@@ -816,16 +876,9 @@
       });
 
       video.addEventListener("loadedmetadata", () => {
+        card.classList.add("is-loaded");
         updateDurationLabel(video, duration);
         updateProgress();
-
-        if (!video.poster) {
-          try {
-            video.currentTime = 0.1;
-          } catch (error) {
-            // Ignore browsers that block seeking before playback.
-          }
-        }
       });
 
       video.addEventListener("loadeddata", () => {
@@ -847,6 +900,10 @@
         updateDurationLabel(video, duration);
         updateProgress();
         startAutoAdvance();
+      });
+      video.addEventListener("error", () => {
+        card.classList.add("has-play-error");
+        syncPlayingState();
       });
       video.addEventListener("timeupdate", () => {
         updateDurationLabel(video, duration);
