@@ -375,22 +375,34 @@
 
   .ttbs-showcase__card {
     border-radius: 30px;
+    height: clamp(300px, 108vw, 420px);
+    overflow: hidden;
+    position: relative;
   }
 
-  .ttbs-showcase__image {
-    border-radius: 30px;
+  .ttbs-showcase .ttbs-showcase__image,
+  .elementor .ttbs-showcase .ttbs-showcase__image {
+    border-radius: 30px !important;
+    height: 100% !important;
+    inset: 0;
+    max-height: none !important;
+    max-width: none !important;
+    min-height: 0 !important;
+    object-fit: cover !important;
+    position: absolute;
+    width: 100% !important;
   }
 
   .ttbs-showcase__card-link {
-    bottom: 18px;
-    height: 56px;
-    right: 18px;
-    width: 56px;
+    bottom: 16px;
+    height: 44px;
+    right: 16px;
+    width: 44px;
   }
 
   .ttbs-showcase__card-link-icon {
-    height: 24px;
-    width: 24px;
+    height: 18px;
+    width: 18px;
   }
 }
 
@@ -400,11 +412,18 @@
     height: clamp(300px, 108vw, 420px);
   }
 
-  .ttbs-showcase__image {
-    height: 100%;
-    max-height: 100%;
-    min-height: 0;
-    width: 100%;
+  .ttbs-showcase__card-link {
+    bottom: 16px;
+    right: 16px;
+  }
+
+  .ttbs-showcase .ttbs-showcase__image,
+  .elementor .ttbs-showcase .ttbs-showcase__image {
+    height: 100% !important;
+    max-height: none !important;
+    min-height: 0 !important;
+    object-fit: cover !important;
+    width: 100% !important;
   } 
 
   .ttbs-showcase__nav {

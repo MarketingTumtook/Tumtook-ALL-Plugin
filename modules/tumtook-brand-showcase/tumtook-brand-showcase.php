@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Tumtook brand showCase
  * Description: Add up to 5 page-level brand showcase images and display them in a looping slider.
- * Version: 1.0.3
+ * Version: 1.0.6
  * Author: Tumtook
  * Text Domain: tumtook-brand-showcase
  */
@@ -14,7 +14,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 final class Tumtook_Brand_Showcase_Plugin {
 	const META_KEY  = '_tumtook_brand_showcase_data';
 	const SHORTCODE = 'tumtook_brand_showcase';
-	const VERSION   = '1.0.3';
+	const VERSION   = '1.0.6';
 	const FONT_HANDLE = 'tumtook-kanit-font';
 
 	private $rendered_page_ids = array();
