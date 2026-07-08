@@ -240,6 +240,33 @@ document.addEventListener('DOMContentLoaded', function () {
 		});
 	}
 
+	function getMasonrySpan(gallery, height) {
+		var galleryStyles = window.getComputedStyle(gallery);
+		var rowGap = parseFloat(galleryStyles.getPropertyValue('row-gap')) || parseFloat(galleryStyles.getPropertyValue('gap')) || 0;
+		var rowSize = parseFloat(galleryStyles.getPropertyValue('grid-auto-rows')) || 8;
+
+		return Math.max(1, Math.ceil((height + rowGap) / (rowSize + rowGap)));
+	}
+
+	function renderEndFillers(gallery, shell) {
+		var columns = getColumns(shell);
+		var fillerHeight = Math.max(160, Math.min(230, Math.round(window.innerHeight * 0.22)));
+		var existingFillers = Array.prototype.slice.call(gallery.querySelectorAll('.ttg-end-filler'));
+
+		existingFillers.forEach(function (filler) {
+			filler.remove();
+		});
+
+		for (var index = 0; index < columns; index += 1) {
+			var filler = document.createElement('div');
+			filler.className = 'ttg-end-filler';
+			filler.setAttribute('aria-hidden', 'true');
+			filler.style.minHeight = fillerHeight + 'px';
+			filler.style.gridRowEnd = 'span ' + getMasonrySpan(gallery, fillerHeight);
+			gallery.appendChild(filler);
+		}
+	}
+
 	function waitForImages(cards, callback) {
 		var images = [];
 
@@ -406,9 +433,12 @@ document.addEventListener('DOMContentLoaded', function () {
 
 					gallery.appendChild(fragment);
 
-						waitForImages(newCards, function () {
-							animateCards(gallery, newCards);
-						});
+					waitForImages(newCards, function () {
+						animateCards(gallery, newCards);
+						if (complete) {
+							renderEndFillers(gallery, shell);
+						}
+					});
 
 					complete = !data.has_more;
 					page += 1;
@@ -432,6 +462,9 @@ document.addEventListener('DOMContentLoaded', function () {
 			window.cancelAnimationFrame(resizeFrame);
 			resizeFrame = window.requestAnimationFrame(function () {
 				resizeMasonryItems(gallery, Array.prototype.slice.call(gallery.querySelectorAll('.ttg-card')));
+				if (complete) {
+					renderEndFillers(gallery, shell);
+				}
 			});
 		});
 

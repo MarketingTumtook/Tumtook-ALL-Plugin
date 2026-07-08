@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Tumtook Page Product Recommendations
  * Description: Adds a page-based recommended products slider with manual page selection, price fields, and a layout tailored for Tumtook landing pages.
- * Version: 1.1.1
+ * Version: 1.1.3
  * Author: Tumtook
  * Text Domain: tumtook-page-product-recommendations
  */
@@ -13,11 +13,12 @@ if (!defined('ABSPATH')) {
 
 final class Tumtook_Page_Product_Recommendations
 {
-	const VERSION = '1.1.1';
+	const VERSION = '1.1.3';
 	const META_KEY = '_tt_page_product_recommendations';
 	const PAGE_PRICE_META = '_ttpr_page_price';
 	const PAGE_BADGE_META = '_ttpr_page_badge';
 	const PAGE_IMAGE_META = '_ttpr_page_image_id';
+	const PAGE_TITLE_META = '_ttpr_page_card_title';
 	const CACHE_VERSION_OPTION = '_ttpr_cache_version';
 	const SHORTCODE = 'tumtook_recommended_products';
 	const FONT_HANDLE = 'tumtook-kanit-font';
@@ -160,6 +161,7 @@ final class Tumtook_Page_Product_Recommendations
 			'badge' => sanitize_key((string) get_post_meta($post_id, self::PAGE_BADGE_META, true)),
 			'image_id' => $image_id,
 			'image' => $image_id ? wp_get_attachment_image_url($image_id, 'large') : '',
+			'title' => sanitize_text_field((string) get_post_meta($post_id, self::PAGE_TITLE_META, true)),
 		);
 	}
 
@@ -315,6 +317,15 @@ final class Tumtook_Page_Product_Recommendations
 					<?php esc_html_e('ข้อมูลส่วนนี้จะถูกใช้เมื่อ page นี้ถูกเลือกไปแสดงใน section สินค้าแนะนำของหน้าอื่น', 'tumtook-page-product-recommendations'); ?>
 				</p>
 				<div class="ttpr-admin-grid" style="margin-top:16px">
+					<div class="ttpr-admin-field ttpr-admin-field--full">
+						<label
+							for="ttpr-page-card-title"><?php esc_html_e('ชื่อที่แสดงบนการ์ด', 'tumtook-page-product-recommendations'); ?></label>
+						<input id="ttpr-page-card-title" type="text" name="ttpr_page_meta[title]"
+							value="<?php echo esc_attr($page_meta['title']); ?>" placeholder="<?php echo esc_attr(get_the_title($post)); ?>" />
+						<p class="ttpr-admin-hint">
+							<?php esc_html_e('ถ้าเว้นว่างไว้ ปลั๊กอินจะใช้ Title ของ page นี้แทน', 'tumtook-page-product-recommendations'); ?>
+						</p>
+					</div>
 					<div class="ttpr-admin-field">
 						<label
 							for="ttpr-page-price"><?php esc_html_e('ราคา', 'tumtook-page-product-recommendations'); ?></label>
@@ -492,6 +503,7 @@ final class Tumtook_Page_Product_Recommendations
 		}
 
 		update_post_meta($post_id, self::PAGE_PRICE_META, isset($page_meta['price']) ? sanitize_text_field($page_meta['price']) : '');
+		update_post_meta($post_id, self::PAGE_TITLE_META, isset($page_meta['title']) ? sanitize_text_field($page_meta['title']) : '');
 
 		$badge = isset($page_meta['badge']) ? sanitize_key($page_meta['badge']) : '';
 		if (!in_array($badge, array('', 'new', 'best', 'recommended'), true)) {
@@ -701,6 +713,7 @@ final class Tumtook_Page_Product_Recommendations
 
 			$meta = $this->get_page_card_meta($page_id);
 			$image = $meta['image'] ? $meta['image'] : get_the_post_thumbnail_url($page_id, 'large');
+			$title = '' !== $meta['title'] ? $meta['title'] : get_the_title($page_id);
 			$badge_map = array(
 				'new' => __('ใหม่', 'tumtook-page-product-recommendations'),
 				'best' => __('ขายดี', 'tumtook-page-product-recommendations'),
@@ -708,7 +721,7 @@ final class Tumtook_Page_Product_Recommendations
 			);
 
 			$items[] = array(
-				'title' => get_the_title($page_id),
+				'title' => $title,
 				'url' => get_permalink($page_id),
 				'image' => $image ? $image : '',
 				'price' => $this->format_price($meta['price']),

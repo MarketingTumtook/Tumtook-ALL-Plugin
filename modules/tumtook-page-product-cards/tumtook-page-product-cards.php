@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Tumtook Page Product Cards
  * Description: Adds a page-based product card slider with manual page selection and a no-price layout for Tumtook landing pages.
- * Version: 1.0.0
+ * Version: 1.0.2
  * Author: Tumtook
  * Text Domain: tumtook-page-product-cards
  */
@@ -12,9 +12,10 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 final class Tumtook_Page_Product_Cards {
-	const VERSION = '1.0.0';
+	const VERSION = '1.0.2';
 	const META_KEY            = '_tt_page_product_cards';
 	const PAGE_IMAGE_META     = '_ttpc_page_image_id';
+	const PAGE_TITLE_META     = '_ttpc_page_card_title';
 	const CACHE_VERSION_OPTION = '_ttpc_cache_version';
 	const SHORTCODE           = 'tumtook_product_cards';
 	const FONT_HANDLE         = 'tumtook-kanit-font';
@@ -144,6 +145,7 @@ final class Tumtook_Page_Product_Cards {
 		return array(
 			'image_id' => $image_id,
 			'image'    => $image_id ? wp_get_attachment_image_url( $image_id, 'large' ) : '',
+			'title'    => sanitize_text_field( (string) get_post_meta( $post_id, self::PAGE_TITLE_META, true ) ),
 		);
 	}
 
@@ -188,6 +190,11 @@ final class Tumtook_Page_Product_Cards {
 				<h3><?php esc_html_e( 'ข้อมูลการ์ดของ Page นี้', 'tumtook-page-product-cards' ); ?></h3>
 				<p class="ttpc-admin-note"><?php esc_html_e( 'ข้อมูลส่วนนี้จะถูกใช้เมื่อ page นี้ถูกเลือกไปแสดงใน section สินค้าเพิ่มเติมของหน้าอื่น', 'tumtook-page-product-cards' ); ?></p>
 				<div class="ttpc-admin-grid" style="margin-top:16px">
+					<div class="ttpc-admin-field ttpc-admin-field--full">
+						<label for="ttpc-page-card-title"><?php esc_html_e( 'ชื่อที่แสดงบนการ์ด', 'tumtook-page-product-cards' ); ?></label>
+						<input id="ttpc-page-card-title" type="text" name="ttpc_page_meta[title]" value="<?php echo esc_attr( $page_meta['title'] ); ?>" placeholder="<?php echo esc_attr( get_the_title( $post ) ); ?>" />
+						<p class="ttpc-admin-hint"><?php esc_html_e( 'ถ้าเว้นว่างไว้ ปลั๊กอินจะใช้ Title ของ page นี้แทน', 'tumtook-page-product-cards' ); ?></p>
+					</div>
 					<div class="ttpc-admin-field ttpc-admin-field--full">
 						<label><?php esc_html_e( 'รูปการ์ดของ page นี้', 'tumtook-page-product-cards' ); ?></label>
 						<input type="hidden" id="ttpc-page-image-id" name="ttpc_page_meta[image_id]" value="<?php echo esc_attr( $page_meta['image_id'] ); ?>" />
@@ -305,6 +312,7 @@ final class Tumtook_Page_Product_Cards {
 		}
 
 		update_post_meta( $post_id, self::PAGE_IMAGE_META, isset( $page_meta['image_id'] ) ? absint( $page_meta['image_id'] ) : 0 );
+		update_post_meta( $post_id, self::PAGE_TITLE_META, isset( $page_meta['title'] ) ? sanitize_text_field( $page_meta['title'] ) : '' );
 		$this->bump_cache_version();
 	}
 
@@ -495,9 +503,10 @@ final class Tumtook_Page_Product_Cards {
 
 			$meta  = $this->get_page_card_meta( $page_id );
 			$image = $meta['image'] ? $meta['image'] : get_the_post_thumbnail_url( $page_id, 'large' );
+			$title = '' !== $meta['title'] ? $meta['title'] : get_the_title( $page_id );
 
 			$items[] = array(
-				'title' => get_the_title( $page_id ),
+				'title' => $title,
 				'url'   => get_permalink( $page_id ),
 				'image' => $image ? $image : '',
 			);

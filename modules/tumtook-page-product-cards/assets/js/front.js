@@ -46,6 +46,9 @@
     var lastManualDirection = 0;
     var lastScrollLeft = 0;
     var skipBoundaryLoopOnSettle = false;
+    var pointerStartX = 0;
+    var pointerStartY = 0;
+    var suppressCardClick = false;
 
     if (!track || !slides.length) {
       return;
@@ -432,10 +435,6 @@
       });
     }
 
-    function isMobileViewport() {
-      return window.matchMedia("(max-width: 767px)").matches;
-    }
-
     function finalizeReorder() {
       var stepSize = getStepSize();
 
@@ -506,18 +505,35 @@
       });
     }
 
-    track.addEventListener("pointerdown", function () {
+    track.addEventListener("pointerdown", function (event) {
       isPointerDown = true;
+      pointerStartX = event.clientX;
+      pointerStartY = event.clientY;
+      suppressCardClick = false;
       pendingReorder = null;
       isProgrammaticScroll = false;
     });
 
-    track.addEventListener("pointerup", function () {
+    track.addEventListener("pointerup", function (event) {
+      var deltaX = Math.abs(event.clientX - pointerStartX);
+      var deltaY = Math.abs(event.clientY - pointerStartY);
+
+      if (deltaX > 8 || deltaY > 8) {
+        suppressCardClick = true;
+        window.setTimeout(function () {
+          suppressCardClick = false;
+        }, 0);
+      }
+
       isPointerDown = false;
       syncCurrentIndexFromViewport();
     });
 
     track.addEventListener("pointercancel", function () {
+      suppressCardClick = true;
+      window.setTimeout(function () {
+        suppressCardClick = false;
+      }, 0);
       isPointerDown = false;
       syncCurrentIndexFromViewport();
     });
@@ -572,7 +588,7 @@
         var target = event.target;
         var detailLink = slide.querySelector(".ttpc-button");
 
-        if (!isMobileViewport() || !detailLink) {
+        if (!detailLink || suppressCardClick) {
           return;
         }
 

@@ -122,6 +122,7 @@
   box-shadow: none;
   scroll-snap-align: none;
   scroll-snap-stop: normal;
+  cursor: pointer;
 }
 
 .ttpr-card-media {
