@@ -73,6 +73,7 @@
 	display: block;
 	position: relative;
 	background: #f3f4f6;
+	min-height: clamp(170px, 24vw, 280px);
 }
 
 .ttg-gallery-shell .ttg-media img {
@@ -434,6 +435,10 @@
 		grid-template-columns: repeat(2, minmax(0, 1fr));
 	}
 
+	.ttg-gallery-shell .ttg-media {
+		min-height: clamp(168px, 55vw, 260px);
+	}
+
 	.ttg-lightbox {
 		padding: 14px;
 	}
@@ -491,6 +496,10 @@
 		column-gap: 8px;
 		row-gap: 8px;
 		grid-template-columns: repeat(2, minmax(0, 1fr));
+	}
+
+	.ttg-gallery-shell .ttg-media {
+		min-height: clamp(154px, 58vw, 238px);
 	}
 
 	.ttg-title {

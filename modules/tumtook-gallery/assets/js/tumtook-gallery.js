@@ -176,6 +176,7 @@ document.addEventListener('DOMContentLoaded', function () {
 		image.src = item.image;
 		image.alt = item.alt || item.title || '';
 		image.loading = 'lazy';
+		image.decoding = 'async';
 		image.tabIndex = 0;
 		image.addEventListener('click', function () {
 			var parentGallery = article.closest('.ttg-gallery');
@@ -197,6 +198,14 @@ document.addEventListener('DOMContentLoaded', function () {
 			if (event.key === 'Enter' || event.key === ' ') {
 				event.preventDefault();
 				image.click();
+			}
+		});
+		image.addEventListener('load', function () {
+			var parentGallery = article.closest('.ttg-gallery');
+			if (parentGallery) {
+				window.requestAnimationFrame(function () {
+					resizeMasonryItems(parentGallery, [article]);
+				});
 			}
 		});
 		image.addEventListener('error', function () {
@@ -246,6 +255,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
 	function waitForImages(cards, callback) {
 		var images = [];
+		var done = false;
+		var timeoutId;
 
 		cards.forEach(function (card) {
 			images = images.concat(Array.prototype.slice.call(card.querySelectorAll('img')));
@@ -258,12 +269,30 @@ document.addEventListener('DOMContentLoaded', function () {
 
 		var pending = images.length;
 
+		function finishAll() {
+			if (done) {
+				return;
+			}
+
+			done = true;
+			if (timeoutId) {
+				window.clearTimeout(timeoutId);
+			}
+			callback();
+		}
+
 		function finishOne() {
+			if (done) {
+				return;
+			}
+
 			pending -= 1;
 			if (pending <= 0) {
-				callback();
+				finishAll();
 			}
 		}
+
+		timeoutId = window.setTimeout(finishAll, 3200);
 
 		images.forEach(function (image) {
 			if (image.complete) {
@@ -352,8 +381,10 @@ document.addEventListener('DOMContentLoaded', function () {
 		var page = 1;
 		var loading = false;
 		var complete = false;
+		var pendingLoad = false;
 		var observer;
 		var resizeFrame;
+		var scrollFrame;
 
 		function setLoaderState(message, hidden) {
 			loader.textContent = message;
@@ -370,6 +401,28 @@ document.addEventListener('DOMContentLoaded', function () {
 			url.searchParams.set('limit', limit);
 
 			return url.toString();
+		}
+
+		function isSentinelNearViewport() {
+			if (!sentinel) {
+				return false;
+			}
+
+			var rect = sentinel.getBoundingClientRect();
+			var preloadDistance = Math.max(window.innerHeight * 0.75, 420);
+
+			return rect.top <= preloadDistance;
+		}
+
+		function requestLoad(perPage) {
+			if (loading || complete) {
+				if (loading && !complete) {
+					pendingLoad = true;
+				}
+				return;
+			}
+
+			loadPage(perPage);
 		}
 
 		function loadPage(perPage) {
@@ -410,16 +463,16 @@ document.addEventListener('DOMContentLoaded', function () {
 
 					gallery.appendChild(fragment);
 
-					waitForImages(newCards, function () {
+					complete = !data.has_more;
+					page += 1;
+					setLoaderState('', true);
+
+					window.requestAnimationFrame(function () {
 						animateCards(gallery, newCards);
 						if (complete) {
 							showEndPanel(shell);
 						}
 					});
-
-					complete = !data.has_more;
-					page += 1;
-					setLoaderState('', true);
 
 					if (complete && observer) {
 						observer.disconnect();
@@ -430,10 +483,16 @@ document.addEventListener('DOMContentLoaded', function () {
 				})
 				.finally(function () {
 					loading = false;
+					if (!complete && (pendingLoad || isSentinelNearViewport())) {
+						pendingLoad = false;
+						window.requestAnimationFrame(function () {
+							requestLoad(getBatchPerPage(shell));
+						});
+					}
 				});
 		}
 
-		loadPage(getInitialPerPage(shell));
+		requestLoad(getInitialPerPage(shell));
 
 		window.addEventListener('resize', function () {
 			window.cancelAnimationFrame(resizeFrame);
@@ -446,15 +505,28 @@ document.addEventListener('DOMContentLoaded', function () {
 			function (entries) {
 				entries.forEach(function (entry) {
 					if (entry.isIntersecting) {
-						loadPage(getBatchPerPage(shell));
+						requestLoad(getBatchPerPage(shell));
 					}
 				});
 			},
 			{
-				rootMargin: '400px 0px'
+				rootMargin: '420px 0px'
 			}
 		);
 
 		observer.observe(sentinel);
+
+		window.addEventListener('scroll', function () {
+			if (scrollFrame) {
+				return;
+			}
+
+			scrollFrame = window.requestAnimationFrame(function () {
+				scrollFrame = null;
+				if (!complete && isSentinelNearViewport()) {
+					requestLoad(getBatchPerPage(shell));
+				}
+			});
+		}, { passive: true });
 	});
 });
