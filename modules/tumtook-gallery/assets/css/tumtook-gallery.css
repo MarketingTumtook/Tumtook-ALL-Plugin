@@ -112,7 +112,7 @@
 .ttg-end-panel {
 	align-items: center;
 	background:
-		linear-gradient(180deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.42) 34%, #f7f8f9 76%),
+		linear-gradient(180deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.42) 34%, #fff 76%),
 		transparent;
 	border-radius: 0 0 22px 22px;
 	box-shadow: none;
