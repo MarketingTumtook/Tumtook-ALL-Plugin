@@ -8,7 +8,7 @@
 2. Tumtook Download PDF Catalog
 3. Tumtook Gallery
 4. Tumtook Page Article Recommendations
-5. Tumtook Page Product Cards
+5. Tumtook Page Card Products ทั้งหมด
 6. Tumtook Page Product Recommendations
 7. Tumtook Video How To Slider
 

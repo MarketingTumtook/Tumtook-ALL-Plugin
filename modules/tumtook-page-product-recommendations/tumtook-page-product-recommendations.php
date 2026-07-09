@@ -1,7 +1,7 @@
 <?php
 /**
  * Plugin Name: Tumtook Page Product Recommendations
- * Description: Adds a page-based recommended products slider with manual page selection, price fields, and a layout tailored for Tumtook landing pages.
+ * Description: Adds a page-based Card Products ทั้งหมด slider with manual page selection, price fields, and a layout tailored for Tumtook landing pages.
  * Version: 1.1.3
  * Author: Tumtook
  * Text Domain: tumtook-page-product-recommendations
@@ -37,7 +37,7 @@ final class Tumtook_Page_Product_Recommendations
 	{
 		add_meta_box(
 			'tt-page-product-recommendations',
-			__('Recommended Products', 'tumtook-page-product-recommendations'),
+			__('Card Products ทั้งหมด', 'tumtook-page-product-recommendations'),
 			array($this, 'render_meta_box'),
 			'page',
 			'normal',
@@ -321,7 +321,8 @@ final class Tumtook_Page_Product_Recommendations
 						<label
 							for="ttpr-page-card-title"><?php esc_html_e('ชื่อที่แสดงบนการ์ด', 'tumtook-page-product-recommendations'); ?></label>
 						<input id="ttpr-page-card-title" type="text" name="ttpr_page_meta[title]"
-							value="<?php echo esc_attr($page_meta['title']); ?>" placeholder="<?php echo esc_attr(get_the_title($post)); ?>" />
+							value="<?php echo esc_attr($page_meta['title']); ?>"
+							placeholder="<?php echo esc_attr(get_the_title($post)); ?>" />
 						<p class="ttpr-admin-hint">
 							<?php esc_html_e('ถ้าเว้นว่างไว้ ปลั๊กอินจะใช้ Title ของ page นี้แทน', 'tumtook-page-product-recommendations'); ?>
 						</p>

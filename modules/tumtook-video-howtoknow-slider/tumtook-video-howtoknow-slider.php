@@ -35,7 +35,7 @@ final class Video_Howtoknow_Slider_Plugin
 	{
 		add_meta_box(
 			'tumtook-video-rollup-slider-page',
-			__('สไลด์วิดีโอและรูปภาพ', 'tumtook-video-rollup-slider'),
+			__('Apple Slide Card', 'tumtook-video-rollup-slider'),
 			array($this, 'render_page_meta_box'),
 			'page',
 			'normal',
@@ -654,7 +654,8 @@ final class Video_Howtoknow_Slider_Plugin
 						<div class="video-rollup-page-grid">
 							<div class="video-rollup-admin-field video-rollup-admin-field--full">
 								<label><?php echo esc_html(sprintf(__('ข้อความหัวการ์ด รูปภาพ %d', 'tumtook-video-rollup-slider'), $index + 1)); ?></label>
-								<textarea name="tumtook_video_howtoknow_data[images][<?php echo esc_attr($index); ?>][heading]" rows="2"
+								<textarea name="tumtook_video_howtoknow_data[images][<?php echo esc_attr($index); ?>][heading]"
+									rows="2"
 									placeholder="<?php esc_attr_e('ข้อความที่จะโชว์บนรูปภาพนี้', 'tumtook-video-rollup-slider'); ?>"><?php echo esc_textarea($image['heading']); ?></textarea>
 							</div>
 
@@ -852,8 +853,9 @@ final class Video_Howtoknow_Slider_Plugin
 				<div class="video-rollup-media-item__media">
 					<div
 						class="video-rollup-video-card<?php echo 'image' === $type ? ' video-rollup-video-card--image' : ''; ?><?php echo 'youtube' === $type ? ' video-rollup-video-card--youtube' : ''; ?>">
-							<?php if ('video' === $type): ?>
-								<video class="video-rollup-video-card__video" playsinline webkit-playsinline x5-playsinline preload="metadata" muted <?php echo !empty($slide['poster_url']) ? 'poster="' . esc_url($slide['poster_url']) . '"' : ''; ?>>
+						<?php if ('video' === $type): ?>
+							<video class="video-rollup-video-card__video" playsinline webkit-playsinline x5-playsinline
+								preload="metadata" muted <?php echo !empty($slide['poster_url']) ? 'poster="' . esc_url($slide['poster_url']) . '"' : ''; ?>>
 								<source src="<?php echo esc_url($slide['video_url']); ?>" type="video/mp4">
 							</video>
 							<button type="button" class="video-rollup-video-card__play" data-play-toggle

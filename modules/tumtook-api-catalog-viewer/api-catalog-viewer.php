@@ -212,7 +212,7 @@ final class API_Catalog_Images_Plugin
 	{
 		add_meta_box(
 			'tumtook-api-catalog-images-viewer-page',
-			__('ตั้งค่า Tumtook Catalog Image Data', 'api-catalog-images-viewer'),
+			__('ตั้งค่า Catalog Tumtook', 'api-catalog-images-viewer'),
 			array($this, 'render_page_meta_box'),
 			'page',
 			'normal',

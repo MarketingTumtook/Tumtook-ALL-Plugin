@@ -1,7 +1,7 @@
 <?php
 /**
  * Plugin Name: Tumtook All-in-One Modules
- * Description: Combined Tumtook page modules: API catalog viewer, brand showcase, PDF catalog, gallery, article recommendations, product cards, product recommendations, and video how-to slider.
+ * Description: Combined Tumtook page modules: API catalog viewer, brand showcase, PDF catalog, gallery, article recommendations, Card Products  ทั้งหมด, product recommendations, and video how-to slider.
  * Version: 1.0.27
  * Author: Tumtook
  * Text Domain: tumtook-all-in-one
@@ -99,7 +99,7 @@ function tumtook_aio_get_modules()
 			'guard' => array('type' => 'class', 'name' => 'Tumtook_Page_Article_Recommendations'),
 		),
 		array(
-			'name' => 'Tumtook Page Product Cards',
+			'name' => 'Tumtook Page Card Products  ทั้งหมด',
 			'file' => 'tumtook-page-product-cards/tumtook-page-product-cards.php',
 			'guard' => array('type' => 'class', 'name' => 'Tumtook_Page_Product_Cards'),
 		),
