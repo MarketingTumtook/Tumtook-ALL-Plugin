@@ -1,8 +1,8 @@
 <?php
 /**
  * Plugin Name: Tumtook Page Product Cards
- * Description: Adds a page-based product card slider with manual page selection and a no-price layout for Tumtook landing pages.
- * Version: 1.0.2
+ * Description: Adds a page-based product card slider with manual page selection and price support for Tumtook landing pages.
+ * Version: 1.0.3
  * Author: Tumtook
  * Text Domain: tumtook-page-product-cards
  */
@@ -12,10 +12,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 final class Tumtook_Page_Product_Cards {
-	const VERSION = '1.0.2';
+	const VERSION = '1.0.3';
 	const META_KEY            = '_tt_page_product_cards';
 	const PAGE_IMAGE_META     = '_ttpc_page_image_id';
 	const PAGE_TITLE_META     = '_ttpc_page_card_title';
+	const PAGE_PRICE_META     = '_ttpc_page_price';
 	const CACHE_VERSION_OPTION = '_ttpc_cache_version';
 	const SHORTCODE           = 'tumtook_product_cards';
 	const FONT_HANDLE         = 'tumtook-kanit-font';
@@ -146,6 +147,7 @@ final class Tumtook_Page_Product_Cards {
 			'image_id' => $image_id,
 			'image'    => $image_id ? wp_get_attachment_image_url( $image_id, 'large' ) : '',
 			'title'    => sanitize_text_field( (string) get_post_meta( $post_id, self::PAGE_TITLE_META, true ) ),
+			'price'    => sanitize_text_field( (string) get_post_meta( $post_id, self::PAGE_PRICE_META, true ) ),
 		);
 	}
 
@@ -194,6 +196,11 @@ final class Tumtook_Page_Product_Cards {
 						<label for="ttpc-page-card-title"><?php esc_html_e( 'ชื่อที่แสดงบนการ์ด', 'tumtook-page-product-cards' ); ?></label>
 						<input id="ttpc-page-card-title" type="text" name="ttpc_page_meta[title]" value="<?php echo esc_attr( $page_meta['title'] ); ?>" placeholder="<?php echo esc_attr( get_the_title( $post ) ); ?>" />
 						<p class="ttpc-admin-hint"><?php esc_html_e( 'ถ้าเว้นว่างไว้ ปลั๊กอินจะใช้ Title ของ page นี้แทน', 'tumtook-page-product-cards' ); ?></p>
+					</div>
+					<div class="ttpc-admin-field ttpc-admin-field--full">
+						<label for="ttpc-page-price"><?php esc_html_e( 'ราคา', 'tumtook-page-product-cards' ); ?></label>
+						<input id="ttpc-page-price" type="text" name="ttpc_page_meta[price]" value="<?php echo esc_attr( $page_meta['price'] ); ?>" placeholder="฿1.70" />
+						<p class="ttpc-admin-hint"><?php esc_html_e( 'ถ้าใส่เฉพาะตัวเลข ระบบจะเติมสัญลักษณ์ ฿ ให้อัตโนมัติ', 'tumtook-page-product-cards' ); ?></p>
 					</div>
 					<div class="ttpc-admin-field ttpc-admin-field--full">
 						<label><?php esc_html_e( 'รูปการ์ดของ page นี้', 'tumtook-page-product-cards' ); ?></label>
@@ -313,6 +320,7 @@ final class Tumtook_Page_Product_Cards {
 
 		update_post_meta( $post_id, self::PAGE_IMAGE_META, isset( $page_meta['image_id'] ) ? absint( $page_meta['image_id'] ) : 0 );
 		update_post_meta( $post_id, self::PAGE_TITLE_META, isset( $page_meta['title'] ) ? sanitize_text_field( $page_meta['title'] ) : '' );
+		update_post_meta( $post_id, self::PAGE_PRICE_META, isset( $page_meta['price'] ) ? sanitize_text_field( $page_meta['price'] ) : '' );
 		$this->bump_cache_version();
 	}
 
@@ -436,6 +444,7 @@ final class Tumtook_Page_Product_Cards {
 								</div>
 								<div class="ttpc-content">
 									<h3 class="ttpc-product-title"><?php echo esc_html( $item['title'] ); ?></h3>
+									<div class="ttpc-price"><?php echo esc_html( $item['price'] ); ?></div>
 									<div class="ttpc-footer">
 										<a class="ttpc-button" href="<?php echo esc_url( $item['url'] ); ?>">
 											<span class="ttpc-button-arrow" aria-hidden="true"></span>
@@ -509,6 +518,7 @@ final class Tumtook_Page_Product_Cards {
 				'title' => $title,
 				'url'   => get_permalink( $page_id ),
 				'image' => $image ? $image : '',
+				'price' => $this->format_price( $meta['price'] ),
 			);
 		}
 
@@ -526,6 +536,7 @@ final class Tumtook_Page_Product_Cards {
 				'title' => sprintf( __( 'ตัวอย่างสินค้า %d', 'tumtook-page-product-cards' ), $i ),
 				'url'   => '#',
 				'image' => '',
+				'price' => $this->format_price( 1 + ( $i / 10 ) ),
 			);
 		}
 
@@ -536,6 +547,28 @@ final class Tumtook_Page_Product_Cards {
 		$ids = preg_split( '/[\s,]+/', (string) $raw_ids );
 		$ids = array_filter( array_map( 'absint', $ids ) );
 		return array_values( array_unique( $ids ) );
+	}
+
+	private function format_price( $raw_price ) {
+		$raw_price = trim( (string) $raw_price );
+
+		if ( '' === $raw_price ) {
+			return '฿0.00';
+		}
+
+		if ( preg_match( '/฿|บาท/u', $raw_price ) ) {
+			return $raw_price;
+		}
+
+		$normalized = str_replace( ',', '', $raw_price );
+
+		if ( is_numeric( $normalized ) ) {
+			$number   = (float) $normalized;
+			$decimals = ( floor( $number ) === $number ) ? 0 : 2;
+			return '฿' . number_format_i18n( $number, $decimals );
+		}
+
+		return '฿' . $raw_price;
 	}
 
 	private function prime_page_caches( $page_ids ) {

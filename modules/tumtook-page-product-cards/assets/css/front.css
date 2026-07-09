@@ -243,8 +243,8 @@
 .ttpc-product-title {
   margin: 0;
   min-width: 0;
-  min-height: 2.44em;
-  max-height: 2.44em;
+  min-height: 1.22em;
+  max-height: 1.22em;
   color: #050505;
   font-family: inherit;
   font-size: 20px;
@@ -259,6 +259,19 @@
   white-space: normal;
 }
 
+.ttpc-price {
+  grid-column: 1;
+  grid-row: 2;
+  margin: 0;
+  min-width: 0;
+  color: var(--ttpc-accent);
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+}
+
 .ttpc-footer {
   display: contents;
 }
@@ -266,6 +279,8 @@
 .ttpc-button,
 .ttpc-button:link,
 .ttpc-button:visited {
+  grid-column: 2;
+  grid-row: 1 / span 2;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -467,6 +482,10 @@
     font-size: 24px;
   }
 
+  .ttpc-price {
+    font-size: 17px;
+  }
+
   .ttpc-button,
   .ttpc-button:link,
   .ttpc-button:visited {
@@ -547,8 +566,8 @@
   }
 
   .ttpc-product-title {
-    min-height: 2.4em;
-    max-height: 2.4em;
+    min-height: 1.2em;
+    max-height: 1.2em;
     font-size: 16px;
     line-height: 1.2;
     display: -webkit-box;
@@ -556,6 +575,11 @@
     -webkit-line-clamp: 2;
     overflow: hidden;
     white-space: normal;
+  }
+
+  .ttpc-price {
+    font-size: 14px;
+    line-height: 1;
   }
 
   .ttpc-button,
