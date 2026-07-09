@@ -173,7 +173,6 @@ document.addEventListener('DOMContentLoaded', function () {
 		noImage.appendChild(noImageIcon);
 		noImage.appendChild(noImageText);
 
-		image.src = item.image;
 		image.alt = item.alt || item.title || '';
 		image.loading = 'lazy';
 		image.decoding = 'async';
@@ -202,6 +201,7 @@ document.addEventListener('DOMContentLoaded', function () {
 		});
 		image.addEventListener('load', function () {
 			var parentGallery = article.closest('.ttg-gallery');
+			media.classList.add('ttg-media--loaded');
 			if (parentGallery) {
 				window.requestAnimationFrame(function () {
 					resizeMasonryItems(parentGallery, [article]);
@@ -211,6 +211,7 @@ document.addEventListener('DOMContentLoaded', function () {
 		image.addEventListener('error', function () {
 			var parentGallery = article.closest('.ttg-gallery');
 			image.hidden = true;
+			media.classList.add('ttg-media--loaded');
 			noImage.hidden = false;
 			if (parentGallery) {
 				window.requestAnimationFrame(function () {
@@ -218,6 +219,7 @@ document.addEventListener('DOMContentLoaded', function () {
 				});
 			}
 		});
+		image.src = item.image;
 
 		media.appendChild(noImage);
 		media.appendChild(image);
