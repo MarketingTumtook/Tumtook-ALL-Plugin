@@ -112,15 +112,15 @@
 .ttg-end-panel {
 	align-items: center;
 	background:
-		linear-gradient(180deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.42) 34%, #fff 76%),
+		linear-gradient(180deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.62) 30%, #fff 72%),
 		transparent;
 	border-radius: 0 0 22px 22px;
 	box-shadow: none;
 	display: none;
 	flex-direction: column;
-	margin-top: -200px;
-	min-height: 250px;
-	padding: 120px 24px 44px;
+	margin-top: -230px;
+	min-height: 280px;
+	padding: 150px 24px 24px;
 	position: relative;
 	text-align: center;
 	z-index: 5;
@@ -134,9 +134,15 @@
 @media (max-width: 767px) {
 	.ttg-end-panel {
 		border-radius: 0 0 18px 18px;
-		margin-top: -92px;
-		min-height: 220px;
-		padding: 94px 18px 34px;
+		bottom: 0;
+		height: 118px;
+		left: 0;
+		margin-top: 0;
+		min-height: 0;
+		padding: 0;
+		pointer-events: none;
+		position: absolute;
+		right: 0;
 	}
 
 }
