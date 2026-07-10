@@ -65,7 +65,7 @@
   justify-content: space-between;
   gap: 18px;
   width: 100%;
-  padding: 16px 28px;
+  padding: 16px 0;
   border: 0;
   background: transparent;
   color: var(--ttfaq-text-strong);
