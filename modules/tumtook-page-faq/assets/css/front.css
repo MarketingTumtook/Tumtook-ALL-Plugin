@@ -79,7 +79,7 @@
 }
 
 .ttfaq-item.is-open .ttfaq-question {
-  color: var(--ttfaq-accent);
+  color: var(--ttfaq-accent-dark);
   border-bottom: 1px solid #ececef;
 }
 
@@ -99,7 +99,7 @@
 }
 
 .ttfaq-item.is-open .ttfaq-question-icon {
-  color: var(--ttfaq-accent);
+  color: var(--ttfaq-accent-dark);
 }
 
 .ttfaq-question-icon svg {
