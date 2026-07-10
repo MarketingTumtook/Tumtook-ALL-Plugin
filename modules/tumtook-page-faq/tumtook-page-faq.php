@@ -733,11 +733,6 @@ final class Tumtook_Page_FAQ
 					<?php endif; ?>
 				</div>
 
-				<div class="ttfaq-meta">
-					<span
-						data-ttfaq-count><?php echo esc_html(sprintf(__('แสดง %1$d คำถาม', 'tumtook-page-faq'), count($items))); ?></span>
-				</div>
-
 				<div class="ttfaq-list" data-ttfaq-list>
 					<?php foreach ($items as $index => $item): ?>
 						<?php

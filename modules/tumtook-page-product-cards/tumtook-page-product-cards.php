@@ -89,7 +89,7 @@ final class Tumtook_Page_Product_Cards
 		return array(
 			'enabled' => '1',
 			'auto_display' => '0',
-			'title' => __('สินค้าเพิ่มเติม', 'tumtook-page-product-cards'),
+			'title' => __('ต่อยอดไอเดียด้วยสินค้าอื่น ๆ', 'tumtook-page-product-cards'),
 			'view_all_label' => __('สินค้าสร้างรายได้', 'tumtook-page-product-cards'),
 			'view_all_url' => '',
 			'button_label' => __('ดูสินค้า', 'tumtook-page-product-cards'),
