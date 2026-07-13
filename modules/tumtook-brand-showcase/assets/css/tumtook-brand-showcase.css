@@ -334,7 +334,7 @@
 @media (max-width: 767px) {
   .ttbs-showcase {
     --ttbs-gap: 15px;
-    --ttbs-slides-per-view: 2.25;
+    --ttbs-slides-per-view: 1.25;
     max-width: 100vw;
     width: 100vw;
   }
@@ -409,7 +409,7 @@
 @media (max-width: 640px) {
 
   .ttbs-showcase__card {
-    height: clamp(300px, 108vw, 420px);
+    height: clamp(307px, 135vw, 560px);
   }
 
   .ttbs-showcase__card-link {
