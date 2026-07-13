@@ -127,8 +127,20 @@
       return rect.left;
     }
 
+    function syncFullBleedWidth() {
+      var viewportWidth = document.documentElement.clientWidth || window.innerWidth;
+
+      root.style.setProperty("--ttpc-viewport-width", viewportWidth + "px");
+      root.style.setProperty("--ttpc-viewport-shift", "0px");
+
+      var rootLeft = root.getBoundingClientRect().left;
+      root.style.setProperty("--ttpc-viewport-shift", Math.round(-rootLeft) + "px");
+    }
+
     function syncDesktopContainerInset() {
-      if (window.innerWidth < 768) {
+      syncFullBleedWidth();
+
+      if (window.innerWidth <= 1024) {
         root.style.removeProperty("--ttpc-first-card-inset");
         return;
       }

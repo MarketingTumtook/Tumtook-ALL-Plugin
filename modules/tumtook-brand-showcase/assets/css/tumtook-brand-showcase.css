@@ -26,9 +26,28 @@
   margin: 32px 0 0;
   max-width: 100vw;
   position: relative;
-  left: 50%;
-  transform: translateX(-50%);
+  margin-left: var(--ttbs-viewport-shift, calc(50% - 50vw));
+  margin-right: 0;
   width: 100vw;
+  overflow-x: hidden;
+  overflow-x: clip;
+}
+
+@supports selector(:has(*)) {
+  .elementor-widget:has(.ttbs-showcase),
+  .elementor-element-populated:has(.ttbs-showcase),
+  .elementor-section:has(.ttbs-showcase),
+  .elementor-container:has(.ttbs-showcase),
+  .elementor-column:has(.ttbs-showcase),
+  .elementor-widget-wrap:has(.ttbs-showcase),
+  .elementor-widget-container:has(.ttbs-showcase),
+  .e-con:has(.ttbs-showcase),
+  .e-con-inner:has(.ttbs-showcase),
+  .elementor-element:has(> .elementor-widget-container > .ttbs-showcase) {
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow: visible !important;
+  }
 }
 
 .ttbs-showcase,
@@ -318,6 +337,7 @@
 
 @media (min-width: 768px) {
   .ttbs-showcase {
+    --ttbs-first-card-inset: 100px;
     --ttbs-slides-per-view: 4.12;
     max-width: 100vw;
     width: 100vw;
@@ -331,10 +351,59 @@
   }
 }
 
+@media (min-width: 768px) and (max-width: 1024px) {
+  .ttbs-showcase {
+    --ttbs-first-card-inset: 32px;
+    --ttbs-gap: 18px;
+    --ttbs-slides-per-view: 2.35;
+    margin-left: var(--ttbs-viewport-shift, calc(50% - 50vw));
+    margin-right: 0;
+    max-width: 100vw;
+    width: 100vw;
+  }
+
+  .ttbs-showcase__header {
+    padding-inline: 32px;
+  }
+
+  .ttbs-showcase__viewport {
+    --ttbs-slide-width: calc(
+      (100vw - 64px - (var(--ttbs-gap) * (var(--ttbs-slides-per-view) - 1))) /
+        var(--ttbs-slides-per-view)
+    );
+    width: 100vw;
+    max-width: 100vw;
+    padding-left: 32px;
+    padding-right: 32px;
+    scroll-padding-left: 32px;
+    scroll-padding-right: 32px;
+  }
+
+  .ttbs-showcase__nav {
+    justify-content: space-between;
+    gap: 12px;
+    width: 100%;
+    box-sizing: border-box;
+    padding-inline: 32px;
+  }
+
+  .ttbs-showcase__dots {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .ttbs-showcase__buttons {
+    flex: 0 0 auto;
+  }
+}
+
 @media (max-width: 767px) {
   .ttbs-showcase {
     --ttbs-gap: 15px;
     --ttbs-slides-per-view: 1.25;
+    margin-left: var(--ttbs-viewport-shift, calc(50% - 50vw));
+    margin-right: 0;
     max-width: 100vw;
     width: 100vw;
   }

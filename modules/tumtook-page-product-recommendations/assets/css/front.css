@@ -1,6 +1,43 @@
 .ttpr-section {
   margin: 40px 0 52px;
   font-family: "Kanit", sans-serif;
+  box-sizing: border-box;
+  width: var(--ttpr-viewport-width, 100%);
+  max-width: var(--ttpr-viewport-width, 100%);
+  margin-left: var(--ttpr-viewport-shift, 0px);
+  margin-right: 0;
+  overflow-x: hidden;
+  overflow-x: clip;
+}
+
+html.ttpr-slider-page,
+body.ttpr-slider-page {
+  max-width: 100%;
+  overflow-x: clip;
+}
+
+@supports not (overflow: clip) {
+  html.ttpr-slider-page,
+  body.ttpr-slider-page {
+    overflow-x: hidden;
+  }
+}
+
+@supports selector(:has(*)) {
+  .elementor-widget:has(.ttpr-section),
+  .elementor-element-populated:has(.ttpr-section),
+  .elementor-section:has(.ttpr-section),
+  .elementor-container:has(.ttpr-section),
+  .elementor-column:has(.ttpr-section),
+  .elementor-widget-wrap:has(.ttpr-section),
+  .elementor-widget-container:has(.ttpr-section),
+  .e-con:has(.ttpr-section),
+  .e-con-inner:has(.ttpr-section),
+  .elementor-element:has(> .elementor-widget-container > .ttpr-section) {
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow: visible !important;
+  }
 }
 
 .ttpr-dot,
@@ -18,7 +55,7 @@
   --ttpr-text-dark: #141414;
   --ttpr-border: #d6d6d6;
   --ttpr-dot: rgba(74, 64, 56, 0.18);
-  --ttpr-first-card-inset: max(0px, calc((100vw - var(--container-max-width, 1920px)) / 2));
+  --ttpr-first-card-inset: max(0px, calc((var(--ttpr-viewport-width, 100%) - var(--container-max-width, 1920px)) / 2));
   --ttpr-gap: 15px;
   --ttpr-slides-per-view: 1;
   --ttpr-card-width: 267px;
@@ -28,6 +65,9 @@
   margin: 0 auto;
   padding: 30px 0 28px;
   font-family: inherit;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
 }
 
 .ttpr-header {
@@ -90,14 +130,20 @@
 }
 
 .ttpr-track-wrap {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
   overflow: hidden;
 }
 
 .ttpr-track {
   display: grid;
   grid-auto-flow: column;
-  grid-auto-columns: min(var(--ttpr-card-width), calc(100vw - 46px));
+  grid-auto-columns: min(var(--ttpr-card-width), calc(var(--ttpr-viewport-width, 100%) - 46px));
   gap: var(--ttpr-gap);
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
   overflow-x: auto;
   padding: 6px 0 16px var(--ttpr-first-card-inset);
   scroll-padding-left: var(--ttpr-first-card-inset);
@@ -587,14 +633,104 @@
   stroke: #fff !important;
 }
 
+@media (min-width: 768px) and (max-width: 1024px) {
+  .ttpr-section[data-ttpr-slider] {
+    --ttpr-gap: 22px;
+    --ttpr-slides-per-view: 2.18;
+  }
+
+  .ttpr-section {
+    width: var(--ttpr-viewport-width, 100%);
+    max-width: var(--ttpr-viewport-width, 100%);
+    margin-left: var(--ttpr-viewport-shift, 0px);
+    margin-right: 0;
+  }
+
+  .ttpr-shell,
+  .ttpr-track-wrap {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .ttpr-header {
+    padding-inline: 32px;
+  }
+
+  .ttpr-title {
+    font-size: 32px;
+    line-height: 1.04;
+    letter-spacing: 0;
+  }
+
+  .ttpr-track {
+    width: 100%;
+    box-sizing: border-box;
+    grid-auto-columns: calc(
+      (var(--ttpr-viewport-width, 100%) - 64px - (var(--ttpr-gap) * (var(--ttpr-slides-per-view) - 1))) /
+        var(--ttpr-slides-per-view)
+    );
+    padding-inline: 32px;
+    scroll-padding-inline: 32px;
+  }
+
+  .ttpr-content {
+    grid-template-columns: minmax(0, 1fr) 56px;
+    min-height: 98px;
+    padding: 18px 18px 20px;
+  }
+
+  .ttpr-product-title {
+    font-size: 24px;
+  }
+
+  .ttpr-price {
+    font-size: 17px;
+  }
+
+  .ttpr-button,
+  .ttpr-button:link,
+  .ttpr-button:visited {
+    width: 56px;
+    height: 56px;
+    min-width: 56px;
+    min-height: 56px !important;
+    max-width: 56px;
+    flex-basis: 56px;
+  }
+
+  .ttpr-controls {
+    justify-content: space-between;
+    gap: 12px;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    margin-inline: 0;
+    padding-inline: 32px;
+  }
+
+  .ttpr-pagination {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .ttpr-arrows {
+    flex: 0 0 auto;
+  }
+}
+
 @media (max-width: 767px) {
   .ttpr-section {
     margin: 24px 0 36px;
+    margin-left: var(--ttpr-viewport-shift, 0px);
+    margin-right: 0;
   }
 
   .ttpr-shell {
-    max-width: none;
     width: 100%;
+    max-width: 100%;
+    min-width: 0;
     box-sizing: border-box;
     padding: 18px 0 22px;
   }
@@ -630,14 +766,16 @@
   }
 
   .ttpr-track {
-    grid-auto-columns: min(220px, calc((100vw - 46px - var(--ttpr-gap) - var(--ttpr-mobile-peek)) / 2));
+    grid-auto-columns: min(220px, calc((var(--ttpr-viewport-width, 100%) - 46px - var(--ttpr-gap) - var(--ttpr-mobile-peek)) / 2));
     padding: 6px 15px 16px;
     scroll-padding-inline: 15px;
   }
 
   .ttpr-track-wrap {
     padding-left: 0;
-    max-width: none;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
   }
 
   .ttpr-card {

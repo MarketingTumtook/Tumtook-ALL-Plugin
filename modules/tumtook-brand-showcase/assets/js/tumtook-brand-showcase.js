@@ -96,8 +96,18 @@
       return rect.left;
     };
 
+    const syncFullBleedWidth = () => {
+      root.style.setProperty("--ttbs-viewport-width", `${window.innerWidth}px`);
+      root.style.setProperty("--ttbs-viewport-shift", "0px");
+
+      const rootLeft = root.getBoundingClientRect().left;
+      root.style.setProperty("--ttbs-viewport-shift", `${-rootLeft}px`);
+    };
+
     const syncDesktopContainerInset = () => {
-      if (window.innerWidth < 768) {
+      syncFullBleedWidth();
+
+      if (window.innerWidth <= 1024) {
         root.style.removeProperty("--ttbs-first-card-inset");
         return;
       }

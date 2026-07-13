@@ -127,8 +127,20 @@
       return rect.left;
     }
 
+    function syncFullBleedWidth() {
+      var viewportWidth = document.documentElement.clientWidth || window.innerWidth;
+
+      root.style.setProperty("--ttpr-viewport-width", viewportWidth + "px");
+      root.style.setProperty("--ttpr-viewport-shift", "0px");
+
+      var rootLeft = root.getBoundingClientRect().left;
+      root.style.setProperty("--ttpr-viewport-shift", Math.round(-rootLeft) + "px");
+    }
+
     function syncDesktopContainerInset() {
-      if (window.innerWidth < 768) {
+      syncFullBleedWidth();
+
+      if (window.innerWidth <= 1024) {
         root.style.removeProperty("--ttpr-first-card-inset");
         return;
       }
@@ -613,6 +625,12 @@
 
   document.addEventListener("DOMContentLoaded", function () {
     var sliders = document.querySelectorAll(selectors.root);
+
+    if (sliders.length) {
+      document.documentElement.classList.add("ttpr-slider-page");
+      document.body.classList.add("ttpr-slider-page");
+    }
+
     Array.prototype.forEach.call(sliders, setupSlider);
   });
 })();

@@ -3,9 +3,42 @@
   margin-bottom:52px;
   font-family: "Kanit", sans-serif;
   box-sizing: border-box;
-  max-width: 100%;
+  width: var(--ttpc-viewport-width, 100%);
+  max-width: var(--ttpc-viewport-width, 100%);
+  margin-left: var(--ttpc-viewport-shift, 0px);
+  margin-right: 0;
   overflow-x: hidden;
   overflow-x: clip;
+}
+
+html.ttpc-slider-page,
+body.ttpc-slider-page {
+  max-width: 100%;
+  overflow-x: clip;
+}
+
+@supports not (overflow: clip) {
+  html.ttpc-slider-page,
+  body.ttpc-slider-page {
+    overflow-x: hidden;
+  }
+}
+
+@supports selector(:has(*)) {
+  .elementor-widget:has(.ttpc-section),
+  .elementor-element-populated:has(.ttpc-section),
+  .elementor-section:has(.ttpc-section),
+  .elementor-container:has(.ttpc-section),
+  .elementor-column:has(.ttpc-section),
+  .elementor-widget-wrap:has(.ttpc-section),
+  .elementor-widget-container:has(.ttpc-section),
+  .e-con:has(.ttpc-section),
+  .e-con-inner:has(.ttpc-section),
+  .elementor-element:has(> .elementor-widget-container > .ttpc-section) {
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow: visible !important;
+  }
 }
 
 .ttpc-dot,
@@ -25,7 +58,7 @@
   --ttpc-text-dark: #141414;
   --ttpc-border: #cccccc;
   --ttpc-dot: rgba(20, 20, 20, 0.18);
-  --ttpc-first-card-inset: max(0px, calc((100vw - var(--container-max-width, 1920px)) / 2));
+  --ttpc-first-card-inset: max(0px, calc((var(--ttpc-viewport-width, 100%) - var(--container-max-width, 1920px)) / 2));
   --ttpc-gap: 15px;
   --ttpc-slides-per-view: 5.18;
   --ttpc-card-width: 267px;
@@ -35,6 +68,7 @@
   margin: 0 auto;
   background: transparent;
   box-sizing: border-box;
+  width: 100%;
   max-width: 100%;
   font-family: inherit;
 }
@@ -98,14 +132,20 @@
 }
 
 .ttpc-track-wrap {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
   overflow: hidden;
 }
 
 .ttpc-track {
   display: grid;
   grid-auto-flow: column;
-  grid-auto-columns: min(var(--ttpc-card-width), calc(100vw - 46px));
+  grid-auto-columns: min(var(--ttpc-card-width), calc(var(--ttpc-viewport-width, 100%) - 46px));
   gap: var(--ttpc-gap);
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
   overflow-x: auto;
   padding: 5px 0 15px var(--ttpc-first-card-inset);
   scroll-padding-left: var(--ttpc-first-card-inset);
@@ -465,11 +505,33 @@
     --ttpc-slides-per-view: 2.18;
   }
 
+  .ttpc-section {
+    width: var(--ttpc-viewport-width, 100%);
+    max-width: var(--ttpc-viewport-width, 100%);
+    margin-left: var(--ttpc-viewport-shift, 0px);
+    margin-right: 0;
+  }
+
+  .ttpc-shell,
+  .ttpc-track-wrap {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .ttpc-header {
+    padding-inline: 32px;
+  }
+
   .ttpc-track {
+    width: 100%;
+    box-sizing: border-box;
     grid-auto-columns: calc(
-      (100% - (var(--ttpc-gap) * (var(--ttpc-slides-per-view) - 1))) /
+      (var(--ttpc-viewport-width, 100%) - 64px - (var(--ttpc-gap) * (var(--ttpc-slides-per-view) - 1))) /
         var(--ttpc-slides-per-view)
     );
+    padding-inline: 32px;
+    scroll-padding-inline: 32px;
   }
 
   .ttpc-content {
@@ -502,7 +564,7 @@
     max-width: 100%;
     box-sizing: border-box;
     margin-inline: 0;
-    padding-inline: 24px;
+    padding-inline: 32px;
   }
 
   .ttpc-pagination {
@@ -518,8 +580,9 @@
 
 @media (max-width: 767px) {
   .ttpc-shell {
-    max-width: none;
     width: 100%;
+    max-width: 100%;
+    min-width: 0;
     box-sizing: border-box;
   }
 
@@ -550,6 +613,10 @@
 
   .ttpc-track {
     grid-template-rows: repeat(2, auto);
+    grid-auto-columns: calc(
+      (var(--ttpc-viewport-width, 100%) - 30px - var(--ttpc-gap)) /
+        var(--ttpc-slides-per-view)
+    );
     padding-inline: 15px;
     scroll-padding-inline: 15px;
   }
