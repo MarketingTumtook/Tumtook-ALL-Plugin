@@ -18,12 +18,12 @@
 .aiv-gallery-item {
 	margin: 0;
 	overflow: hidden;
-  padding-bottom:8px;
+  	padding-bottom:8px;
 	background: #ffffff;
 	border: 1px solid #e7e7e7;
-	border-radius: 10px;
+	border-radius: 25px;
 	box-shadow: 0 6px 16px rgba(15, 23, 42, 0.04);
-  padding: 0;
+  	padding: 0;
 }
 
 .aiv-media {
@@ -279,6 +279,7 @@
 @media (max-width: 767px) {
 	.aiv-gallery-item {
 		padding: 0;
+		border-radius: 10px;
 	}
 
 	.aiv-media img {
