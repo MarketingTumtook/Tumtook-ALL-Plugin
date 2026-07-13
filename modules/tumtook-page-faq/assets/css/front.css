@@ -7,7 +7,7 @@
   --ttfaq-accent: #000;
   --ttfaq-accent-dark: #e01804;
   --ttfaq-text: #6f6f73;
-  --ttfaq-text-strong: #5c5d61;
+  --ttfaq-text-strong: #f80000;
   --ttfaq-border: #dedede;
   margin: 34px 0;
   color: var(--ttfaq-text);
@@ -59,7 +59,7 @@
   justify-content: space-between;
   gap: 18px;
   width: 100%;
-  padding: 16px 0;
+  padding: 5px 0;
   border: 0;
   background: transparent;
   color: var(--ttfaq-text-strong);
@@ -146,14 +146,15 @@
 }
 
 .ttfaq-support {
-  display: grid;
-  grid-template-columns: auto 1fr;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
   gap: 20px 18px;
   align-items: start;
   margin-top: 26px;
   padding: 22px 25px;
   border-radius: 18px;
-  background: #ededed;
+  background: #FEF2F3;
 }
 
 .ttfaq-support-icon {
@@ -170,6 +171,7 @@
 
 .ttfaq-support-content {
   min-width: 0;
+  text-align: center;
 }
 
 .ttfaq-support-title {
@@ -201,7 +203,7 @@
   gap: 8px;
   min-height: 56px;
   padding: 0 24px;
-  border-radius: 14px;
+  border-radius: 30px;
   font-size: 16px;
   font-weight: 500;
   line-height: 1;
@@ -219,7 +221,7 @@
 }
 
 .ttfaq-button--primary {
-  background: #11c738;
+  background: #00C300;
   color: #fff !important;
 }
 
@@ -227,7 +229,7 @@
 .ttfaq-button--primary:focus,
 .ttfaq-button--primary:focus-visible,
 .ttfaq-button--primary:active {
-  background: #10bc37 !important;
+  background: #00C300 !important;
   color: #fff !important;
   transform: translateY(-1px);
   box-shadow: 0 10px 24px rgba(17, 199, 56, 0.22);
@@ -283,17 +285,13 @@
   }
 
   .ttfaq-question {
-    padding: 16px 18px;
-    gap: 14px;
+    padding: 16px 0px;
+    gap: 0px;
   }
 
   .ttfaq-question-icon {
     width: 20px;
     height: 20px;
-  }
-
-  .ttfaq-answer {
-    padding: 0 18px;
   }
 
   .ttfaq-support {
