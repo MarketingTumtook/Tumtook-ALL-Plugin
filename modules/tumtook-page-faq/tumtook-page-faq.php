@@ -77,9 +77,9 @@ final class Tumtook_Page_FAQ
 			'auto_display' => '0',
 			'title' => __('คำถามที่พบบ่อย', 'tumtook-page-faq'),
 			'subtitle' => __('คำตอบก่อนสั่งผลิต กระชับ อ่านง่าย ตัดสินใจไว', 'tumtook-page-faq'),
-			'empty_title' => __('ยังไม่เจอคำตอบ?', 'tumtook-page-faq'),
-			'empty_text' => __('ให้ทีมงานช่วยตอบคำถามของคุณ ได้ไวขึ้น และแนะนำได้อย่างตรงจุด', 'tumtook-page-faq'),
-			'contact_button_label' => __('คุยกับเจ้าหน้าที่', 'tumtook-page-faq'),
+			'empty_title' => __('สนใจสั่งสินค้า', 'tumtook-page-faq'),
+			'empty_text' => __('ติดต่อแอดไลน์เพื่อสั่งสินค้าได้เลย', 'tumtook-page-faq'),
+			'contact_button_label' => __('พูดคุยกับฝ่ายขาย', 'tumtook-page-faq'),
 			'contact_button_url' => '',
 			'items' => array(),
 		);
