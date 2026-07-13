@@ -7,7 +7,7 @@
   --ttfaq-accent: #000;
   --ttfaq-accent-dark: #e01804;
   --ttfaq-text: #6f6f73;
-  --ttfaq-text-strong: #f80000;
+  --ttfaq-text-strong: #5c5d61;
   --ttfaq-border: #dedede;
   margin: 34px 0;
   color: var(--ttfaq-text);
@@ -176,7 +176,7 @@
 
 .ttfaq-support-title {
   margin: 0;
-  color: var(--ttfaq-text-strong);
+  color: #D90008;
   font-size: 24px;
   font-weight: 700;
   line-height: 1.15;
