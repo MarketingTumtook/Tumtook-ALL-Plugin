@@ -505,3 +505,26 @@
     width: 50px;
   }
 }
+
+@media (min-width: 1025px) {
+  .ttbs-showcase__viewport {
+    cursor: grab;
+  }
+
+  .ttbs-showcase__card,
+  .ttbs-showcase__image {
+    cursor: grab;
+  }
+
+  .ttbs-showcase__viewport a,
+  .ttbs-showcase__viewport img {
+    -webkit-user-drag: none;
+  }
+
+  .ttbs-showcase__viewport.is-dragging,
+  .ttbs-showcase__viewport.is-dragging * {
+    cursor: grabbing !important;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+}

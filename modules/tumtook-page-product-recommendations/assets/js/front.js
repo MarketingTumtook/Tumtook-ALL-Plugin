@@ -49,6 +49,14 @@
     var pointerStartX = 0;
     var pointerStartY = 0;
     var suppressCardClick = false;
+    var desktopInputQuery = window.matchMedia ? window.matchMedia("(min-width: 1025px)") : null;
+    var isDesktopDragging = false;
+    var desktopDragPointerId = null;
+    var desktopDragStartX = 0;
+    var desktopDragStartLeft = 0;
+    var desktopDragMoved = false;
+    var wheelStepLocked = false;
+    var wheelStepTimer = null;
 
     if (!track || !slides.length) {
       return;
@@ -347,6 +355,37 @@
       return firstSlide.getBoundingClientRect().width + gap;
     }
 
+    function isDesktopViewport() {
+      return desktopInputQuery ? desktopInputQuery.matches : window.innerWidth >= 1025;
+    }
+
+    function isDesktopSliderInput(event) {
+      return isDesktopViewport() && (!event.pointerType || event.pointerType === "mouse" || event.pointerType === "pen");
+    }
+
+    function getWheelDirection(event) {
+      var delta = Math.abs(event.deltaX) > Math.abs(event.deltaY) ? event.deltaX : event.deltaY;
+
+      if (Math.abs(delta) < 10) {
+        return 0;
+      }
+
+      return delta > 0 ? 1 : -1;
+    }
+
+    function lockWheelStep() {
+      wheelStepLocked = true;
+
+      if (wheelStepTimer) {
+        window.clearTimeout(wheelStepTimer);
+      }
+
+      wheelStepTimer = window.setTimeout(function () {
+        wheelStepLocked = false;
+        wheelStepTimer = null;
+      }, 360);
+    }
+
     function isAtLoopBoundary(direction, tolerance) {
       var edgeTolerance = typeof tolerance === "number" ? tolerance : 2;
       var maxScrollLeft = Math.max(track.scrollWidth - track.clientWidth, 0);
@@ -490,7 +529,7 @@
       }
 
       if (totalSlides < 2 || !direction) {
-        return;
+        return false;
       }
 
       var reachableIndexes = getReachableIndexes();
@@ -499,10 +538,123 @@
       var targetIndex = reachableIndexes[targetPageIndex];
 
       if (targetIndex === undefined || targetPageIndex === currentPageIndex) {
-        return;
+        return false;
       }
 
       scrollToSlideIndex(targetIndex);
+      return true;
+    }
+
+    function handleDesktopWheel(event) {
+      var direction;
+      var didMove;
+
+      if (!isDesktopViewport() || event.ctrlKey || event.metaKey || totalSlides < 2) {
+        return;
+      }
+
+      direction = getWheelDirection(event);
+
+      if (!direction) {
+        return;
+      }
+
+      if (wheelStepLocked) {
+        if (event.cancelable) {
+          event.preventDefault();
+        }
+        return;
+      }
+
+      didMove = scrollToSlide(direction);
+
+      if (!didMove) {
+        return;
+      }
+
+      if (event.cancelable) {
+        event.preventDefault();
+      }
+
+      lockWheelStep();
+    }
+
+    function startDesktopDrag(event) {
+      if (!isDesktopSliderInput(event) || totalSlides < 2) {
+        return;
+      }
+
+      isDesktopDragging = true;
+      desktopDragPointerId = event.pointerId;
+      desktopDragStartX = event.clientX;
+      desktopDragStartLeft = track.scrollLeft;
+      desktopDragMoved = false;
+      track.classList.add("is-dragging");
+
+      if (typeof track.setPointerCapture === "function" && event.pointerId !== undefined) {
+        try {
+          track.setPointerCapture(event.pointerId);
+        } catch (error) {
+          // Ignore browsers that decline pointer capture for this event.
+        }
+      }
+    }
+
+    function moveDesktopDrag(event) {
+      var deltaX;
+
+      if (!isDesktopDragging || event.pointerId !== desktopDragPointerId) {
+        return;
+      }
+
+      deltaX = event.clientX - desktopDragStartX;
+
+      if (Math.abs(deltaX) < 3) {
+        return;
+      }
+
+      desktopDragMoved = true;
+      pendingReorder = null;
+      isProgrammaticScroll = false;
+      track.scrollLeft = desktopDragStartLeft - deltaX;
+
+      if (event.cancelable) {
+        event.preventDefault();
+      }
+    }
+
+    function finishDesktopDrag(event) {
+      var didMove = desktopDragMoved;
+      var nearestSlide;
+
+      if (!isDesktopDragging || event.pointerId !== desktopDragPointerId) {
+        return false;
+      }
+
+      if (typeof track.releasePointerCapture === "function" && event.pointerId !== undefined) {
+        try {
+          track.releasePointerCapture(event.pointerId);
+        } catch (error) {
+          // Ignore browsers that already released pointer capture.
+        }
+      }
+
+      isDesktopDragging = false;
+      desktopDragPointerId = null;
+      desktopDragMoved = false;
+      track.classList.remove("is-dragging");
+
+      if (didMove) {
+        suppressCardClick = true;
+        window.setTimeout(function () {
+          suppressCardClick = false;
+        }, 0);
+
+        nearestSlide = getNearestSlide();
+        scrollToSlideIndex(getRealIndexFromSlide(nearestSlide));
+      }
+
+      return didMove;
     }
 
     if (prev) {
@@ -524,11 +676,15 @@
       suppressCardClick = false;
       pendingReorder = null;
       isProgrammaticScroll = false;
+      startDesktopDrag(event);
     });
+
+    track.addEventListener("pointermove", moveDesktopDrag);
 
     track.addEventListener("pointerup", function (event) {
       var deltaX = Math.abs(event.clientX - pointerStartX);
       var deltaY = Math.abs(event.clientY - pointerStartY);
+      var didDesktopDrag;
 
       if (deltaX > 8 || deltaY > 8) {
         suppressCardClick = true;
@@ -537,17 +693,51 @@
         }, 0);
       }
 
+      didDesktopDrag = finishDesktopDrag(event);
       isPointerDown = false;
-      syncCurrentIndexFromViewport();
+
+      if (!didDesktopDrag) {
+        syncCurrentIndexFromViewport();
+      }
     });
 
-    track.addEventListener("pointercancel", function () {
+    track.addEventListener("pointercancel", function (event) {
       suppressCardClick = true;
       window.setTimeout(function () {
         suppressCardClick = false;
       }, 0);
+      finishDesktopDrag(event);
       isPointerDown = false;
       syncCurrentIndexFromViewport();
+    });
+
+    track.addEventListener("click", function (event) {
+      if (!suppressCardClick) {
+        return;
+      }
+
+      event.preventDefault();
+      event.stopPropagation();
+    }, true);
+
+    track.addEventListener("dragstart", function (event) {
+      if (isDesktopViewport()) {
+        event.preventDefault();
+      }
+    });
+
+    track.addEventListener("wheel", handleDesktopWheel, { passive: false });
+
+    track.addEventListener("keydown", function (event) {
+      if (!isDesktopViewport()) {
+        return;
+      }
+
+      if (event.key === "ArrowRight" && scrollToSlide(1)) {
+        event.preventDefault();
+      } else if (event.key === "ArrowLeft" && scrollToSlide(-1)) {
+        event.preventDefault();
+      }
     });
 
     track.addEventListener("scroll", function () {
@@ -620,6 +810,9 @@
 
     syncDesktopContainerInset();
     renderPagination();
+    if (!track.hasAttribute("tabindex")) {
+      track.setAttribute("tabindex", "0");
+    }
     setCurrentIndex(0);
   }
 

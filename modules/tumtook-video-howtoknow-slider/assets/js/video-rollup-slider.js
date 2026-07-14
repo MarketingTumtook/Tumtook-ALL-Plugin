@@ -86,6 +86,15 @@
     const isCoarsePointer = window.matchMedia
       ? window.matchMedia("(hover: none), (pointer: coarse)").matches
       : false;
+    const desktopInputQuery = window.matchMedia ? window.matchMedia("(min-width: 1025px)") : null;
+    let isDesktopDragging = false;
+    let desktopDragPointerId = null;
+    let desktopDragStartX = 0;
+    let desktopDragStartLeft = 0;
+    let desktopDragMoved = false;
+    let suppressTrackClick = false;
+    let wheelStepLocked = false;
+    let wheelStepTimer = null;
 
     if (!track || !slides.length) {
       return;
@@ -394,7 +403,7 @@
 
     const scrollToSlide = (direction, behavior = "smooth") => {
       if (!direction || totalSlides < 2) {
-        return;
+        return false;
       }
 
       const reachableIndexes = getReachableIndexes();
@@ -403,10 +412,168 @@
       const targetIndex = reachableIndexes[targetPageIndex];
 
       if (targetIndex === undefined || targetPageIndex === currentPageIndex) {
-        return;
+        return false;
       }
 
       scrollToSlideIndex(targetIndex, behavior);
+      return true;
+    };
+
+    const isDesktopViewport = () =>
+      desktopInputQuery ? desktopInputQuery.matches : window.innerWidth >= 1025;
+
+    const isDesktopSliderInput = (event) =>
+      isDesktopViewport() && (!event.pointerType || event.pointerType === "mouse" || event.pointerType === "pen");
+
+    const isVideoControlTarget = (target) =>
+      Boolean(
+        target?.closest(
+          "button, input, textarea, select, .video-rollup-video-card__controls, .video-rollup-video-card__timeline, [data-play-toggle], [data-progress-track], [data-volume-shell], [data-volume-slider], [data-volume-toggle]"
+        )
+      );
+
+    const getWheelDirection = (event) => {
+      const delta = Math.abs(event.deltaX) > Math.abs(event.deltaY) ? event.deltaX : event.deltaY;
+
+      if (Math.abs(delta) < 10) {
+        return 0;
+      }
+
+      return delta > 0 ? 1 : -1;
+    };
+
+    const lockWheelStep = () => {
+      wheelStepLocked = true;
+
+      if (wheelStepTimer) {
+        window.clearTimeout(wheelStepTimer);
+      }
+
+      wheelStepTimer = window.setTimeout(() => {
+        wheelStepLocked = false;
+        wheelStepTimer = null;
+      }, 360);
+    };
+
+    const handleDesktopWheel = (event) => {
+      let direction;
+      let didMove;
+
+      if (
+        !isDesktopViewport() ||
+        event.ctrlKey ||
+        event.metaKey ||
+        totalSlides < 2 ||
+        isVideoControlTarget(event.target)
+      ) {
+        return;
+      }
+
+      direction = getWheelDirection(event);
+
+      if (!direction) {
+        return;
+      }
+
+      if (wheelStepLocked) {
+        if (event.cancelable) {
+          event.preventDefault();
+        }
+        return;
+      }
+
+      clearAutoAdvance();
+      didMove = scrollToSlide(direction);
+
+      if (!didMove) {
+        startAutoAdvance();
+        return;
+      }
+
+      if (event.cancelable) {
+        event.preventDefault();
+      }
+
+      lockWheelStep();
+      startAutoAdvance();
+    };
+
+    const startDesktopDrag = (event) => {
+      if (!isDesktopSliderInput(event) || totalSlides < 2 || isVideoControlTarget(event.target)) {
+        return;
+      }
+
+      clearAutoAdvance();
+      isDesktopDragging = true;
+      desktopDragPointerId = event.pointerId;
+      desktopDragStartX = event.clientX;
+      desktopDragStartLeft = track.scrollLeft;
+      desktopDragMoved = false;
+      track.classList.add("is-dragging");
+
+      if (typeof track.setPointerCapture === "function" && event.pointerId !== undefined) {
+        try {
+          track.setPointerCapture(event.pointerId);
+        } catch (error) {
+          // Ignore browsers that decline pointer capture for this event.
+        }
+      }
+    };
+
+    const moveDesktopDrag = (event) => {
+      let deltaX;
+
+      if (!isDesktopDragging || event.pointerId !== desktopDragPointerId) {
+        return;
+      }
+
+      deltaX = event.clientX - desktopDragStartX;
+
+      if (Math.abs(deltaX) < 3) {
+        return;
+      }
+
+      desktopDragMoved = true;
+      isProgrammaticScroll = false;
+      track.scrollLeft = desktopDragStartLeft - deltaX;
+
+      if (event.cancelable) {
+        event.preventDefault();
+      }
+    };
+
+    const finishDesktopDrag = (event) => {
+      const didMove = desktopDragMoved;
+      const nearestSlide = getNearestSlide();
+
+      if (!isDesktopDragging || event.pointerId !== desktopDragPointerId) {
+        return false;
+      }
+
+      if (typeof track.releasePointerCapture === "function" && event.pointerId !== undefined) {
+        try {
+          track.releasePointerCapture(event.pointerId);
+        } catch (error) {
+          // Ignore browsers that already released pointer capture.
+        }
+      }
+
+      isDesktopDragging = false;
+      desktopDragPointerId = null;
+      desktopDragMoved = false;
+      track.classList.remove("is-dragging");
+
+      if (didMove) {
+        suppressTrackClick = true;
+        window.setTimeout(() => {
+          suppressTrackClick = false;
+        }, 0);
+
+        scrollToSlideIndex(getRealIndexFromSlide(nearestSlide));
+      }
+
+      startAutoAdvance();
+      return didMove;
     };
 
     renderPagination();
@@ -453,6 +620,40 @@
     });
     next?.addEventListener("click", () => {
       scrollToSlide(1);
+    });
+
+    track.addEventListener("pointerdown", startDesktopDrag);
+    track.addEventListener("pointermove", moveDesktopDrag);
+    track.addEventListener("pointerup", finishDesktopDrag);
+    track.addEventListener("pointercancel", finishDesktopDrag);
+    track.addEventListener(
+      "click",
+      (event) => {
+        if (!suppressTrackClick) {
+          return;
+        }
+
+        event.preventDefault();
+        event.stopPropagation();
+      },
+      true
+    );
+    track.addEventListener("dragstart", (event) => {
+      if (isDesktopViewport() && !isVideoControlTarget(event.target)) {
+        event.preventDefault();
+      }
+    });
+    track.addEventListener("wheel", handleDesktopWheel, { passive: false });
+    track.addEventListener("keydown", (event) => {
+      if (!isDesktopViewport() || isVideoControlTarget(event.target)) {
+        return;
+      }
+
+      if (event.key === "ArrowRight" && scrollToSlide(1)) {
+        event.preventDefault();
+      } else if (event.key === "ArrowLeft" && scrollToSlide(-1)) {
+        event.preventDefault();
+      }
     });
 
     window.addEventListener(
@@ -912,6 +1113,9 @@
     });
 
     setCurrentIndex(0);
+    if (!track.hasAttribute("tabindex")) {
+      track.setAttribute("tabindex", "0");
+    }
     if (window.innerWidth < 768) {
       requestAnimationFrame(() => {
         scrollToSlideIndex(0, "auto");

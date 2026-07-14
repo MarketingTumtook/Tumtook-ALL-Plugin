@@ -1195,3 +1195,33 @@ section:has(.video-rollup-slider),
 }
 .video-rollup-slider {
 }
+
+@media (min-width: 1025px) {
+  .video-rollup-slider__viewport {
+    cursor: grab;
+  }
+
+  .video-rollup-media-item,
+  .video-rollup-video-card,
+  .video-rollup-video-card__video {
+    cursor: grab;
+  }
+
+  .video-rollup-slider__viewport a,
+  .video-rollup-slider__viewport img,
+  .video-rollup-slider__viewport video {
+    -webkit-user-drag: none;
+  }
+
+  .video-rollup-slider__viewport.is-dragging,
+  .video-rollup-slider__viewport.is-dragging * {
+    cursor: grabbing !important;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  .video-rollup-slider__viewport.is-dragging .video-rollup-video-card__controls,
+  .video-rollup-slider__viewport.is-dragging .video-rollup-video-card__controls * {
+    cursor: auto !important;
+  }
+}
