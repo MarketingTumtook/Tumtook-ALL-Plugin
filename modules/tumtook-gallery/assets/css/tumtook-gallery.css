@@ -1,7 +1,7 @@
 .ttg-gallery-shell {
 	position: relative;
 	font-family: "Kanit", sans-serif;
-	padding: min(var(--ttg-gap, 18px), 18px);
+	/* padding: min(var(--ttg-gap, 18px), 18px); */
 	padding-inline: calc(min(var(--ttg-gap, 18px), 18px) + 24px);
 }
 

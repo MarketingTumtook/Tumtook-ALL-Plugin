@@ -75,7 +75,7 @@ body.ttpr-slider-page {
   align-items: center;
   justify-content: space-between;
   gap: 18px;
-  margin-bottom: 20px;
+  margin-bottom: 30px;
   padding-left: var(--ttpr-first-card-inset);
   padding-right: var(--ttpr-first-card-inset);
 }
