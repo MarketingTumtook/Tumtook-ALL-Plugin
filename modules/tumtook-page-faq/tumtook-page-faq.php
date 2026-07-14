@@ -757,7 +757,8 @@ final class Tumtook_Page_FAQ
 
 				<div class="ttfaq-support">
 					<div class="ttfaq-support-icon" aria-hidden="true">
-						<img src="<?php echo esc_url(plugin_dir_url(__FILE__) . 'assets/images/Quistion.png'); ?>" alt="" />
+						<img src="<?php echo esc_url(plugin_dir_url(__FILE__) . 'assets/images/icon-questionmark.svg'); ?>"
+							alt="" />
 					</div>
 					<div class="ttfaq-support-content">
 						<h3 class="ttfaq-support-title"><?php echo esc_html($settings['empty_title']); ?></h3>

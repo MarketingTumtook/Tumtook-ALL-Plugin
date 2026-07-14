@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Tumtook Gallery
  * Description: Fetch images from an API and display them in a masonry gallery via shortcode.
- * Version: 1.0.14
+ * Version: 1.0.15
  * Author: Tumtook
  * Text Domain: tumtook-gallery
  */
@@ -16,7 +16,7 @@ final class Tumtook_Gallery_Plugin
 	const OPTION_KEY = 'tumtook_gallery_settings';
 	const SHORTCODE = 'tumtook_gallery';
 	const META_KEY = '_tumtook_gallery_settings';
-	const VERSION = '1.0.14';
+	const VERSION = '1.0.15';
 	const FONT_HANDLE = 'tumtook-kanit-font';
 
 	public function __construct()
@@ -64,6 +64,7 @@ final class Tumtook_Gallery_Plugin
 			'title_key' => 'title',
 			'link_key' => 'link',
 			'alt_key' => 'alt',
+			'end_panel_background' => '#f9f9f9',
 		);
 	}
 
@@ -185,6 +186,8 @@ final class Tumtook_Gallery_Plugin
 		$output['title_key'] = isset($input['title_key']) ? sanitize_text_field(trim($input['title_key'])) : $defaults['title_key'];
 		$output['link_key'] = isset($input['link_key']) ? sanitize_text_field(trim($input['link_key'])) : $defaults['link_key'];
 		$output['alt_key'] = isset($input['alt_key']) ? sanitize_text_field(trim($input['alt_key'])) : $defaults['alt_key'];
+		$output['end_panel_background'] = isset($input['end_panel_background']) ? sanitize_hex_color(trim($input['end_panel_background'])) : $defaults['end_panel_background'];
+		$output['end_panel_background'] = $output['end_panel_background'] ? $output['end_panel_background'] : $defaults['end_panel_background'];
 
 		return $output;
 	}
@@ -202,11 +205,14 @@ final class Tumtook_Gallery_Plugin
 			'items_path' => __('Dot notation for where the list lives in the JSON, for example data.items or items.', 'tumtook-gallery'),
 			'image_key' => __('Field path for image URL in each item. Supports nested arrays like images.fileUrl', 'tumtook-gallery'),
 			'alt_key' => __('Field path for image alt text.', 'tumtook-gallery'),
+			'end_panel_background' => __('Background color for the end panel after the gallery finishes loading.', 'tumtook-gallery'),
 		);
 
 		$type = 'text';
 		if ('cache_minutes' === $key) {
 			$type = 'number';
+		} elseif ('end_panel_background' === $key) {
+			$type = 'color';
 		}
 
 		printf(
@@ -270,6 +276,7 @@ final class Tumtook_Gallery_Plugin
 			'match_code',
 			'image_key',
 			'alt_key',
+			'end_panel_background',
 		);
 
 		wp_nonce_field('tumtook_gallery_save_page_settings', 'tumtook_gallery_nonce');
@@ -536,12 +543,14 @@ final class Tumtook_Gallery_Plugin
 		$columns = min(12, max(6, absint($atts['columns'])));
 		$gap = max(0, absint($atts['gap']));
 		$limit = absint($atts['limit']);
+		$end_panel_background = !empty($settings['end_panel_background']) ? $settings['end_panel_background'] : '#f9f9f9';
 
 		ob_start();
 		?>
 		<div class="ttg-gallery-shell" data-page-id="<?php echo esc_attr($page_id); ?>"
 			data-endpoint="<?php echo esc_url($endpoint); ?>" data-limit="<?php echo esc_attr($limit); ?>"
-			data-columns="<?php echo esc_attr($columns); ?>" data-gap="<?php echo esc_attr($gap); ?>">
+			data-columns="<?php echo esc_attr($columns); ?>" data-gap="<?php echo esc_attr($gap); ?>"
+			style="--ttg-end-panel-background: <?php echo esc_attr($end_panel_background); ?>;">
 			<div class="ttg-gallery"
 				style="--ttg-columns: <?php echo esc_attr($columns); ?>; --ttg-gap: <?php echo esc_attr($gap); ?>px;"></div>
 			<div class="ttg-end-panel" aria-hidden="true"></div>
