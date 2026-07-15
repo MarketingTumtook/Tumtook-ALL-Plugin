@@ -48,6 +48,7 @@
     var skipBoundaryLoopOnSettle = false;
     var pointerStartX = 0;
     var pointerStartY = 0;
+    var pointerDownCardLink = null;
     var suppressCardClick = false;
     var suppressCardClickTimer = null;
     var desktopInputQuery = window.matchMedia ? window.matchMedia("(min-width: 1025px)") : null;
@@ -668,6 +669,65 @@
       return didMove;
     }
 
+    function getCardLinkFromTarget(target) {
+      var slide;
+      var directLink;
+      var detailLink;
+      var link;
+
+      if (!target || typeof target.closest !== "function") {
+        return null;
+      }
+
+      slide = target.closest(selectors.slide);
+
+      if (!slide || !track.contains(slide)) {
+        return null;
+      }
+
+      directLink = target.closest("a[href]");
+      detailLink = slide.querySelector(".ttpr-button");
+      link = directLink || detailLink;
+
+      if (!link || !link.href || link.getAttribute("href") === "#") {
+        return null;
+      }
+
+      if (!directLink && target.closest("button, input, textarea, select")) {
+        return null;
+      }
+
+      return link;
+    }
+
+    function openCardLinkFromPointer(event) {
+      var link;
+
+      if (suppressCardClick || (event.pointerType === "mouse" && event.button !== 0)) {
+        return false;
+      }
+
+      link = pointerDownCardLink || getCardLinkFromTarget(event.target);
+
+      if (!link) {
+        return false;
+      }
+
+      holdSuppressCardClick(260);
+
+      if (event.cancelable) {
+        event.preventDefault();
+      }
+
+      if (link.target && link.target !== "_self") {
+        window.open(link.href, link.target);
+      } else {
+        window.location.href = link.href;
+      }
+
+      return true;
+    }
+
     if (prev) {
       prev.addEventListener("click", function () {
         scrollToSlide(-1);
@@ -684,6 +744,7 @@
       isPointerDown = true;
       pointerStartX = event.clientX;
       pointerStartY = event.clientY;
+      pointerDownCardLink = getCardLinkFromTarget(event.target);
       suppressCardClick = false;
       if (suppressCardClickTimer) {
         window.clearTimeout(suppressCardClickTimer);
@@ -702,6 +763,7 @@
       var didDesktopDrag;
 
       if (deltaX > 8 || deltaY > 8) {
+        pointerDownCardLink = null;
         holdSuppressCardClick();
       }
 
@@ -710,10 +772,14 @@
 
       if (!didDesktopDrag) {
         syncCurrentIndexFromViewport();
+        openCardLinkFromPointer(event);
       }
+
+      pointerDownCardLink = null;
     });
 
     track.addEventListener("pointercancel", function (event) {
+      pointerDownCardLink = null;
       holdSuppressCardClick();
       finishDesktopDrag(event);
       isPointerDown = false;
@@ -725,12 +791,14 @@
         return;
       }
 
-      if (event.target && event.target.closest("a, button, input, textarea, select")) {
-        return;
-      }
-
       event.preventDefault();
       event.stopPropagation();
+      suppressCardClick = false;
+
+      if (suppressCardClickTimer) {
+        window.clearTimeout(suppressCardClickTimer);
+        suppressCardClickTimer = null;
+      }
     }, true);
 
     track.addEventListener("dragstart", function (event) {

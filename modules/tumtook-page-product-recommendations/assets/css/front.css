@@ -926,13 +926,13 @@ body.ttpr-slider-page {
   }
 
   .ttpr-section[data-ttpr-slider] .ttpr-track {
-    cursor: grab;
+    cursor: pointer;
   }
 
   .ttpr-section[data-ttpr-slider] .ttpr-card,
   .ttpr-section[data-ttpr-slider] .ttpr-image-link,
   .ttpr-section[data-ttpr-slider] .ttpr-image {
-    cursor: grab;
+    cursor: pointer;
   }
 
   .ttpr-section[data-ttpr-slider] .ttpr-track a,

@@ -508,12 +508,12 @@
 
 @media (min-width: 1025px) {
   .ttbs-showcase__viewport {
-    cursor: grab;
+    cursor: pointer;
   }
 
   .ttbs-showcase__card,
   .ttbs-showcase__image {
-    cursor: grab;
+    cursor: pointer;
   }
 
   .ttbs-showcase__viewport a,

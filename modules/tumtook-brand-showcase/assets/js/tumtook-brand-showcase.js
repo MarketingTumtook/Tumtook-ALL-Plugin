@@ -50,6 +50,7 @@
     let desktopDragStartX = 0;
     let desktopDragStartLeft = 0;
     let desktopDragMoved = false;
+    let pointerDownCardLink = null;
     let suppressTrackClick = false;
     let suppressTrackClickTimer = null;
     let wheelStepLocked = false;
@@ -347,6 +348,63 @@
       }, delay);
     };
 
+    const getCardLinkFromTarget = (target) => {
+      let slide;
+      let directLink;
+      let cardLink;
+
+      if (!target || typeof target.closest !== "function") {
+        return null;
+      }
+
+      slide = target.closest(selectors.slide);
+
+      if (!slide || !track.contains(slide)) {
+        return null;
+      }
+
+      directLink = target.closest("a[href]");
+      cardLink = directLink || slide.querySelector(".ttbs-showcase__card-link");
+
+      if (!cardLink || !cardLink.href || cardLink.getAttribute("href") === "#") {
+        return null;
+      }
+
+      if (!directLink && target.closest("button, input, textarea, select")) {
+        return null;
+      }
+
+      return cardLink;
+    };
+
+    const openCardLinkFromPointer = (event) => {
+      let link;
+
+      if (suppressTrackClick || (event.pointerType === "mouse" && event.button !== 0)) {
+        return false;
+      }
+
+      link = pointerDownCardLink || getCardLinkFromTarget(event.target);
+
+      if (!link) {
+        return false;
+      }
+
+      holdSuppressTrackClick(260);
+
+      if (event.cancelable) {
+        event.preventDefault();
+      }
+
+      if (link.target && link.target !== "_self") {
+        window.open(link.href, link.target);
+      } else {
+        window.location.href = link.href;
+      }
+
+      return true;
+    };
+
     const getWheelDirection = (event) => {
       const delta = Math.abs(event.deltaX) > Math.abs(event.deltaY) ? event.deltaX : event.deltaY;
 
@@ -405,6 +463,9 @@
     };
 
     const startDesktopDrag = (event) => {
+      pointerDownCardLink =
+        !event.button || event.button === 0 ? getCardLinkFromTarget(event.target) : null;
+
       if (!isDesktopSliderInput(event) || totalSlides < 2) {
         return;
       }
@@ -444,6 +505,7 @@
       }
 
       desktopDragMoved = true;
+      pointerDownCardLink = null;
       isProgrammaticScroll = false;
       track.scrollLeft = desktopDragStartLeft - deltaX;
 
@@ -528,8 +590,19 @@
 
     track.addEventListener("pointerdown", startDesktopDrag);
     track.addEventListener("pointermove", moveDesktopDrag);
-    track.addEventListener("pointerup", finishDesktopDrag);
-    track.addEventListener("pointercancel", finishDesktopDrag);
+    track.addEventListener("pointerup", (event) => {
+      const didDesktopDrag = finishDesktopDrag(event);
+
+      if (!didDesktopDrag) {
+        openCardLinkFromPointer(event);
+      }
+
+      pointerDownCardLink = null;
+    });
+    track.addEventListener("pointercancel", (event) => {
+      pointerDownCardLink = null;
+      finishDesktopDrag(event);
+    });
     track.addEventListener(
       "click",
       (event) => {
@@ -537,12 +610,14 @@
           return;
         }
 
-        if (event.target && event.target.closest("a, button, input, textarea, select")) {
-          return;
-        }
-
         event.preventDefault();
         event.stopPropagation();
+        suppressTrackClick = false;
+
+        if (suppressTrackClickTimer) {
+          window.clearTimeout(suppressTrackClickTimer);
+          suppressTrackClickTimer = null;
+        }
       },
       true
     );

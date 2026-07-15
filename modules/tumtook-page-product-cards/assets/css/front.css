@@ -712,13 +712,13 @@ body.ttpc-slider-page {
   }
 
   .ttpc-section[data-ttpc-slider] .ttpc-track {
-    cursor: grab;
+    cursor: pointer;
   }
 
   .ttpc-section[data-ttpc-slider] .ttpc-card,
   .ttpc-section[data-ttpc-slider] .ttpc-image-link,
   .ttpc-section[data-ttpc-slider] .ttpc-image {
-    cursor: grab;
+    cursor: pointer;
   }
 
   .ttpc-section[data-ttpc-slider] .ttpc-track a,
