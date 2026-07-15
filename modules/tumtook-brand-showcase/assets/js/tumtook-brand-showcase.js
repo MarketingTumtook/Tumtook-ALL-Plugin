@@ -51,6 +51,7 @@
     let desktopDragStartLeft = 0;
     let desktopDragMoved = false;
     let suppressTrackClick = false;
+    let suppressTrackClickTimer = null;
     let wheelStepLocked = false;
     let wheelStepTimer = null;
 
@@ -333,6 +334,19 @@
     const isDesktopSliderInput = (event) =>
       isDesktopViewport() && (!event.pointerType || event.pointerType === "mouse" || event.pointerType === "pen");
 
+    const holdSuppressTrackClick = (delay = 180) => {
+      suppressTrackClick = true;
+
+      if (suppressTrackClickTimer) {
+        window.clearTimeout(suppressTrackClickTimer);
+      }
+
+      suppressTrackClickTimer = window.setTimeout(() => {
+        suppressTrackClick = false;
+        suppressTrackClickTimer = null;
+      }, delay);
+    };
+
     const getWheelDirection = (event) => {
       const delta = Math.abs(event.deltaX) > Math.abs(event.deltaY) ? event.deltaX : event.deltaY;
 
@@ -400,6 +414,11 @@
       desktopDragStartX = event.clientX;
       desktopDragStartLeft = track.scrollLeft;
       desktopDragMoved = false;
+      suppressTrackClick = false;
+      if (suppressTrackClickTimer) {
+        window.clearTimeout(suppressTrackClickTimer);
+        suppressTrackClickTimer = null;
+      }
       track.classList.add("is-dragging");
 
       if (typeof track.setPointerCapture === "function" && event.pointerId !== undefined) {
@@ -455,10 +474,7 @@
       track.classList.remove("is-dragging");
 
       if (didMove) {
-        suppressTrackClick = true;
-        window.setTimeout(() => {
-          suppressTrackClick = false;
-        }, 0);
+        holdSuppressTrackClick();
 
         scrollToSlideIndex(getRealIndexFromSlide(nearestSlide));
       }
@@ -518,6 +534,10 @@
       "click",
       (event) => {
         if (!suppressTrackClick) {
+          return;
+        }
+
+        if (event.target && event.target.closest("a, button, input, textarea, select")) {
           return;
         }
 

@@ -49,6 +49,7 @@
     var pointerStartX = 0;
     var pointerStartY = 0;
     var suppressCardClick = false;
+    var suppressCardClickTimer = null;
     var desktopInputQuery = window.matchMedia ? window.matchMedia("(min-width: 1025px)") : null;
     var isDesktopDragging = false;
     var desktopDragPointerId = null;
@@ -355,6 +356,19 @@
       return firstSlide.getBoundingClientRect().width + gap;
     }
 
+    function holdSuppressCardClick(delay) {
+      suppressCardClick = true;
+
+      if (suppressCardClickTimer) {
+        window.clearTimeout(suppressCardClickTimer);
+      }
+
+      suppressCardClickTimer = window.setTimeout(function () {
+        suppressCardClick = false;
+        suppressCardClickTimer = null;
+      }, delay || 180);
+    }
+
     function isDesktopViewport() {
       return desktopInputQuery ? desktopInputQuery.matches : window.innerWidth >= 1025;
     }
@@ -645,10 +659,7 @@
       track.classList.remove("is-dragging");
 
       if (didMove) {
-        suppressCardClick = true;
-        window.setTimeout(function () {
-          suppressCardClick = false;
-        }, 0);
+        holdSuppressCardClick();
 
         nearestSlide = getNearestSlide();
         scrollToSlideIndex(getRealIndexFromSlide(nearestSlide));
@@ -674,6 +685,10 @@
       pointerStartX = event.clientX;
       pointerStartY = event.clientY;
       suppressCardClick = false;
+      if (suppressCardClickTimer) {
+        window.clearTimeout(suppressCardClickTimer);
+        suppressCardClickTimer = null;
+      }
       pendingReorder = null;
       isProgrammaticScroll = false;
       startDesktopDrag(event);
@@ -687,10 +702,7 @@
       var didDesktopDrag;
 
       if (deltaX > 8 || deltaY > 8) {
-        suppressCardClick = true;
-        window.setTimeout(function () {
-          suppressCardClick = false;
-        }, 0);
+        holdSuppressCardClick();
       }
 
       didDesktopDrag = finishDesktopDrag(event);
@@ -702,10 +714,7 @@
     });
 
     track.addEventListener("pointercancel", function (event) {
-      suppressCardClick = true;
-      window.setTimeout(function () {
-        suppressCardClick = false;
-      }, 0);
+      holdSuppressCardClick();
       finishDesktopDrag(event);
       isPointerDown = false;
       syncCurrentIndexFromViewport();
@@ -713,6 +722,10 @@
 
     track.addEventListener("click", function (event) {
       if (!suppressCardClick) {
+        return;
+      }
+
+      if (event.target && event.target.closest("a, button, input, textarea, select")) {
         return;
       }
 

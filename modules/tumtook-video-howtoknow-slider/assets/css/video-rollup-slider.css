@@ -121,6 +121,9 @@ section:has(.video-rollup-slider),
   scroll-snap-type: none;
   scrollbar-width: none;
   touch-action: auto;
+  -webkit-overflow-scrolling: touch;
+  contain: layout paint;
+  transform: translateZ(0);
 }
 
 .video-rollup-slider__viewport::-webkit-scrollbar {
@@ -136,6 +139,9 @@ section:has(.video-rollup-slider),
   padding: 0;
   scroll-snap-align: none;
   scroll-snap-stop: normal;
+  backface-visibility: hidden;
+  contain: layout paint;
+  transform: translateZ(0);
 }
 
 .video-rollup-media-item__content,
@@ -187,6 +193,8 @@ section:has(.video-rollup-slider),
   height: 100%;
   overflow: hidden;
   text-decoration: none;
+  backface-visibility: hidden;
+  transform: translateZ(0);
 }
 
 .video-rollup-product-card__media {
@@ -294,6 +302,9 @@ section:has(.video-rollup-slider),
   position: relative;
   container-type: inline-size;
   width: 100%;
+  backface-visibility: hidden;
+  contain: layout paint;
+  transform: translateZ(0);
 }
 
 .video-rollup-video-card--youtube {
@@ -307,6 +318,8 @@ section:has(.video-rollup-slider),
   min-height: 360px;
   object-fit: cover;
   width: 100%;
+  backface-visibility: hidden;
+  transform: translateZ(0);
 }
 
 .video-rollup-video-card__video::-webkit-media-controls,
@@ -1199,6 +1212,7 @@ section:has(.video-rollup-slider),
 @media (min-width: 1025px) {
   .video-rollup-slider__viewport {
     cursor: grab;
+    scroll-behavior: auto;
   }
 
   .video-rollup-media-item,
@@ -1218,6 +1232,21 @@ section:has(.video-rollup-slider),
     cursor: grabbing !important;
     -webkit-user-select: none;
     user-select: none;
+  }
+
+  .video-rollup-slider__viewport.is-dragging .video-rollup-video-card__play,
+  .video-rollup-slider__viewport.is-dragging .video-rollup-video-card__timeline,
+  .video-rollup-slider__viewport.is-dragging .video-rollup-video-card__controls {
+    opacity: 0 !important;
+    pointer-events: none !important;
+    transition: none !important;
+  }
+
+  .video-rollup-slider__viewport.is-dragging .video-rollup-product-card,
+  .video-rollup-slider__viewport.is-dragging .video-rollup-video-card,
+  .video-rollup-slider__viewport.is-dragging .video-rollup-video-card__video,
+  .video-rollup-slider__viewport.is-dragging .video-rollup-youtube-card {
+    transition: none !important;
   }
 
   .video-rollup-slider__viewport.is-dragging .video-rollup-video-card__controls,

@@ -92,9 +92,15 @@
     let desktopDragStartX = 0;
     let desktopDragStartLeft = 0;
     let desktopDragMoved = false;
+    let dragScrollFrame = null;
+    let pendingDragScrollLeft = null;
+    let isDragSettling = false;
+    let dragSettleTimer = null;
     let suppressTrackClick = false;
     let wheelStepLocked = false;
     let wheelStepTimer = null;
+    const dragFollowEase = 0.34;
+    const dragSettleDelay = 120;
 
     if (!track || !slides.length) {
       return;
@@ -209,7 +215,7 @@
     };
 
     const autoplayVisibleVideo = () => {
-      if (autoplayDisabled) {
+      if (autoplayDisabled || isDesktopDragging || isDragSettling) {
         return;
       }
       let activeManaged = null;
@@ -340,13 +346,12 @@
       });
     };
 
-    const getNearestSlide = () => {
-      const currentLeft = track.scrollLeft;
+    const getNearestSlide = (scrollLeft = track.scrollLeft) => {
       let nearestSlide = slides[0] || null;
       let nearestDistance = Number.POSITIVE_INFINITY;
 
       slides.forEach((slide) => {
-        const distance = Math.abs(getSlideScrollLeft(slide) - currentLeft);
+        const distance = Math.abs(getSlideScrollLeft(slide) - scrollLeft);
 
         if (distance < nearestDistance) {
           nearestDistance = distance;
@@ -509,7 +514,13 @@
       desktopDragStartX = event.clientX;
       desktopDragStartLeft = track.scrollLeft;
       desktopDragMoved = false;
+      isDragSettling = false;
       track.classList.add("is-dragging");
+
+      if (dragSettleTimer) {
+        window.clearTimeout(dragSettleTimer);
+        dragSettleTimer = null;
+      }
 
       if (typeof track.setPointerCapture === "function" && event.pointerId !== undefined) {
         try {
@@ -535,20 +546,56 @@
 
       desktopDragMoved = true;
       isProgrammaticScroll = false;
-      track.scrollLeft = desktopDragStartLeft - deltaX;
+      pendingDragScrollLeft = desktopDragStartLeft - deltaX;
+
+      scheduleDragScroll();
 
       if (event.cancelable) {
         event.preventDefault();
       }
     };
 
+    const scheduleDragScroll = () => {
+      if (dragScrollFrame) {
+        return;
+      }
+
+      dragScrollFrame = window.requestAnimationFrame(() => {
+        const targetLeft = pendingDragScrollLeft;
+
+        dragScrollFrame = null;
+
+        if (targetLeft === null) {
+          return;
+        }
+
+        const distance = targetLeft - track.scrollLeft;
+
+        if (Math.abs(distance) < 0.5) {
+          track.scrollLeft = targetLeft;
+
+          if (!isDesktopDragging) {
+            pendingDragScrollLeft = null;
+          }
+
+          return;
+        }
+
+        track.scrollLeft += distance * dragFollowEase;
+        scheduleDragScroll();
+      });
+    };
+
     const finishDesktopDrag = (event) => {
       const didMove = desktopDragMoved;
-      const nearestSlide = getNearestSlide();
+      const releaseTargetLeft = pendingDragScrollLeft ?? track.scrollLeft;
+      let nearestSlide;
 
       if (!isDesktopDragging || event.pointerId !== desktopDragPointerId) {
         return false;
       }
+
+      nearestSlide = getNearestSlide(releaseTargetLeft);
 
       if (typeof track.releasePointerCapture === "function" && event.pointerId !== undefined) {
         try {
@@ -561,15 +608,25 @@
       isDesktopDragging = false;
       desktopDragPointerId = null;
       desktopDragMoved = false;
-      track.classList.remove("is-dragging");
 
       if (didMove) {
+        isDragSettling = true;
         suppressTrackClick = true;
         window.setTimeout(() => {
           suppressTrackClick = false;
         }, 0);
 
-        scrollToSlideIndex(getRealIndexFromSlide(nearestSlide));
+        scheduleDragScroll();
+
+        dragSettleTimer = window.setTimeout(() => {
+          pendingDragScrollLeft = null;
+          isDragSettling = false;
+          track.classList.remove("is-dragging");
+          scrollToSlideIndex(getRealIndexFromSlide(nearestSlide), "smooth");
+        }, dragSettleDelay);
+      } else {
+        isDragSettling = false;
+        track.classList.remove("is-dragging");
       }
 
       startAutoAdvance();
@@ -588,7 +645,7 @@
         autoplayVisibleVideo();
 
         // Only update active dots/indexes during manual swipe/scroll (not during programmatic scrollTo animations)
-        if (!isProgrammaticScroll) {
+        if (!isProgrammaticScroll && !isDesktopDragging && !isDragSettling) {
           let activeSlide = null;
           let maxRatio = 0;
 
