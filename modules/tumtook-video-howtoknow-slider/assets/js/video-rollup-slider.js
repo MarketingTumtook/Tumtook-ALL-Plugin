@@ -91,6 +91,7 @@
     let desktopDragPointerId = null;
     let desktopDragStartX = 0;
     let desktopDragStartLeft = 0;
+    let desktopDragStartIndex = 0;
     let desktopDragMoved = false;
     let dragScrollFrame = null;
     let pendingDragScrollLeft = null;
@@ -99,8 +100,12 @@
     let suppressTrackClick = false;
     let wheelStepLocked = false;
     let wheelStepTimer = null;
-    const dragFollowEase = 0.34;
-    const dragSettleDelay = 120;
+    let wheelGestureDelta = 0;
+    let wheelGestureTimer = null;
+    const dragFollowEase = 0.42;
+    const dragSettleDelay = 90;
+    const wheelGestureThreshold = 42;
+    const wheelGestureQuietDelay = 180;
 
     if (!track || !slides.length) {
       return;
@@ -411,18 +416,38 @@
         return false;
       }
 
-      const reachableIndexes = getReachableIndexes();
-      const currentPageIndex = getCurrentPageIndex(reachableIndexes);
-      const targetPageIndex = Math.max(0, Math.min(reachableIndexes.length - 1, currentPageIndex + direction));
-      const targetIndex = reachableIndexes[targetPageIndex];
+      const targetIndex = Math.max(
+        0,
+        Math.min(totalSlides - 1, currentIndex + Math.sign(direction))
+      );
 
-      if (targetIndex === undefined || targetPageIndex === currentPageIndex) {
+      if (targetIndex === currentIndex) {
         return false;
       }
 
       scrollToSlideIndex(targetIndex, behavior);
       return true;
     };
+
+    const getOneCardDragScrollLeft = (deltaX) => {
+      const direction = deltaX < 0 ? 1 : -1;
+      const targetIndex = getOneCardDragTargetIndex(direction);
+      const targetSlide = findSlideByRealIndex(targetIndex);
+      const targetLeft = targetSlide ? getSlideScrollLeft(targetSlide) : desktopDragStartLeft;
+      const rawLeft = desktopDragStartLeft - deltaX;
+
+      if (direction > 0) {
+        return Math.min(Math.max(rawLeft, desktopDragStartLeft), targetLeft);
+      }
+
+      return Math.max(Math.min(rawLeft, desktopDragStartLeft), targetLeft);
+    };
+
+    const getOneCardDragTargetIndex = (direction) =>
+      Math.max(
+        0,
+        Math.min(totalSlides - 1, desktopDragStartIndex + Math.sign(direction))
+      );
 
     const isDesktopViewport = () =>
       desktopInputQuery ? desktopInputQuery.matches : window.innerWidth >= 1025;
@@ -437,16 +462,6 @@
         )
       );
 
-    const getWheelDirection = (event) => {
-      const delta = Math.abs(event.deltaX) > Math.abs(event.deltaY) ? event.deltaX : event.deltaY;
-
-      if (Math.abs(delta) < 10) {
-        return 0;
-      }
-
-      return delta > 0 ? 1 : -1;
-    };
-
     const lockWheelStep = () => {
       wheelStepLocked = true;
 
@@ -457,11 +472,35 @@
       wheelStepTimer = window.setTimeout(() => {
         wheelStepLocked = false;
         wheelStepTimer = null;
-      }, 360);
+      }, wheelGestureQuietDelay);
+    };
+
+    const resetWheelGestureSoon = () => {
+      if (wheelGestureTimer) {
+        window.clearTimeout(wheelGestureTimer);
+      }
+
+      wheelGestureTimer = window.setTimeout(() => {
+        wheelGestureDelta = 0;
+        wheelStepLocked = false;
+        wheelGestureTimer = null;
+      }, wheelGestureQuietDelay);
+    };
+
+    const getWheelGestureDelta = (event) => {
+      if (Math.abs(event.deltaX) >= Math.abs(event.deltaY)) {
+        return event.deltaX;
+      }
+
+      if (event.shiftKey) {
+        return event.deltaY;
+      }
+
+      return 0;
     };
 
     const handleDesktopWheel = (event) => {
-      let direction;
+      const delta = getWheelGestureDelta(event);
       let didMove;
 
       if (
@@ -474,29 +513,34 @@
         return;
       }
 
-      direction = getWheelDirection(event);
-
-      if (!direction) {
-        return;
-      }
-
-      if (wheelStepLocked) {
-        if (event.cancelable) {
-          event.preventDefault();
-        }
-        return;
-      }
-
-      clearAutoAdvance();
-      didMove = scrollToSlide(direction);
-
-      if (!didMove) {
-        startAutoAdvance();
+      if (!delta) {
         return;
       }
 
       if (event.cancelable) {
         event.preventDefault();
+      }
+
+      if (wheelStepLocked) {
+        resetWheelGestureSoon();
+        return;
+      }
+
+      wheelGestureDelta += delta;
+      resetWheelGestureSoon();
+
+      if (Math.abs(wheelGestureDelta) < wheelGestureThreshold) {
+        return;
+      }
+
+      clearAutoAdvance();
+      didMove = scrollToSlide(wheelGestureDelta > 0 ? 1 : -1);
+      wheelGestureDelta = 0;
+
+      if (!didMove) {
+        lockWheelStep();
+        startAutoAdvance();
+        return;
       }
 
       lockWheelStep();
@@ -513,6 +557,7 @@
       desktopDragPointerId = event.pointerId;
       desktopDragStartX = event.clientX;
       desktopDragStartLeft = track.scrollLeft;
+      desktopDragStartIndex = currentIndex;
       desktopDragMoved = false;
       isDragSettling = false;
       track.classList.add("is-dragging");
@@ -546,7 +591,7 @@
 
       desktopDragMoved = true;
       isProgrammaticScroll = false;
-      pendingDragScrollLeft = desktopDragStartLeft - deltaX;
+      pendingDragScrollLeft = getOneCardDragScrollLeft(deltaX);
 
       scheduleDragScroll();
 
@@ -589,13 +634,12 @@
     const finishDesktopDrag = (event) => {
       const didMove = desktopDragMoved;
       const releaseTargetLeft = pendingDragScrollLeft ?? track.scrollLeft;
-      let nearestSlide;
+      const dragDirection = releaseTargetLeft > desktopDragStartLeft ? 1 : -1;
+      const targetIndex = getOneCardDragTargetIndex(dragDirection);
 
       if (!isDesktopDragging || event.pointerId !== desktopDragPointerId) {
         return false;
       }
-
-      nearestSlide = getNearestSlide(releaseTargetLeft);
 
       if (typeof track.releasePointerCapture === "function" && event.pointerId !== undefined) {
         try {
@@ -616,13 +660,21 @@
           suppressTrackClick = false;
         }, 0);
 
-        scheduleDragScroll();
+        if (dragScrollFrame) {
+          window.cancelAnimationFrame(dragScrollFrame);
+          dragScrollFrame = null;
+        }
+
+        pendingDragScrollLeft = null;
 
         dragSettleTimer = window.setTimeout(() => {
-          pendingDragScrollLeft = null;
-          isDragSettling = false;
+          scrollToSlideIndex(targetIndex, "smooth");
           track.classList.remove("is-dragging");
-          scrollToSlideIndex(getRealIndexFromSlide(nearestSlide), "smooth");
+
+          window.setTimeout(() => {
+            isDragSettling = false;
+            autoplayVisibleVideo();
+          }, 260);
         }, dragSettleDelay);
       } else {
         isDragSettling = false;

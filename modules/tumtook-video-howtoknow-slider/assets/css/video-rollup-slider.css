@@ -1237,7 +1237,7 @@ section:has(.video-rollup-slider),
   .video-rollup-slider__viewport.is-dragging .video-rollup-video-card__play,
   .video-rollup-slider__viewport.is-dragging .video-rollup-video-card__timeline,
   .video-rollup-slider__viewport.is-dragging .video-rollup-video-card__controls {
-    opacity: 0 !important;
+    opacity: 0.001 !important;
     pointer-events: none !important;
     transition: none !important;
   }
