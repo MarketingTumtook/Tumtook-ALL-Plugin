@@ -771,8 +771,9 @@
       isPointerDown = false;
 
       if (!didDesktopDrag) {
-        syncCurrentIndexFromViewport();
-        openCardLinkFromPointer(event);
+        if (!openCardLinkFromPointer(event)) {
+          syncCurrentIndexFromViewport();
+        }
       }
 
       pointerDownCardLink = null;

@@ -727,7 +727,9 @@ body.ttpc-slider-page {
   }
 
   .ttpc-section[data-ttpc-slider] .ttpc-track.is-dragging,
-  .ttpc-section[data-ttpc-slider] .ttpc-track.is-dragging * {
+  .ttpc-section[data-ttpc-slider] .ttpc-track.is-dragging *,
+  .ttpc-section[data-ttpc-slider] .ttpc-track:active,
+  .ttpc-section[data-ttpc-slider] .ttpc-track:active * {
     cursor: grabbing !important;
     -webkit-user-select: none;
     user-select: none;

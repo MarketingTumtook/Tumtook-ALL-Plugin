@@ -522,7 +522,9 @@
   }
 
   .ttbs-showcase__viewport.is-dragging,
-  .ttbs-showcase__viewport.is-dragging * {
+  .ttbs-showcase__viewport.is-dragging *,
+  .ttbs-showcase__viewport:active,
+  .ttbs-showcase__viewport:active * {
     cursor: grabbing !important;
     -webkit-user-select: none;
     user-select: none;

@@ -941,7 +941,9 @@ body.ttpr-slider-page {
   }
 
   .ttpr-section[data-ttpr-slider] .ttpr-track.is-dragging,
-  .ttpr-section[data-ttpr-slider] .ttpr-track.is-dragging * {
+  .ttpr-section[data-ttpr-slider] .ttpr-track.is-dragging *,
+  .ttpr-section[data-ttpr-slider] .ttpr-track:active,
+  .ttpr-section[data-ttpr-slider] .ttpr-track:active * {
     cursor: grabbing !important;
     -webkit-user-select: none;
     user-select: none;
