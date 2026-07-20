@@ -60,7 +60,7 @@ body.ttpc-slider-page {
   --ttpc-dot: rgba(20, 20, 20, 0.18);
   --ttpc-first-card-inset: max(0px, calc((var(--ttpc-viewport-width, 100%) - var(--container-max-width, 1920px)) / 2));
   --ttpc-gap: 15px;
-  --ttpc-slides-per-view: 4;
+  --ttpc-slides-per-view: 4.2;
   --ttpc-card-width: 267px;
 }
 
@@ -725,7 +725,7 @@ body.ttpc-slider-page {
 
 @media (min-width: 1025px) {
   .ttpc-section[data-ttpc-slider] {
-    --ttpc-slides-per-view: 4 !important;
+    --ttpc-slides-per-view: 4.2 !important;
     --ttpc-desktop-visible-width: calc(
       var(--ttpc-viewport-width, 100%) - var(--ttpc-first-card-inset, 0px)
     );
@@ -733,8 +733,8 @@ body.ttpc-slider-page {
 
   .ttpc-section[data-ttpc-slider] .ttpc-track {
     grid-auto-columns: calc(
-      (var(--ttpc-desktop-visible-width) - (var(--ttpc-gap) * (4 - 1))) /
-        4
+      (var(--ttpc-desktop-visible-width) - (var(--ttpc-gap) * (4.2 - 1))) /
+        4.2
     ) !important;
   }
 

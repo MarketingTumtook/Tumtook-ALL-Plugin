@@ -57,7 +57,7 @@ body.ttpr-slider-page {
   --ttpr-dot: rgba(74, 64, 56, 0.18);
   --ttpr-first-card-inset: max(0px, calc((var(--ttpr-viewport-width, 100%) - var(--container-max-width, 1920px)) / 2));
   --ttpr-gap: 15px;
-  --ttpr-slides-per-view: 4;
+  --ttpr-slides-per-view: 4.2;
   --ttpr-card-width: 267px;
 }
 
@@ -939,7 +939,7 @@ body.ttpr-slider-page {
 
 @media (min-width: 1025px) {
   .ttpr-section[data-ttpr-slider] {
-    --ttpr-slides-per-view: 4 !important;
+    --ttpr-slides-per-view: 4.2 !important;
     --ttpr-desktop-visible-width: calc(
       var(--ttpr-viewport-width, 100%) - var(--ttpr-first-card-inset, 0px)
     );
@@ -947,8 +947,8 @@ body.ttpr-slider-page {
 
   .ttpr-section[data-ttpr-slider] .ttpr-track {
     grid-auto-columns: calc(
-      (var(--ttpr-desktop-visible-width) - (var(--ttpr-gap) * (4 - 1))) /
-        4
+      (var(--ttpr-desktop-visible-width) - (var(--ttpr-gap) * (4.2 - 1))) /
+        4.2
     ) !important;
   }
 

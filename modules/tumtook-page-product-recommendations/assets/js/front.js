@@ -248,6 +248,17 @@
       pendingDragScrollLeft = null;
     }
 
+    function releaseNativeWheelScroll() {
+      if (programmaticScrollTimer) {
+        window.clearTimeout(programmaticScrollTimer);
+        programmaticScrollTimer = null;
+      }
+
+      cancelScrollAnimation();
+      cancelDragAnimation();
+      isProgrammaticScroll = false;
+    }
+
     function scheduleDragScroll() {
       if (dragAnimationFrame) {
         return;
@@ -512,6 +523,7 @@
     track.addEventListener("pointermove", dragViewport);
     track.addEventListener("pointerup", stopViewportDrag);
     track.addEventListener("pointercancel", stopViewportDrag);
+    track.addEventListener("wheel", releaseNativeWheelScroll, { passive: true });
     track.addEventListener("click", function (event) {
       if (!suppressNextClick) {
         return;

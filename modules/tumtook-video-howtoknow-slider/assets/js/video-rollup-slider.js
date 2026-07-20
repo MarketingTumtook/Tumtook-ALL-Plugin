@@ -89,6 +89,8 @@
     let suppressNextClick = false;
     let dragStartX = 0;
     let dragStartScrollLeft = 0;
+    let activePointerId = null;
+    let hasPointerCapture = false;
     let dragAnimationFrame = null;
     let pendingDragScrollLeft = null;
     const dragFollowEase = 0.28;
@@ -356,6 +358,17 @@
       pendingDragScrollLeft = null;
     };
 
+    const releaseNativeWheelScroll = () => {
+      if (programmaticScrollTimer) {
+        window.clearTimeout(programmaticScrollTimer);
+        programmaticScrollTimer = null;
+      }
+
+      cancelScrollAnimation();
+      cancelDragAnimation();
+      isProgrammaticScroll = false;
+    };
+
     const scheduleDragScroll = () => {
       if (dragAnimationFrame) {
         return;
@@ -501,6 +514,8 @@
 
       isPointerDown = true;
       isPointerDragging = false;
+      activePointerId = event.pointerId ?? null;
+      hasPointerCapture = false;
       dragStartX = event.clientX;
       dragStartScrollLeft = track.scrollLeft;
       suppressNextClick = false;
@@ -514,14 +529,6 @@
       cancelDragAnimation();
       isProgrammaticScroll = false;
       track.classList.add("is-pointer-down");
-
-      if (typeof track.setPointerCapture === "function" && event.pointerId !== undefined) {
-        try {
-          track.setPointerCapture(event.pointerId);
-        } catch (error) {
-          // Ignore browsers that do not allow pointer capture on this element.
-        }
-      }
     };
 
     const dragViewport = (event) => {
@@ -535,6 +542,19 @@
         isPointerDragging = true;
         suppressNextClick = true;
         track.classList.add("is-dragging");
+
+        if (
+          !hasPointerCapture &&
+          typeof track.setPointerCapture === "function" &&
+          activePointerId !== null
+        ) {
+          try {
+            track.setPointerCapture(activePointerId);
+            hasPointerCapture = true;
+          } catch (error) {
+            // Ignore browsers that do not allow pointer capture on this element.
+          }
+        }
       }
 
       if (!isPointerDragging) {
@@ -559,6 +579,21 @@
       isPointerDragging = false;
       track.classList.remove("is-pointer-down", "is-dragging");
 
+      if (
+        hasPointerCapture &&
+        typeof track.releasePointerCapture === "function" &&
+        activePointerId !== null
+      ) {
+        try {
+          track.releasePointerCapture(activePointerId);
+        } catch (error) {
+          // Ignore browsers that already released pointer capture.
+        }
+      }
+
+      activePointerId = null;
+      hasPointerCapture = false;
+
       if (shouldUpdateActiveCard) {
         setCurrentIndex(getNearestSlideIndex(pendingDragScrollLeft ?? track.scrollLeft));
         window.setTimeout(() => {
@@ -581,6 +616,7 @@
     track.addEventListener("pointermove", dragViewport);
     track.addEventListener("pointerup", stopViewportDrag);
     track.addEventListener("pointercancel", stopViewportDrag);
+    track.addEventListener("wheel", releaseNativeWheelScroll, { passive: true });
     track.addEventListener(
       "click",
       (event) => {

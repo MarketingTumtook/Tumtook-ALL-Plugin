@@ -24,7 +24,7 @@
   --ttar-badge: #35b879;
   --ttar-first-card-inset: max(0px, calc((100vw - var(--container-max-width, 1920px)) / 2));
   --ttar-gap: 15px;
-  --ttar-slides-per-view: 4;
+  --ttar-slides-per-view: 4.2;
   --ttar-accentdot: #f80000;
 }
 
@@ -610,13 +610,13 @@
 
 @media (min-width: 1025px) {
   .ttar-section[data-ttar-slider] {
-    --ttar-slides-per-view: 4 !important;
+    --ttar-slides-per-view: 4.2 !important;
   }
 
   .ttar-section[data-ttar-slider] .ttar-track {
     grid-auto-columns: calc(
-      (100% - (var(--ttar-gap) * (4 - 1))) /
-        4
+      (100% - (var(--ttar-gap) * (4.2 - 1))) /
+        4.2
     ) !important;
   }
 
