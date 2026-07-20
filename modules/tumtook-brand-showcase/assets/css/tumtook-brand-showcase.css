@@ -193,11 +193,16 @@
 }
 
 .ttbs-showcase__card-link {
-  display: block;
-  inset: 0;
-  position: absolute;
+  align-items: center;
+  border-radius: inherit;
+  display: flex;
+  height: 100%;
+  justify-content: center;
+  min-width: 0;
+  position: relative;
   text-decoration: none;
-  z-index: 3;
+  width: 100%;
+  z-index: 1;
 }
 
 .ttbs-showcase__card-link:hover,
@@ -206,7 +211,9 @@
 }
 
 .ttbs-showcase__card-link-icon {
+  -webkit-appearance: none;
   align-items: center;
+  appearance: none;
   background: #f7f7f7;
   border: 1px solid rgba(255, 255, 255, 0.22);
   border-radius: 12px;
@@ -215,6 +222,8 @@
   display: flex;
   height: 52px;
   justify-content: center;
+  margin: 0;
+  padding: 0;
   position: absolute;
   right: 22px;
   transition:
@@ -222,7 +231,7 @@
     backdrop-filter 0.22s ease,
     transform 0.22s ease;
   width: 52px;
-  z-index: 1;
+  z-index: 2;
 }
 
 .ttbs-showcase__card-link-icon::after {
@@ -235,14 +244,16 @@
   width: 14px;
 }
 
-.ttbs-showcase__card-link:hover .ttbs-showcase__card-link-icon,
-.ttbs-showcase__card-link:focus-visible .ttbs-showcase__card-link-icon {
+.ttbs-showcase__card-link-icon:hover,
+.ttbs-showcase__card-link-icon:focus-visible {
   background: rgba(217, 217, 217, 0.5);
   backdrop-filter: blur(2px) saturate(100%);
+  outline: none;
   transform: translateY(-1px);
 }
 
-.ttbs-showcase__card-link:hover .ttbs-showcase__card-link-icon::after {
+.ttbs-showcase__card-link-icon:hover::after,
+.ttbs-showcase__card-link-icon:focus-visible::after {
   filter: brightness(0) invert(1);
 }
 
@@ -498,7 +509,8 @@
   }
 
   .ttbs-showcase__card-link {
-    inset: 0;
+    height: 100%;
+    width: 100%;
   }
 
   .ttbs-showcase__card-link-icon {
@@ -521,7 +533,8 @@
   }
 
   .ttbs-showcase__card-link {
-    inset: 0;
+    height: 100%;
+    width: 100%;
   }
 
   .ttbs-showcase .ttbs-showcase__image,

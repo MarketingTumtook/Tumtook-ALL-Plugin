@@ -515,6 +515,16 @@
       scrollToReachableDirection(1);
     });
 
+    root.querySelectorAll(".ttbs-showcase__card-link-icon[data-card-link]").forEach((button) => {
+      button.addEventListener("click", () => {
+        const url = button.getAttribute("data-card-link");
+
+        if (url) {
+          window.location.assign(url);
+        }
+      });
+    });
+
     track.addEventListener("pointerdown", startViewportDrag);
     track.addEventListener("pointermove", dragViewport);
     track.addEventListener("pointerup", stopViewportDrag);
