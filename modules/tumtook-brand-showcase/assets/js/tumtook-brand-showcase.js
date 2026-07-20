@@ -530,6 +530,9 @@
     track.addEventListener("pointerup", stopViewportDrag);
     track.addEventListener("pointercancel", stopViewportDrag);
     track.addEventListener("wheel", releaseNativeWheelScroll, { passive: true });
+    track.addEventListener("dragstart", (event) => {
+      event.preventDefault();
+    });
     track.addEventListener(
       "click",
       (event) => {
