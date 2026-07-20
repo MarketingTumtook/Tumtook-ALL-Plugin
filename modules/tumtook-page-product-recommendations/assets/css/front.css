@@ -57,7 +57,7 @@ body.ttpr-slider-page {
   --ttpr-dot: rgba(74, 64, 56, 0.18);
   --ttpr-first-card-inset: max(0px, calc((var(--ttpr-viewport-width, 100%) - var(--container-max-width, 1920px)) / 2));
   --ttpr-gap: 15px;
-  --ttpr-slides-per-view: 4.2;
+  --ttpr-slides-per-view: 4;
   --ttpr-card-width: 267px;
 }
 
@@ -154,8 +154,24 @@ body.ttpr-slider-page {
   scroll-snap-type: none;
   scrollbar-width: none;
   overscroll-behavior-x: contain;
-  overscroll-behavior-y: auto;
-  touch-action: auto;
+  touch-action: pan-y;
+  user-select: none;
+  cursor: grab;
+}
+
+.ttpr-track.is-dragging,
+.ttpr-track.is-pointer-down {
+  cursor: grabbing;
+}
+
+.ttpr-track.is-dragging a,
+.ttpr-track.is-dragging img {
+  pointer-events: none;
+}
+
+.ttpr-track img {
+  -webkit-user-drag: none;
+  user-select: none;
 }
 
 .ttpr-track::-webkit-scrollbar {
@@ -168,10 +184,18 @@ body.ttpr-slider-page {
   border: 1px solid #ccc;
   border-radius: 22px;
   overflow: hidden;
+  position: relative;
   box-shadow: none;
   scroll-snap-align: none;
   scroll-snap-stop: normal;
   cursor: pointer;
+}
+
+.ttpr-card-link {
+  inset: 0;
+  position: absolute;
+  text-decoration: none;
+  z-index: 20;
 }
 
 .ttpr-card-media {
@@ -283,6 +307,7 @@ body.ttpr-slider-page {
   top: 12px;
   left: 12px;
   z-index: 2;
+  pointer-events: none;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -391,7 +416,9 @@ body.ttpr-slider-page {
   outline: none;
   appearance: none;
   -webkit-appearance: none;
+  position: relative;
   transition: background-color .2s ease, transform .2s ease, color .2s ease;
+  z-index: 21;
 }
 
 .ttpr-button:hover,
@@ -912,7 +939,7 @@ body.ttpr-slider-page {
 
 @media (min-width: 1025px) {
   .ttpr-section[data-ttpr-slider] {
-    --ttpr-slides-per-view: 4.2 !important;
+    --ttpr-slides-per-view: 4 !important;
     --ttpr-desktop-visible-width: calc(
       var(--ttpr-viewport-width, 100%) - var(--ttpr-first-card-inset, 0px)
     );
@@ -920,19 +947,19 @@ body.ttpr-slider-page {
 
   .ttpr-section[data-ttpr-slider] .ttpr-track {
     grid-auto-columns: calc(
-      (var(--ttpr-desktop-visible-width) - (var(--ttpr-gap) * (4.2 - 1))) /
-        4.2
+      (var(--ttpr-desktop-visible-width) - (var(--ttpr-gap) * (4 - 1))) /
+        4
     ) !important;
   }
 
   .ttpr-section[data-ttpr-slider] .ttpr-track {
-    cursor: pointer;
+    cursor: grab;
   }
 
   .ttpr-section[data-ttpr-slider] .ttpr-card,
   .ttpr-section[data-ttpr-slider] .ttpr-image-link,
   .ttpr-section[data-ttpr-slider] .ttpr-image {
-    cursor: pointer;
+    cursor: grab;
   }
 
   .ttpr-section[data-ttpr-slider] .ttpr-track a,
@@ -941,9 +968,7 @@ body.ttpr-slider-page {
   }
 
   .ttpr-section[data-ttpr-slider] .ttpr-track.is-dragging,
-  .ttpr-section[data-ttpr-slider] .ttpr-track.is-dragging *,
-  .ttpr-section[data-ttpr-slider] .ttpr-track:active,
-  .ttpr-section[data-ttpr-slider] .ttpr-track:active * {
+  .ttpr-section[data-ttpr-slider] .ttpr-track.is-dragging * {
     cursor: grabbing !important;
     -webkit-user-select: none;
     user-select: none;

@@ -60,7 +60,7 @@ body.ttpc-slider-page {
   --ttpc-dot: rgba(20, 20, 20, 0.18);
   --ttpc-first-card-inset: max(0px, calc((var(--ttpc-viewport-width, 100%) - var(--container-max-width, 1920px)) / 2));
   --ttpc-gap: 15px;
-  --ttpc-slides-per-view: 4.2;
+  --ttpc-slides-per-view: 4;
   --ttpc-card-width: 267px;
 }
 
@@ -156,8 +156,24 @@ body.ttpc-slider-page {
   scroll-snap-type: none;
   scrollbar-width: none;
   overscroll-behavior-x: contain;
-  overscroll-behavior-y: auto;
-  touch-action: auto;
+  touch-action: pan-y;
+  user-select: none;
+  cursor: grab;
+}
+
+.ttpc-track.is-dragging,
+.ttpc-track.is-pointer-down {
+  cursor: grabbing;
+}
+
+.ttpc-track.is-dragging a,
+.ttpc-track.is-dragging img {
+  pointer-events: none;
+}
+
+.ttpc-track img {
+  -webkit-user-drag: none;
+  user-select: none;
 }
 
 .ttpc-track::-webkit-scrollbar {
@@ -172,10 +188,18 @@ body.ttpc-slider-page {
   border: 1px solid var(--ttpc-border);
   border-radius: 22px;
   overflow: hidden;
+  position: relative;
   box-shadow: none;
   scroll-snap-align: none;
   scroll-snap-stop: normal;
   cursor: pointer;
+}
+
+.ttpc-card-link {
+  inset: 0;
+  position: absolute;
+  text-decoration: none;
+  z-index: 20;
 }
 
 .ttpc-image-link {
@@ -221,6 +245,7 @@ body.ttpc-slider-page {
   top: 50%;
   transform: translate(-50%, -50%);
   z-index: 3;
+  pointer-events: none;
   padding: 8px 14px;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.94);
@@ -348,7 +373,9 @@ body.ttpc-slider-page {
   outline: none;
   appearance: none;
   -webkit-appearance: none;
+  position: relative;
   transition: background-color 0.2s ease, transform 0.2s ease, color 0.2s ease;
+  z-index: 21;
 }
 
 .ttpc-button:hover,
@@ -611,7 +638,7 @@ body.ttpc-slider-page {
 
   .ttpc-section[data-ttpc-slider] {
     --ttpc-gap: 10px;
-    --ttpc-slides-per-view: 2.05;
+    --ttpc-slides-per-view: 2;
   }
 
   .ttpc-track {
@@ -698,7 +725,7 @@ body.ttpc-slider-page {
 
 @media (min-width: 1025px) {
   .ttpc-section[data-ttpc-slider] {
-    --ttpc-slides-per-view: 4.2 !important;
+    --ttpc-slides-per-view: 4 !important;
     --ttpc-desktop-visible-width: calc(
       var(--ttpc-viewport-width, 100%) - var(--ttpc-first-card-inset, 0px)
     );
@@ -706,19 +733,19 @@ body.ttpc-slider-page {
 
   .ttpc-section[data-ttpc-slider] .ttpc-track {
     grid-auto-columns: calc(
-      (var(--ttpc-desktop-visible-width) - (var(--ttpc-gap) * (4.2 - 1))) /
-        4.2
+      (var(--ttpc-desktop-visible-width) - (var(--ttpc-gap) * (4 - 1))) /
+        4
     ) !important;
   }
 
   .ttpc-section[data-ttpc-slider] .ttpc-track {
-    cursor: pointer;
+    cursor: grab;
   }
 
   .ttpc-section[data-ttpc-slider] .ttpc-card,
   .ttpc-section[data-ttpc-slider] .ttpc-image-link,
   .ttpc-section[data-ttpc-slider] .ttpc-image {
-    cursor: pointer;
+    cursor: grab;
   }
 
   .ttpc-section[data-ttpc-slider] .ttpc-track a,
@@ -727,9 +754,7 @@ body.ttpc-slider-page {
   }
 
   .ttpc-section[data-ttpc-slider] .ttpc-track.is-dragging,
-  .ttpc-section[data-ttpc-slider] .ttpc-track.is-dragging *,
-  .ttpc-section[data-ttpc-slider] .ttpc-track:active,
-  .ttpc-section[data-ttpc-slider] .ttpc-track:active * {
+  .ttpc-section[data-ttpc-slider] .ttpc-track.is-dragging * {
     cursor: grabbing !important;
     -webkit-user-select: none;
     user-select: none;

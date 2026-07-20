@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Tumtook Page Article Recommendations
  * Description: Adds a random article slider section for Tumtook pages and posts with a layout tailored to article recommendations.
- * Version: 1.0.0
+ * Version: 1.0.2
  * Author: Tumtook
  * Text Domain: tumtook-page-article-recommendations
  */
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
 
 final class Tumtook_Page_Article_Recommendations
 {
-	const VERSION = '1.0.0';
+	const VERSION = '1.0.2';
 	const META_KEY = '_tt_page_article_recommendations';
 	const SHORTCODE = 'tumtook_recommended_articles';
 	const FONT_HANDLE = 'tumtook-kanit-font';
@@ -438,6 +438,8 @@ final class Tumtook_Page_Article_Recommendations
 						<div class="ttar-track" data-ttar-track>
 							<?php foreach ($items as $item): ?>
 								<article class="ttar-card">
+									<a class="ttar-card-link" href="<?php echo esc_url($item['url']); ?>"
+										aria-label="<?php echo esc_attr($item['title']); ?>"></a>
 									<a class="ttar-image-link<?php echo empty($item['image']) ? ' ttar-image-link--missing' : ''; ?>"
 										href="<?php echo esc_url($item['url']); ?>">
 										<?php if (!empty($item['badge'])): ?>

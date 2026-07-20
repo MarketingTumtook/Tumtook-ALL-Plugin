@@ -124,12 +124,30 @@
   margin-bottom: 24px;
   overflow-x: auto;
   overscroll-behavior-x: contain;
-  overscroll-behavior-y: auto;
   padding-bottom: 6px;
   scroll-padding-inline: 0;
   scroll-snap-type: none;
   scrollbar-width: none;
-  touch-action: auto;
+  touch-action: pan-y;
+  user-select: none;
+  cursor: grab;
+}
+
+.ttbs-showcase__viewport.is-dragging,
+.ttbs-showcase__viewport.is-pointer-down {
+  cursor: grabbing;
+}
+
+.ttbs-showcase__viewport.is-dragging a,
+.ttbs-showcase__viewport.is-dragging img {
+  pointer-events: none;
+}
+
+.ttbs-showcase__viewport img {
+  -webkit-user-drag: none;
+  cursor: inherit;
+  pointer-events: none;
+  user-select: none;
 }
 
 .ttbs-showcase__viewport::-webkit-scrollbar {
@@ -156,7 +174,7 @@
   max-width: none;
   padding: 0;
   position: relative;
-  border-radius: 33px;
+  border-radius: 18px;
   overflow: hidden;
   width: 100%;
 }
@@ -175,39 +193,57 @@
 }
 
 .ttbs-showcase__card-link {
-    position: absolute;
-    right: 22px;
-    bottom: 22px;
-    z-index: 3;
-    height: 52px;
-    width: 52px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    text-decoration: none;
-    border-radius: 12px;
-    background: #f7f7f7;
-    border: 1px solid rgba(255, 255, 255, 0.22);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, .18), inset 0 1px 1px rgba(255, 255, 255, .35), inset 0 -1px 1px rgba(255, 255, 255, .05) !important;
-  }
+  display: block;
+  inset: 0;
+  position: absolute;
+  text-decoration: none;
+  z-index: 3;
+}
 
 .ttbs-showcase__card-link:hover,
 .ttbs-showcase__card-link:focus-visible {
-    background: rgba(217, 217, 217, 0.5);
-    backdrop-filter: blur(2px) saturate(100%);
   outline: none;
 }
 
 .ttbs-showcase__card-link-icon {
+  align-items: center;
+  background: #f7f7f7;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 12px;
+  bottom: 22px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, .18), inset 0 1px 1px rgba(255, 255, 255, .35), inset 0 -1px 1px rgba(255, 255, 255, .05) !important;
+  display: flex;
+  height: 52px;
+  justify-content: center;
+  position: absolute;
+  right: 22px;
+  transition:
+    background-color 0.22s ease,
+    backdrop-filter 0.22s ease,
+    transform 0.22s ease;
+  width: 52px;
+  z-index: 1;
+}
+
+.ttbs-showcase__card-link-icon::after {
   background: url("../images/arrow-click.svg") center / contain no-repeat;
+  content: "";
   display: block;
   filter: brightness(0) saturate(100%) invert(75%) sepia(0%) saturate(0%) hue-rotate(180deg) brightness(95%) contrast(88%);
   height: 14px;
+  transition: filter 0.22s ease;
   width: 14px;
 }
 
-.ttbs-showcase__card-link:hover .ttbs-showcase__card-link-icon{
-   filter: brightness(0) invert(1);
+.ttbs-showcase__card-link:hover .ttbs-showcase__card-link-icon,
+.ttbs-showcase__card-link:focus-visible .ttbs-showcase__card-link-icon {
+  background: rgba(217, 217, 217, 0.5);
+  backdrop-filter: blur(2px) saturate(100%);
+  transform: translateY(-1px);
+}
+
+.ttbs-showcase__card-link:hover .ttbs-showcase__card-link-icon::after {
+  filter: brightness(0) invert(1);
 }
 
 /* Elementor can reset img radius to 0; keep the showcase radius inside Elementor. */
@@ -443,33 +479,36 @@
   }
 
   .ttbs-showcase__card {
-    border-radius: 30px;
-    height: clamp(300px, 108vw, 420px);
+    border-radius: 18px;
+    height: auto;
     overflow: hidden;
     position: relative;
   }
 
   .ttbs-showcase .ttbs-showcase__image,
   .elementor .ttbs-showcase .ttbs-showcase__image {
-    border-radius: 30px !important;
-    height: 100% !important;
-    inset: 0;
+    border-radius: 18px !important;
+    height: auto !important;
     max-height: none !important;
     max-width: none !important;
     min-height: 0 !important;
-    object-fit: cover !important;
-    position: absolute;
+    object-fit: contain !important;
+    position: relative;
     width: 100% !important;
   }
 
   .ttbs-showcase__card-link {
+    inset: 0;
+  }
+
+  .ttbs-showcase__card-link-icon {
     bottom: 16px;
     height: 44px;
     right: 16px;
     width: 44px;
   }
 
-  .ttbs-showcase__card-link-icon {
+  .ttbs-showcase__card-link-icon::after {
     height: 18px;
     width: 18px;
   }
@@ -478,20 +517,19 @@
 @media (max-width: 640px) {
 
   .ttbs-showcase__card {
-    height: clamp(307px, 135vw, 560px);
+    height: auto;
   }
 
   .ttbs-showcase__card-link {
-    bottom: 16px;
-    right: 16px;
+    inset: 0;
   }
 
   .ttbs-showcase .ttbs-showcase__image,
   .elementor .ttbs-showcase .ttbs-showcase__image {
-    height: 100% !important;
+    height: auto !important;
     max-height: none !important;
     min-height: 0 !important;
-    object-fit: cover !important;
+    object-fit: contain !important;
     width: 100% !important;
   } 
 
@@ -503,30 +541,5 @@
     font-size: 1.8rem;
     height: 50px;
     width: 50px;
-  }
-}
-
-@media (min-width: 1025px) {
-  .ttbs-showcase__viewport {
-    cursor: pointer;
-  }
-
-  .ttbs-showcase__card,
-  .ttbs-showcase__image {
-    cursor: pointer;
-  }
-
-  .ttbs-showcase__viewport a,
-  .ttbs-showcase__viewport img {
-    -webkit-user-drag: none;
-  }
-
-  .ttbs-showcase__viewport.is-dragging,
-  .ttbs-showcase__viewport.is-dragging *,
-  .ttbs-showcase__viewport:active,
-  .ttbs-showcase__viewport:active * {
-    cursor: grabbing !important;
-    -webkit-user-select: none;
-    user-select: none;
   }
 }

@@ -83,36 +83,24 @@
     let autoplayDisabled = false;
     let isProgrammaticScroll = false;
     let programmaticScrollTimer = null;
+    let scrollAnimationFrame = null;
+    let isPointerDown = false;
+    let isPointerDragging = false;
+    let suppressNextClick = false;
+    let dragStartX = 0;
+    let dragStartScrollLeft = 0;
+    let dragAnimationFrame = null;
+    let pendingDragScrollLeft = null;
+    const dragFollowEase = 0.28;
     const isCoarsePointer = window.matchMedia
       ? window.matchMedia("(hover: none), (pointer: coarse)").matches
       : false;
-    const desktopInputQuery = window.matchMedia ? window.matchMedia("(min-width: 1025px)") : null;
-    let isDesktopDragging = false;
-    let desktopDragPointerId = null;
-    let desktopDragStartX = 0;
-    let desktopDragStartLeft = 0;
-    let desktopDragMoved = false;
-    let dragScrollFrame = null;
-    let pendingDragScrollLeft = null;
-    let isDragSettling = false;
-    let suppressTrackClick = false;
-    let wheelStepLocked = false;
-    let wheelStepTimer = null;
-    let dragSettleTimer = null;
-    const dragFollowEase = 0.34;
-    const dragSettleDelay = 120;
-    const wheelDeltaThreshold = 12;
-    const wheelStepQuietDelay = 620;
 
     if (!track || !slides.length) {
       return;
     }
 
     const totalSlides = slides.length;
-
-    const refreshSlides = () => {
-      slides = [...track.querySelectorAll(selectors.slide)];
-    };
 
     const getPixelValue = (value) => {
       const parsed = Number.parseFloat(value || "");
@@ -217,7 +205,7 @@
     };
 
     const autoplayVisibleVideo = () => {
-      if (autoplayDisabled || isDesktopDragging || isDragSettling) {
+      if (autoplayDisabled) {
         return;
       }
       let activeManaged = null;
@@ -253,34 +241,43 @@
       }).catch(() => {});
     };
 
+    const setCurrentIndex = (targetIndex) => {
+      currentIndex = Math.max(0, Math.min(totalSlides - 1, targetIndex));
+      setActiveSlide(root, currentIndex);
+
+      const reachableIndexes = getReachableIndexes();
+      const currentReachableIndex = getCurrentReachableIndex(reachableIndexes);
+
+      if (prev) {
+        prev.disabled = currentReachableIndex <= 0;
+      }
+
+      if (next) {
+        next.disabled = currentReachableIndex >= reachableIndexes.length - 1;
+      }
+    };
+
+    const clearAutoAdvance = () => {};
+    const startAutoAdvance = () => {};
+
     const getMaxScrollLeft = () => Math.max(track.scrollWidth - track.clientWidth, 0);
+
+    const getTrackPaddingLeft = () =>
+      Number.parseFloat(window.getComputedStyle(track).paddingLeft || "0") || 0;
 
     const getSlideRawScrollLeft = (slide) => {
       if (!slide) {
         return 0;
       }
-      const raw = slide.offsetLeft - track.offsetLeft;
-      if (window.innerWidth < 768) {
-        return raw - (track.clientWidth - slide.clientWidth) / 2;
-      }
-      const trackStyle = window.getComputedStyle(track);
-      const trackPaddingLeft = Number.parseFloat(trackStyle.paddingLeft || "0") || 0;
-      const firstCardInset =
-        Number.parseFloat(
-          window.getComputedStyle(root).getPropertyValue("--video-rollup-first-card-inset") || "0"
-        ) || 0;
-      return raw - Math.max(trackPaddingLeft, firstCardInset);
+
+      const slideRect = slide.getBoundingClientRect();
+      const trackRect = track.getBoundingClientRect();
+
+      return slideRect.left - trackRect.left + track.scrollLeft - getTrackPaddingLeft();
     };
 
-    const getSlideScrollLeft = (slide) => {
-      if (!slide) {
-        return 0;
-      }
-      return Math.max(
-        0,
-        Math.min(getMaxScrollLeft(), getSlideRawScrollLeft(slide))
-      );
-    };
+    const getSlideScrollLeft = (slide) =>
+      Math.max(0, Math.min(getMaxScrollLeft(), getSlideRawScrollLeft(slide)));
 
     const getReachableIndexes = () => {
       const positions = [];
@@ -297,26 +294,164 @@
       return positions.map((position) => position.index);
     };
 
-    const getCurrentPageIndex = (reachableIndexes) => {
-      let bestPageIndex = 0;
-      let bestDistance = Number.POSITIVE_INFINITY;
+    const getCurrentReachableIndex = (reachableIndexes = getReachableIndexes()) => {
+      let pageIndex = 0;
 
-      reachableIndexes.forEach((slideIndex, pageIndex) => {
-        const slide = findSlideByRealIndex(slideIndex);
-        const distance = Math.abs((slide ? getSlideScrollLeft(slide) : 0) - track.scrollLeft);
-
-        if (distance < bestDistance) {
-          bestDistance = distance;
-          bestPageIndex = pageIndex;
+      reachableIndexes.forEach((slideIndex, index) => {
+        if (slideIndex <= currentIndex) {
+          pageIndex = index;
         }
       });
 
-      return bestPageIndex;
+      return pageIndex;
+    };
+
+    const scrollToReachableDirection = (direction) => {
+      const reachableIndexes = getReachableIndexes();
+      const currentReachableIndex = getCurrentReachableIndex(reachableIndexes);
+      const nextReachableIndex = Math.max(
+        0,
+        Math.min(reachableIndexes.length - 1, currentReachableIndex + direction)
+      );
+      const targetIndex = reachableIndexes[nextReachableIndex];
+
+      if (targetIndex === undefined || nextReachableIndex === currentReachableIndex) {
+        return;
+      }
+
+      scrollToSlideIndex(targetIndex);
+    };
+
+    const getNearestSlideIndex = (scrollLeft = track.scrollLeft) => {
+      let nearestIndex = currentIndex;
+      let nearestDistance = Number.POSITIVE_INFINITY;
+
+      slides.forEach((slide) => {
+        const distance = Math.abs(getSlideScrollLeft(slide) - scrollLeft);
+
+        if (distance < nearestDistance) {
+          nearestDistance = distance;
+          nearestIndex = getRealIndexFromSlide(slide);
+        }
+      });
+
+      return nearestIndex;
+    };
+
+    const cancelScrollAnimation = () => {
+      if (!scrollAnimationFrame) {
+        return;
+      }
+
+      window.cancelAnimationFrame(scrollAnimationFrame);
+      scrollAnimationFrame = null;
+    };
+
+    const cancelDragAnimation = () => {
+      if (dragAnimationFrame) {
+        window.cancelAnimationFrame(dragAnimationFrame);
+      }
+
+      dragAnimationFrame = null;
+      pendingDragScrollLeft = null;
+    };
+
+    const scheduleDragScroll = () => {
+      if (dragAnimationFrame) {
+        return;
+      }
+
+      dragAnimationFrame = window.requestAnimationFrame(() => {
+        const targetLeft = pendingDragScrollLeft;
+
+        dragAnimationFrame = null;
+
+        if (targetLeft === null) {
+          return;
+        }
+
+        const distance = targetLeft - track.scrollLeft;
+
+        if (Math.abs(distance) < 0.5) {
+          track.scrollLeft = targetLeft;
+
+          if (!isPointerDown) {
+            pendingDragScrollLeft = null;
+          }
+
+          return;
+        }
+
+        track.scrollLeft += distance * dragFollowEase;
+        scheduleDragScroll();
+      });
+    };
+
+    const animateScrollTo = (targetLeft, duration = 560) => {
+      const startLeft = track.scrollLeft;
+      const distance = targetLeft - startLeft;
+      const startTime = window.performance.now();
+
+      cancelScrollAnimation();
+      cancelDragAnimation();
+
+      if (Math.abs(distance) < 1) {
+        track.scrollLeft = targetLeft;
+        return;
+      }
+
+      const easeOutCubic = (progress) => 1 - Math.pow(1 - progress, 3);
+
+      const step = (currentTime) => {
+        const elapsed = currentTime - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+
+        track.scrollLeft = startLeft + distance * easeOutCubic(progress);
+
+        if (progress < 1) {
+          scrollAnimationFrame = window.requestAnimationFrame(step);
+          return;
+        }
+
+        track.scrollLeft = targetLeft;
+        scrollAnimationFrame = null;
+      };
+
+      scrollAnimationFrame = window.requestAnimationFrame(step);
+    };
+
+    const scrollToSlideIndex = (targetIndex, behavior = "smooth") => {
+      const safeIndex = Math.max(0, Math.min(totalSlides - 1, targetIndex));
+      const targetSlide = findSlideByRealIndex(safeIndex);
+
+      if (!targetSlide) {
+        return;
+      }
+
+      isProgrammaticScroll = true;
+
+      if (programmaticScrollTimer) {
+        window.clearTimeout(programmaticScrollTimer);
+      }
+
+      setCurrentIndex(safeIndex);
+      if (behavior === "auto") {
+        cancelScrollAnimation();
+        track.scrollTo({
+          left: getSlideScrollLeft(targetSlide),
+          behavior,
+        });
+      } else {
+        animateScrollTo(getSlideScrollLeft(targetSlide));
+      }
+
+      programmaticScrollTimer = window.setTimeout(() => {
+        isProgrammaticScroll = false;
+      }, behavior === "auto" ? 0 : 620);
     };
 
     const renderPagination = () => {
-      const reachableIndexes = getReachableIndexes();
-      const canScroll = reachableIndexes.length > 1;
+      const canScroll = slides.length > 1 && getMaxScrollLeft() > 1;
 
       if (dotsWrap) {
         dotsWrap.innerHTML = "";
@@ -335,323 +470,140 @@
         return;
       }
 
-      reachableIndexes.forEach((slideIndex, pageIndex) => {
+      getReachableIndexes().forEach((slideIndex, dotIndex) => {
         const dot = document.createElement("button");
         dot.type = "button";
-        dot.className = `video-rollup-slider__dot${pageIndex === 0 ? " is-active" : ""}`;
+        dot.className = `video-rollup-slider__dot${dotIndex === getCurrentReachableIndex() ? " is-active" : ""}`;
         dot.dataset.slideIndex = slideIndex.toString();
-        dot.setAttribute("aria-label", `Go to slide group ${pageIndex + 1}`);
+        dot.setAttribute("aria-label", `Go to slide ${slideIndex + 1}`);
         dot.addEventListener("click", () => {
           scrollToSlideIndex(slideIndex);
         });
         dotsWrap.appendChild(dot);
       });
-    };
 
-    const getNearestSlide = (scrollLeft = track.scrollLeft) => {
-      let nearestSlide = slides[0] || null;
-      let nearestDistance = Number.POSITIVE_INFINITY;
-
-      slides.forEach((slide) => {
-        const distance = Math.abs(getSlideScrollLeft(slide) - scrollLeft);
-
-        if (distance < nearestDistance) {
-          nearestDistance = distance;
-          nearestSlide = slide;
-        }
-      });
-
-      return nearestSlide;
-    };
-
-    const preserveViewportWhile = (mutateSlides) => {
-      const anchorSlide = findSlideByRealIndex(currentIndex) || getNearestSlide();
-      const anchorOffset = anchorSlide ? getSlideRawScrollLeft(anchorSlide) : 0;
-
-      mutateSlides();
-      refreshSlides();
-
-      if (anchorSlide) {
-        track.scrollLeft += getSlideRawScrollLeft(anchorSlide) - anchorOffset;
-      }
-    };
-
-    const setCurrentIndex = (targetIndex) => {
-      currentIndex = ((targetIndex % totalSlides) + totalSlides) % totalSlides;
       setActiveSlide(root, currentIndex);
     };
 
-    const clearAutoAdvance = () => {};
-    const startAutoAdvance = () => {};
+    const isSliderControl = (target) =>
+      !!target.closest(
+        "button, input, textarea, select, iframe, .video-rollup-video-card__controls, .video-rollup-video-card__timeline, [data-play-toggle], [data-progress-track], [data-volume-shell], [data-volume-slider], [data-volume-toggle]"
+      );
 
-    const scrollToSlideIndex = (targetIndex, behavior = "smooth") => {
-      const safeIndex = ((targetIndex % totalSlides) + totalSlides) % totalSlides;
-      
-      isProgrammaticScroll = true;
+    const startViewportDrag = (event) => {
+      if (event.button !== undefined && event.button !== 0) {
+        return;
+      }
+
+      if (isSliderControl(event.target)) {
+        return;
+      }
+
+      isPointerDown = true;
+      isPointerDragging = false;
+      dragStartX = event.clientX;
+      dragStartScrollLeft = track.scrollLeft;
+      suppressNextClick = false;
+
       if (programmaticScrollTimer) {
         window.clearTimeout(programmaticScrollTimer);
-      }
-      
-      currentIndex = safeIndex;
-      setActiveSlide(root, safeIndex);
-      
-      const targetSlide = findSlideByRealIndex(safeIndex);
-      if (targetSlide) {
-        track.scrollTo({
-          left: getSlideScrollLeft(targetSlide),
-          behavior,
-        });
+        programmaticScrollTimer = null;
       }
 
-      programmaticScrollTimer = window.setTimeout(() => {
-        isProgrammaticScroll = false;
-      }, 500);
-    };
-
-    const scrollToSlide = (direction, behavior = "smooth") => {
-      if (!direction || totalSlides < 2) {
-        return false;
-      }
-
-      const reachableIndexes = getReachableIndexes();
-      const currentPageIndex = getCurrentPageIndex(reachableIndexes);
-      const targetPageIndex = Math.max(0, Math.min(reachableIndexes.length - 1, currentPageIndex + direction));
-      const targetIndex = reachableIndexes[targetPageIndex];
-
-      if (targetIndex === undefined || targetPageIndex === currentPageIndex) {
-        return false;
-      }
-
-      scrollToSlideIndex(targetIndex, behavior);
-      return true;
-    };
-
-    const isDesktopViewport = () =>
-      desktopInputQuery ? desktopInputQuery.matches : window.innerWidth >= 1025;
-
-    const isDesktopSliderInput = (event) =>
-      isDesktopViewport() && (!event.pointerType || event.pointerType === "mouse" || event.pointerType === "pen");
-
-    const isVideoControlTarget = (target) =>
-      Boolean(
-        target?.closest(
-          "button, input, textarea, select, .video-rollup-video-card__controls, .video-rollup-video-card__timeline, [data-play-toggle], [data-progress-track], [data-volume-shell], [data-volume-slider], [data-volume-toggle]"
-        )
-      );
-
-    const getWheelDirection = (event) => {
-      let delta = event.deltaX;
-
-      if (Math.abs(delta) < wheelDeltaThreshold && event.shiftKey) {
-        delta = event.deltaY;
-      }
-
-      if (Math.abs(delta) < wheelDeltaThreshold) {
-        return 0;
-      }
-
-      return delta > 0 ? 1 : -1;
-    };
-
-    const lockWheelStep = () => {
-      wheelStepLocked = true;
-
-      if (wheelStepTimer) {
-        window.clearTimeout(wheelStepTimer);
-      }
-
-      wheelStepTimer = window.setTimeout(() => {
-        wheelStepLocked = false;
-        wheelStepTimer = null;
-      }, wheelStepQuietDelay);
-    };
-
-    const handleDesktopWheel = (event) => {
-      let direction;
-      let targetIndex;
-
-      if (
-        !isDesktopViewport() ||
-        event.ctrlKey ||
-        event.metaKey ||
-        totalSlides < 2 ||
-        isVideoControlTarget(event.target)
-      ) {
-        return;
-      }
-
-      direction = getWheelDirection(event);
-
-      if (!direction) {
-        return;
-      }
-
-      if (event.cancelable) {
-        event.preventDefault();
-      }
-
-      if (wheelStepLocked || isProgrammaticScroll || isDragSettling) {
-        lockWheelStep();
-        return;
-      }
-
-      clearAutoAdvance();
-      targetIndex = Math.max(
-        0,
-        Math.min(totalSlides - 1, currentIndex + direction)
-      );
-
-      if (targetIndex === currentIndex) {
-        lockWheelStep();
-        startAutoAdvance();
-        return;
-      }
-
-      scrollToSlideIndex(targetIndex);
-      lockWheelStep();
-      startAutoAdvance();
-    };
-
-    const startDesktopDrag = (event) => {
-      if (!isDesktopSliderInput(event) || totalSlides < 2 || isVideoControlTarget(event.target)) {
-        return;
-      }
-
-      clearAutoAdvance();
-      isDesktopDragging = true;
-      desktopDragPointerId = event.pointerId;
-      desktopDragStartX = event.clientX;
-      desktopDragStartLeft = track.scrollLeft;
-      desktopDragMoved = false;
-      isDragSettling = false;
-      track.classList.add("is-dragging");
-
-      if (dragSettleTimer) {
-        window.clearTimeout(dragSettleTimer);
-        dragSettleTimer = null;
-      }
+      cancelScrollAnimation();
+      cancelDragAnimation();
+      isProgrammaticScroll = false;
+      track.classList.add("is-pointer-down");
 
       if (typeof track.setPointerCapture === "function" && event.pointerId !== undefined) {
         try {
           track.setPointerCapture(event.pointerId);
         } catch (error) {
-          // Ignore browsers that decline pointer capture for this event.
+          // Ignore browsers that do not allow pointer capture on this element.
         }
       }
     };
 
-    const moveDesktopDrag = (event) => {
-      let deltaX;
-
-      if (!isDesktopDragging || event.pointerId !== desktopDragPointerId) {
+    const dragViewport = (event) => {
+      if (!isPointerDown) {
         return;
       }
 
-      deltaX = event.clientX - desktopDragStartX;
+      const deltaX = event.clientX - dragStartX;
 
-      if (Math.abs(deltaX) < 3) {
+      if (!isPointerDragging && Math.abs(deltaX) > 5) {
+        isPointerDragging = true;
+        suppressNextClick = true;
+        track.classList.add("is-dragging");
+      }
+
+      if (!isPointerDragging) {
         return;
       }
 
-      desktopDragMoved = true;
-      isProgrammaticScroll = false;
-      pendingDragScrollLeft = desktopDragStartLeft - deltaX;
-
+      event.preventDefault();
+      pendingDragScrollLeft = Math.max(
+        0,
+        Math.min(getMaxScrollLeft(), dragStartScrollLeft - deltaX)
+      );
       scheduleDragScroll();
-
-      if (event.cancelable) {
-        event.preventDefault();
-      }
     };
 
-    const scheduleDragScroll = () => {
-      if (dragScrollFrame) {
+    const stopViewportDrag = () => {
+      if (!isPointerDown) {
         return;
       }
 
-      dragScrollFrame = window.requestAnimationFrame(() => {
-        const targetLeft = pendingDragScrollLeft;
+      const shouldUpdateActiveCard = isPointerDragging;
+      isPointerDown = false;
+      isPointerDragging = false;
+      track.classList.remove("is-pointer-down", "is-dragging");
 
-        dragScrollFrame = null;
-
-        if (targetLeft === null) {
-          return;
-        }
-
-        const distance = targetLeft - track.scrollLeft;
-
-        if (Math.abs(distance) < 0.5) {
-          track.scrollLeft = targetLeft;
-
-          if (!isDesktopDragging) {
-            pendingDragScrollLeft = null;
-          }
-
-          return;
-        }
-
-        track.scrollLeft += distance * dragFollowEase;
-        scheduleDragScroll();
-      });
-    };
-
-    const finishDesktopDrag = (event) => {
-      const didMove = desktopDragMoved;
-      const releaseTargetLeft = pendingDragScrollLeft ?? track.scrollLeft;
-      let nearestSlide;
-
-      if (!isDesktopDragging || event.pointerId !== desktopDragPointerId) {
-        return false;
-      }
-
-      nearestSlide = getNearestSlide(releaseTargetLeft);
-
-      if (typeof track.releasePointerCapture === "function" && event.pointerId !== undefined) {
-        try {
-          track.releasePointerCapture(event.pointerId);
-        } catch (error) {
-          // Ignore browsers that already released pointer capture.
-        }
-      }
-
-      isDesktopDragging = false;
-      desktopDragPointerId = null;
-      desktopDragMoved = false;
-
-      if (didMove) {
-        isDragSettling = true;
-        suppressTrackClick = true;
+      if (shouldUpdateActiveCard) {
+        setCurrentIndex(getNearestSlideIndex(pendingDragScrollLeft ?? track.scrollLeft));
         window.setTimeout(() => {
-          suppressTrackClick = false;
-        }, 0);
-
-        if (dragScrollFrame) {
-          window.cancelAnimationFrame(dragScrollFrame);
-          dragScrollFrame = null;
-        }
-
-        pendingDragScrollLeft = null;
-
-        scheduleDragScroll();
-
-        dragSettleTimer = window.setTimeout(() => {
-          pendingDragScrollLeft = null;
-          isDragSettling = false;
-          track.classList.remove("is-dragging");
-          scrollToSlideIndex(getRealIndexFromSlide(nearestSlide), "smooth");
-        }, dragSettleDelay);
-      } else {
-        isDragSettling = false;
-        track.classList.remove("is-dragging");
+          suppressNextClick = false;
+        }, 250);
       }
-
-      startAutoAdvance();
-      return didMove;
     };
 
     renderPagination();
 
-    // High performance IntersectionObserver for native snap scroll tracking
+    prev?.addEventListener("click", () => {
+      scrollToReachableDirection(-1);
+    });
+
+    next?.addEventListener("click", () => {
+      scrollToReachableDirection(1);
+    });
+
+    track.addEventListener("pointerdown", startViewportDrag);
+    track.addEventListener("pointermove", dragViewport);
+    track.addEventListener("pointerup", stopViewportDrag);
+    track.addEventListener("pointercancel", stopViewportDrag);
+    track.addEventListener(
+      "click",
+      (event) => {
+        if (!suppressNextClick) {
+          return;
+        }
+
+        event.preventDefault();
+        event.stopPropagation();
+        suppressNextClick = false;
+      },
+      true
+    );
+    window.addEventListener(
+      "resize",
+      () => {
+        syncDesktopContainerInset();
+        renderPagination();
+      },
+      { passive: true }
+    );
+
+    // Track visible cards for video autoplay and active state.
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
@@ -660,25 +612,26 @@
 
         autoplayVisibleVideo();
 
-        // Only update active dots/indexes during manual swipe/scroll (not during programmatic scrollTo animations)
-        if (!isProgrammaticScroll && !isDesktopDragging && !isDragSettling) {
-          let activeSlide = null;
-          let maxRatio = 0;
+        if (isProgrammaticScroll || isPointerDown) {
+          return;
+        }
 
-          slides.forEach((slide) => {
-            const ratio = slideVisibility.get(slide) || 0;
-            if (ratio > maxRatio) {
-              maxRatio = ratio;
-              activeSlide = slide;
-            }
-          });
+        let activeSlide = null;
+        let maxRatio = 0;
 
-          if (activeSlide && maxRatio >= 0.5) {
-            const realIndex = getRealIndexFromSlide(activeSlide);
-            if (realIndex !== currentIndex) {
-              currentIndex = realIndex;
-              setActiveSlide(root, currentIndex);
-            }
+        slides.forEach((slide) => {
+          const ratio = slideVisibility.get(slide) || 0;
+          if (ratio > maxRatio) {
+            maxRatio = ratio;
+            activeSlide = slide;
+          }
+        });
+
+        if (activeSlide && maxRatio >= 0.5) {
+          const realIndex = getRealIndexFromSlide(activeSlide);
+          if (realIndex !== currentIndex) {
+            currentIndex = realIndex;
+            setActiveSlide(root, currentIndex);
           }
         }
       },
@@ -686,57 +639,6 @@
     );
 
     slides.forEach((slide) => observer.observe(slide));
-
-    // Next/Prev Buttons
-    prev?.addEventListener("click", () => {
-      scrollToSlide(-1);
-    });
-    next?.addEventListener("click", () => {
-      scrollToSlide(1);
-    });
-
-    track.addEventListener("pointerdown", startDesktopDrag);
-    track.addEventListener("pointermove", moveDesktopDrag);
-    track.addEventListener("pointerup", finishDesktopDrag);
-    track.addEventListener("pointercancel", finishDesktopDrag);
-    track.addEventListener(
-      "click",
-      (event) => {
-        if (!suppressTrackClick) {
-          return;
-        }
-
-        event.preventDefault();
-        event.stopPropagation();
-      },
-      true
-    );
-    track.addEventListener("dragstart", (event) => {
-      if (isDesktopViewport() && !isVideoControlTarget(event.target)) {
-        event.preventDefault();
-      }
-    });
-    track.addEventListener("wheel", handleDesktopWheel, { passive: false });
-    track.addEventListener("keydown", (event) => {
-      if (!isDesktopViewport() || isVideoControlTarget(event.target)) {
-        return;
-      }
-
-      if (event.key === "ArrowRight" && scrollToSlide(1)) {
-        event.preventDefault();
-      } else if (event.key === "ArrowLeft" && scrollToSlide(-1)) {
-        event.preventDefault();
-      }
-    });
-
-    window.addEventListener(
-      "resize",
-      () => {
-        renderPagination();
-        scrollToSlideIndex(currentIndex, "auto");
-      },
-      { passive: true }
-    );
 
     window.addEventListener("scroll", autoplayVisibleVideo, { passive: true });
     window.addEventListener("resize", autoplayVisibleVideo, { passive: true });
@@ -1186,19 +1088,6 @@
     });
 
     setCurrentIndex(0);
-    if (!track.hasAttribute("tabindex")) {
-      track.setAttribute("tabindex", "0");
-    }
-    if (window.innerWidth < 768) {
-      requestAnimationFrame(() => {
-        scrollToSlideIndex(0, "auto");
-      });
-    } else {
-      track.scrollTo({
-        left: 0,
-        behavior: "auto",
-      });
-    }
     startAutoAdvance();
     startAutoAdvance();
   };

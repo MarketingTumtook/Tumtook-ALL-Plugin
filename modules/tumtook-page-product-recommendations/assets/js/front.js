@@ -1,100 +1,44 @@
 (function () {
-  var selectors = {
+  var config = {
     root: "[data-ttpr-slider]",
     track: "[data-ttpr-track]",
     slide: ".ttpr-card",
+    dotClass: "ttpr-dot",
     dots: "[data-ttpr-pagination]",
     prev: "[data-ttpr-prev]",
-    next: "[data-ttpr-next]"
+    next: "[data-ttpr-next]",
+    cssPrefix: "ttpr",
+    pageLabel: "Go to product group "
   };
 
-  function setActiveSlide(root, index) {
-    var slides = Array.prototype.slice.call(root.querySelectorAll(selectors.slide));
-
-    slides.forEach(function (slide) {
-      var slideRealIndex = parseInt(slide.getAttribute("data-real-index") || "0", 10) || 0;
-      slide.classList.toggle("is-active", slideRealIndex === index);
-    });
-
-    var dots = Array.prototype.slice.call(root.querySelectorAll(".ttpr-dot"));
-    var activeDotIndex = 0;
-
-    dots.forEach(function (dot, dotIndex) {
-      var dotSlideIndex = parseInt(dot.getAttribute("data-slide-index") || String(dotIndex), 10) || 0;
-
-      if (dotSlideIndex <= index) {
-        activeDotIndex = dotIndex;
-      }
-    });
-
-    dots.forEach(function (dot, dotIndex) {
-      dot.classList.toggle("is-active", dotIndex === activeDotIndex);
-    });
-  }
-
   function setupSlider(root) {
-    var track = root.querySelector(selectors.track);
-    var slides = Array.prototype.slice.call(root.querySelectorAll(selectors.slide));
-    var dotsWrap = root.querySelector(selectors.dots);
-    var prev = root.querySelector(selectors.prev);
-    var next = root.querySelector(selectors.next);
+    var track = root.querySelector(config.track);
+    var slides = Array.prototype.slice.call(root.querySelectorAll(config.slide));
+    var dotsWrap = root.querySelector(config.dots);
+    var prev = root.querySelector(config.prev);
+    var next = root.querySelector(config.next);
     var currentIndex = 0;
-    var isPointerDown = false;
     var isProgrammaticScroll = false;
-    var scrollSettleTimer = null;
-    var pendingReorder = null;
-    var lastManualDirection = 0;
-    var lastScrollLeft = 0;
-    var skipBoundaryLoopOnSettle = false;
-    var pointerStartX = 0;
-    var pointerStartY = 0;
-    var pointerDownCardLink = null;
-    var suppressCardClick = false;
-    var suppressCardClickTimer = null;
-    var desktopInputQuery = window.matchMedia ? window.matchMedia("(min-width: 1025px)") : null;
-    var isDesktopDragging = false;
-    var desktopDragPointerId = null;
-    var desktopDragStartX = 0;
-    var desktopDragStartLeft = 0;
-    var desktopDragMoved = false;
-    var wheelStepLocked = false;
-    var wheelStepTimer = null;
+    var programmaticScrollTimer = null;
+    var scrollAnimationFrame = null;
+    var isPointerDown = false;
+    var isPointerDragging = false;
+    var suppressNextClick = false;
+    var dragStartX = 0;
+    var dragStartScrollLeft = 0;
+    var activePointerId = null;
+    var hasPointerCapture = false;
+    var dragAnimationFrame = null;
+    var pendingDragScrollLeft = null;
+    var dragFollowEase = 0.28;
 
     if (!track || !slides.length) {
       return;
     }
 
-    var totalSlides = slides.length;
-    var loopEnabled = totalSlides > 1;
-
     slides.forEach(function (slide, index) {
       slide.setAttribute("data-real-index", String(index));
     });
-
-    function refreshSlides() {
-      slides = Array.prototype.slice.call(track.querySelectorAll(selectors.slide));
-    }
-
-    function getRealIndexFromSlide(slide) {
-      if (!slide) {
-        return 0;
-      }
-
-      return parseInt(slide.getAttribute("data-real-index") || "0", 10) || 0;
-    }
-
-    function findSlideByRealIndex(realIndex) {
-      var normalizedIndex = ((realIndex % totalSlides) + totalSlides) % totalSlides;
-
-      return slides.find(function (slide) {
-        return getRealIndexFromSlide(slide) === normalizedIndex;
-      }) || null;
-    }
-
-    function setCurrentIndex(targetIndex) {
-      currentIndex = ((targetIndex % totalSlides) + totalSlides) % totalSlides;
-      setActiveSlide(root, currentIndex);
-    }
 
     function getPixelValue(value) {
       var parsed = parseFloat(value || "");
@@ -140,18 +84,16 @@
     function syncFullBleedWidth() {
       var viewportWidth = document.documentElement.clientWidth || window.innerWidth;
 
-      root.style.setProperty("--ttpr-viewport-width", viewportWidth + "px");
-      root.style.setProperty("--ttpr-viewport-shift", "0px");
-
-      var rootLeft = root.getBoundingClientRect().left;
-      root.style.setProperty("--ttpr-viewport-shift", Math.round(-rootLeft) + "px");
+      root.style.setProperty("--" + config.cssPrefix + "-viewport-width", viewportWidth + "px");
+      root.style.setProperty("--" + config.cssPrefix + "-viewport-shift", "0px");
+      root.style.setProperty("--" + config.cssPrefix + "-viewport-shift", Math.round(-root.getBoundingClientRect().left) + "px");
     }
 
     function syncDesktopContainerInset() {
       syncFullBleedWidth();
 
       if (window.innerWidth <= 1024) {
-        root.style.removeProperty("--ttpr-first-card-inset");
+        root.style.removeProperty("--" + config.cssPrefix + "-first-card-inset");
         return;
       }
 
@@ -163,47 +105,57 @@
       );
       var trackRect = track.getBoundingClientRect();
 
-      root.style.setProperty("--ttpr-first-card-inset", Math.max(0, containerInset - trackRect.left) + "px");
+      root.style.setProperty("--" + config.cssPrefix + "-first-card-inset", Math.max(0, containerInset - trackRect.left) + "px");
     }
 
-    function getTrackStartInset() {
-      var styles = window.getComputedStyle(track);
-      var rootStyles = window.getComputedStyle(root);
-
-      return Math.max(
-        getPixelValue(styles.scrollPaddingLeft),
-        getPixelValue(styles.paddingLeft),
-        getPixelValue(rootStyles.getPropertyValue("--ttpr-first-card-inset"))
-      );
-    }
-
-    function getSlideTargetLeft(slide) {
+    function getRealIndexFromSlide(slide) {
       if (!slide) {
         return 0;
       }
 
-      return slide.offsetLeft - track.offsetLeft - getTrackStartInset();
+      return parseInt(slide.getAttribute("data-real-index") || "0", 10) || 0;
     }
 
-    function getClampedSlideTargetLeft(slide) {
-      return Math.max(0, Math.min(getSlideTargetLeft(slide), Math.max(track.scrollWidth - track.clientWidth, 0)));
+    function findSlideByRealIndex(realIndex) {
+      return slides.find(function (slide) {
+        return getRealIndexFromSlide(slide) === realIndex;
+      }) || null;
+    }
+
+    function getMaxScrollLeft() {
+      return Math.max(track.scrollWidth - track.clientWidth, 0);
+    }
+
+    function getTrackPaddingLeft() {
+      return getPixelValue(window.getComputedStyle(track).paddingLeft);
+    }
+
+    function getSlideRawScrollLeft(slide) {
+      if (!slide) {
+        return 0;
+      }
+
+      var slideRect = slide.getBoundingClientRect();
+      var trackRect = track.getBoundingClientRect();
+
+      return slideRect.left - trackRect.left + track.scrollLeft - getTrackPaddingLeft();
+    }
+
+    function getSlideScrollLeft(slide) {
+      return Math.max(0, Math.min(getMaxScrollLeft(), getSlideRawScrollLeft(slide)));
     }
 
     function getReachableIndexes() {
-      var maxScrollLeft = Math.max(track.scrollWidth - track.clientWidth, 0);
       var positions = [];
 
       slides.forEach(function (slide, index) {
-        var targetLeft = Math.max(0, Math.min(getSlideTargetLeft(slide), maxScrollLeft));
+        var left = getSlideScrollLeft(slide);
         var isDuplicate = positions.some(function (position) {
-          return Math.abs(position.left - targetLeft) < 2;
+          return Math.abs(position.left - left) < 2;
         });
 
         if (!isDuplicate) {
-          positions.push({
-            index: index,
-            left: targetLeft
-          });
+          positions.push({ index: index, left: left });
         }
       });
 
@@ -212,30 +164,205 @@
       });
     }
 
-    function getCurrentPageIndex(reachableIndexes) {
-      var currentLeft = track.scrollLeft;
-      var bestPageIndex = 0;
-      var bestDistance = Number.POSITIVE_INFINITY;
+    function getCurrentReachableIndex(reachableIndexes) {
+      var indexes = reachableIndexes || getReachableIndexes();
+      var pageIndex = 0;
 
-      reachableIndexes.forEach(function (slideIndex, pageIndex) {
-        var slide = findSlideByRealIndex(slideIndex);
-        var targetLeft = slide
-          ? Math.max(0, Math.min(getSlideTargetLeft(slide), Math.max(track.scrollWidth - track.clientWidth, 0)))
-          : 0;
-        var distance = Math.abs(targetLeft - currentLeft);
-
-        if (distance < bestDistance) {
-          bestDistance = distance;
-          bestPageIndex = pageIndex;
+      indexes.forEach(function (slideIndex, index) {
+        if (slideIndex <= currentIndex) {
+          pageIndex = index;
         }
       });
 
-      return bestPageIndex;
+      return pageIndex;
+    }
+
+    function setActiveSlide(index) {
+      var dots = Array.prototype.slice.call(root.querySelectorAll("." + config.dotClass));
+      var activeDotIndex = 0;
+
+      slides.forEach(function (slide) {
+        slide.classList.toggle("is-active", getRealIndexFromSlide(slide) === index);
+      });
+
+      dots.forEach(function (dot, dotIndex) {
+        var dotSlideIndex = parseInt(dot.getAttribute("data-slide-index") || String(dotIndex), 10) || 0;
+
+        if (dotSlideIndex <= index) {
+          activeDotIndex = dotIndex;
+        }
+      });
+
+      dots.forEach(function (dot, dotIndex) {
+        dot.classList.toggle("is-active", dotIndex === activeDotIndex);
+      });
+    }
+
+    function setCurrentIndex(targetIndex) {
+      var reachableIndexes = getReachableIndexes();
+
+      currentIndex = Math.max(0, Math.min(slides.length - 1, targetIndex));
+      setActiveSlide(currentIndex);
+
+      if (prev) {
+        prev.disabled = getCurrentReachableIndex(reachableIndexes) <= 0;
+      }
+
+      if (next) {
+        next.disabled = getCurrentReachableIndex(reachableIndexes) >= reachableIndexes.length - 1;
+      }
+    }
+
+    function getNearestSlideIndex(scrollLeft) {
+      var left = typeof scrollLeft === "number" ? scrollLeft : track.scrollLeft;
+      var nearestIndex = currentIndex;
+      var nearestDistance = Number.POSITIVE_INFINITY;
+
+      slides.forEach(function (slide) {
+        var distance = Math.abs(getSlideScrollLeft(slide) - left);
+
+        if (distance < nearestDistance) {
+          nearestDistance = distance;
+          nearestIndex = getRealIndexFromSlide(slide);
+        }
+      });
+
+      return nearestIndex;
+    }
+
+    function cancelScrollAnimation() {
+      if (!scrollAnimationFrame) {
+        return;
+      }
+
+      window.cancelAnimationFrame(scrollAnimationFrame);
+      scrollAnimationFrame = null;
+    }
+
+    function cancelDragAnimation() {
+      if (dragAnimationFrame) {
+        window.cancelAnimationFrame(dragAnimationFrame);
+      }
+
+      dragAnimationFrame = null;
+      pendingDragScrollLeft = null;
+    }
+
+    function scheduleDragScroll() {
+      if (dragAnimationFrame) {
+        return;
+      }
+
+      dragAnimationFrame = window.requestAnimationFrame(function () {
+        var targetLeft = pendingDragScrollLeft;
+        var distance;
+
+        dragAnimationFrame = null;
+
+        if (targetLeft === null) {
+          return;
+        }
+
+        distance = targetLeft - track.scrollLeft;
+
+        if (Math.abs(distance) < 0.5) {
+          track.scrollLeft = targetLeft;
+
+          if (!isPointerDown) {
+            pendingDragScrollLeft = null;
+          }
+
+          return;
+        }
+
+        track.scrollLeft += distance * dragFollowEase;
+        scheduleDragScroll();
+      });
+    }
+
+    function animateScrollTo(targetLeft, duration) {
+      var startLeft = track.scrollLeft;
+      var distance = targetLeft - startLeft;
+      var startTime = window.performance.now();
+      var scrollDuration = duration || 560;
+
+      cancelScrollAnimation();
+      cancelDragAnimation();
+
+      if (Math.abs(distance) < 1) {
+        track.scrollLeft = targetLeft;
+        return;
+      }
+
+      function easeOutCubic(progress) {
+        return 1 - Math.pow(1 - progress, 3);
+      }
+
+      function step(currentTime) {
+        var elapsed = currentTime - startTime;
+        var progress = Math.min(elapsed / scrollDuration, 1);
+
+        track.scrollLeft = startLeft + distance * easeOutCubic(progress);
+
+        if (progress < 1) {
+          scrollAnimationFrame = window.requestAnimationFrame(step);
+          return;
+        }
+
+        track.scrollLeft = targetLeft;
+        scrollAnimationFrame = null;
+      }
+
+      scrollAnimationFrame = window.requestAnimationFrame(step);
+    }
+
+    function scrollToSlideIndex(targetIndex, behavior) {
+      var safeIndex = Math.max(0, Math.min(slides.length - 1, targetIndex));
+      var targetSlide = findSlideByRealIndex(safeIndex);
+
+      if (!targetSlide) {
+        return;
+      }
+
+      isProgrammaticScroll = true;
+
+      if (programmaticScrollTimer) {
+        window.clearTimeout(programmaticScrollTimer);
+      }
+
+      setCurrentIndex(safeIndex);
+
+      if (behavior === "auto") {
+        cancelScrollAnimation();
+        cancelDragAnimation();
+        track.scrollTo({
+          left: getSlideScrollLeft(targetSlide),
+          behavior: "auto"
+        });
+      } else {
+        animateScrollTo(getSlideScrollLeft(targetSlide));
+      }
+
+      programmaticScrollTimer = window.setTimeout(function () {
+        isProgrammaticScroll = false;
+      }, behavior === "auto" ? 0 : 620);
+    }
+
+    function scrollToReachableDirection(direction) {
+      var reachableIndexes = getReachableIndexes();
+      var currentReachableIndex = getCurrentReachableIndex(reachableIndexes);
+      var nextReachableIndex = Math.max(0, Math.min(reachableIndexes.length - 1, currentReachableIndex + direction));
+      var targetIndex = reachableIndexes[nextReachableIndex];
+
+      if (targetIndex === undefined || nextReachableIndex === currentReachableIndex) {
+        return;
+      }
+
+      scrollToSlideIndex(targetIndex);
     }
 
     function renderPagination() {
-      var reachableIndexes = getReachableIndexes();
-      var canScroll = reachableIndexes.length > 1;
+      var canScroll = slides.length > 1 && getMaxScrollLeft() > 1;
 
       if (dotsWrap) {
         dotsWrap.innerHTML = "";
@@ -254,652 +381,157 @@
         return;
       }
 
-      reachableIndexes.forEach(function (slideIndex, pageIndex) {
+      getReachableIndexes().forEach(function (slideIndex, dotIndex) {
         var dot = document.createElement("button");
+
         dot.type = "button";
-        dot.className = "ttpr-dot" + (pageIndex === 0 ? " is-active" : "");
-        dot.setAttribute("aria-label", "Go to product group " + (pageIndex + 1));
+        dot.className = config.dotClass + (dotIndex === getCurrentReachableIndex() ? " is-active" : "");
+        dot.setAttribute("aria-label", config.pageLabel + (dotIndex + 1));
         dot.setAttribute("data-slide-index", String(slideIndex));
         dot.addEventListener("click", function () {
           scrollToSlideIndex(slideIndex);
         });
         dotsWrap.appendChild(dot);
       });
+
+      setActiveSlide(currentIndex);
     }
 
-    function getNearestSlide() {
-      var currentLeft = track.scrollLeft;
-      var nearestSlide = slides[0] || null;
-      var nearestDistance = Number.POSITIVE_INFINITY;
-
-      slides.forEach(function (slide) {
-        var targetLeft = getClampedSlideTargetLeft(slide);
-        var distance = Math.abs(targetLeft - currentLeft);
-
-        if (distance < nearestDistance) {
-          nearestDistance = distance;
-          nearestSlide = slide;
-        }
-      });
-
-      return nearestSlide;
+    function isSliderControl(target) {
+      return !!target.closest("button, input, textarea, select, iframe");
     }
 
-    function getSettledSlide(direction) {
-      var currentLeft;
-      var tolerance;
-      var candidates;
-      var bestSlide;
-      var bestDistance;
-
-      if (!direction) {
-        return getNearestSlide();
-      }
-
-      currentLeft = track.scrollLeft;
-      tolerance = 8;
-      candidates = slides.filter(function (slide) {
-        var offset = getSlideTargetLeft(slide);
-        return direction > 0
-          ? offset >= currentLeft - tolerance
-          : offset <= currentLeft + tolerance;
-      });
-
-      if (!candidates.length) {
-        return getNearestSlide();
-      }
-
-      bestSlide = candidates[0];
-      bestDistance = Number.POSITIVE_INFINITY;
-
-      candidates.forEach(function (slide) {
-        var offset = getSlideTargetLeft(slide);
-        var distance = Math.abs(offset - currentLeft);
-
-        if (distance < bestDistance) {
-          bestDistance = distance;
-          bestSlide = slide;
-        }
-      });
-
-      return bestSlide;
-    }
-
-    function preserveViewportWhile(mutateSlides) {
-      var anchorSlide = getNearestSlide();
-      var anchorOffset = anchorSlide ? getSlideTargetLeft(anchorSlide) : 0;
-
-      mutateSlides();
-      refreshSlides();
-
-      if (anchorSlide) {
-        var nextOffset = getSlideTargetLeft(anchorSlide);
-        track.scrollLeft += nextOffset - anchorOffset;
-      }
-
-      lastScrollLeft = track.scrollLeft;
-    }
-
-    function syncCurrentIndexFromViewport() {
-      var nearestSlide = getNearestSlide();
-      setCurrentIndex(getRealIndexFromSlide(nearestSlide));
-    }
-
-    function getStepSize() {
-      var firstSlide = slides[0];
-
-      if (!firstSlide) {
-        return 0;
-      }
-
-      var styles = window.getComputedStyle(track);
-      var gap = parseFloat(styles.columnGap || styles.gap || "0") || 0;
-      return firstSlide.getBoundingClientRect().width + gap;
-    }
-
-    function holdSuppressCardClick(delay) {
-      suppressCardClick = true;
-
-      if (suppressCardClickTimer) {
-        window.clearTimeout(suppressCardClickTimer);
-      }
-
-      suppressCardClickTimer = window.setTimeout(function () {
-        suppressCardClick = false;
-        suppressCardClickTimer = null;
-      }, delay || 180);
-    }
-
-    function isDesktopViewport() {
-      return desktopInputQuery ? desktopInputQuery.matches : window.innerWidth >= 1025;
-    }
-
-    function isDesktopSliderInput(event) {
-      return isDesktopViewport() && (!event.pointerType || event.pointerType === "mouse" || event.pointerType === "pen");
-    }
-
-    function getWheelDirection(event) {
-      var delta = Math.abs(event.deltaX) > Math.abs(event.deltaY) ? event.deltaX : event.deltaY;
-
-      if (Math.abs(delta) < 10) {
-        return 0;
-      }
-
-      return delta > 0 ? 1 : -1;
-    }
-
-    function lockWheelStep() {
-      wheelStepLocked = true;
-
-      if (wheelStepTimer) {
-        window.clearTimeout(wheelStepTimer);
-      }
-
-      wheelStepTimer = window.setTimeout(function () {
-        wheelStepLocked = false;
-        wheelStepTimer = null;
-      }, 360);
-    }
-
-    function isAtLoopBoundary(direction, tolerance) {
-      var edgeTolerance = typeof tolerance === "number" ? tolerance : 2;
-      var maxScrollLeft = Math.max(track.scrollWidth - track.clientWidth, 0);
-
-      if (direction > 0) {
-        return maxScrollLeft - track.scrollLeft <= edgeTolerance;
-      }
-
-      if (direction < 0) {
-        return track.scrollLeft <= edgeTolerance;
-      }
-
-      return false;
-    }
-
-    function prepareLoopEdge(direction) {
-      if (!loopEnabled) {
-        return false;
-      }
-
-      var stepSize = getStepSize();
-
-      if (!stepSize || totalSlides < 2) {
-        return false;
-      }
-
-      if (direction > 0 && isAtLoopBoundary(direction)) {
-        var firstSlide = track.firstElementChild;
-
-        if (firstSlide) {
-          preserveViewportWhile(function () {
-            track.appendChild(firstSlide);
-          });
-          lastManualDirection = 0;
-          return true;
-        }
-      }
-
-      if (direction < 0 && isAtLoopBoundary(direction)) {
-        var lastSlide = track.lastElementChild;
-
-        if (lastSlide) {
-          preserveViewportWhile(function () {
-            track.insertBefore(lastSlide, track.firstElementChild);
-          });
-          lastManualDirection = 0;
-          return true;
-        }
-      }
-
-      return false;
-    }
-
-    function interruptProgrammaticScroll() {
-      if (!isProgrammaticScroll && !pendingReorder) {
+    function startViewportDrag(event) {
+      if (event.button !== undefined && event.button !== 0) {
         return;
       }
 
-      track.scrollTo({
-        left: track.scrollLeft,
-        behavior: "auto"
-      });
-
-      if (scrollSettleTimer) {
-        window.clearTimeout(scrollSettleTimer);
-        scrollSettleTimer = null;
-      }
-
-      if (pendingReorder) {
-        finalizeReorder();
-      } else {
-        isProgrammaticScroll = false;
-        skipBoundaryLoopOnSettle = false;
-      }
-    }
-
-    function scrollToSlideIndex(targetIndex, behavior) {
-      var scrollBehavior = behavior || "smooth";
-      var targetSlide;
-
-      if (scrollBehavior === "smooth" && (isProgrammaticScroll || pendingReorder)) {
-        interruptProgrammaticScroll();
-      }
-
-      setCurrentIndex(targetIndex);
-      targetSlide = findSlideByRealIndex(targetIndex);
-
-      if (!targetSlide) {
+      if (isSliderControl(event.target)) {
         return;
       }
 
-      isProgrammaticScroll = scrollBehavior === "smooth";
-      skipBoundaryLoopOnSettle = scrollBehavior === "smooth";
+      isPointerDown = true;
+      isPointerDragging = false;
+      activePointerId = event.pointerId !== undefined ? event.pointerId : null;
+      hasPointerCapture = false;
+      dragStartX = event.clientX;
+      dragStartScrollLeft = track.scrollLeft;
+      suppressNextClick = false;
 
-      track.scrollTo({
-        left: getSlideTargetLeft(targetSlide),
-        behavior: scrollBehavior
-      });
-    }
-
-    function finalizeReorder() {
-      var stepSize = getStepSize();
-
-      if (!stepSize) {
-        pendingReorder = null;
-        isProgrammaticScroll = false;
-        skipBoundaryLoopOnSettle = false;
-        return;
+      if (programmaticScrollTimer) {
+        window.clearTimeout(programmaticScrollTimer);
+        programmaticScrollTimer = null;
       }
 
-      if (pendingReorder === "next") {
-        var firstSlide = track.firstElementChild;
-
-        if (firstSlide) {
-          preserveViewportWhile(function () {
-            track.appendChild(firstSlide);
-          });
-        }
-      } else if (pendingReorder === "prev") {
-        var lastSlide = track.lastElementChild;
-
-        if (lastSlide) {
-          preserveViewportWhile(function () {
-            track.insertBefore(lastSlide, track.firstElementChild);
-          });
-        }
-      }
-
-      pendingReorder = null;
+      cancelScrollAnimation();
+      cancelDragAnimation();
       isProgrammaticScroll = false;
-      lastManualDirection = 0;
-      skipBoundaryLoopOnSettle = false;
-      setActiveSlide(root, currentIndex);
+      track.classList.add("is-pointer-down");
     }
 
-    renderPagination();
-
-    function scrollToSlide(direction) {
-      if (isProgrammaticScroll || pendingReorder) {
-        interruptProgrammaticScroll();
-      }
-
-      if (totalSlides < 2 || !direction) {
-        return false;
-      }
-
-      var reachableIndexes = getReachableIndexes();
-      var currentPageIndex = getCurrentPageIndex(reachableIndexes);
-      var targetPageIndex = Math.max(0, Math.min(reachableIndexes.length - 1, currentPageIndex + direction));
-      var targetIndex = reachableIndexes[targetPageIndex];
-
-      if (targetIndex === undefined || targetPageIndex === currentPageIndex) {
-        return false;
-      }
-
-      scrollToSlideIndex(targetIndex);
-      return true;
-    }
-
-    function handleDesktopWheel(event) {
-      var direction;
-      var didMove;
-
-      if (!isDesktopViewport() || event.ctrlKey || event.metaKey || totalSlides < 2) {
-        return;
-      }
-
-      direction = getWheelDirection(event);
-
-      if (!direction) {
-        return;
-      }
-
-      if (wheelStepLocked) {
-        if (event.cancelable) {
-          event.preventDefault();
-        }
-        return;
-      }
-
-      didMove = scrollToSlide(direction);
-
-      if (!didMove) {
-        return;
-      }
-
-      if (event.cancelable) {
-        event.preventDefault();
-      }
-
-      lockWheelStep();
-    }
-
-    function startDesktopDrag(event) {
-      if (!isDesktopSliderInput(event) || totalSlides < 2) {
-        return;
-      }
-
-      isDesktopDragging = true;
-      desktopDragPointerId = event.pointerId;
-      desktopDragStartX = event.clientX;
-      desktopDragStartLeft = track.scrollLeft;
-      desktopDragMoved = false;
-      track.classList.add("is-dragging");
-
-      if (typeof track.setPointerCapture === "function" && event.pointerId !== undefined) {
-        try {
-          track.setPointerCapture(event.pointerId);
-        } catch (error) {
-          // Ignore browsers that decline pointer capture for this event.
-        }
-      }
-    }
-
-    function moveDesktopDrag(event) {
+    function dragViewport(event) {
       var deltaX;
 
-      if (!isDesktopDragging || event.pointerId !== desktopDragPointerId) {
+      if (!isPointerDown) {
         return;
       }
 
-      deltaX = event.clientX - desktopDragStartX;
+      deltaX = event.clientX - dragStartX;
 
-      if (Math.abs(deltaX) < 3) {
+      if (!isPointerDragging && Math.abs(deltaX) > 5) {
+        isPointerDragging = true;
+        suppressNextClick = true;
+        track.classList.add("is-dragging");
+
+        if (!hasPointerCapture && typeof track.setPointerCapture === "function" && activePointerId !== null) {
+          try {
+            track.setPointerCapture(activePointerId);
+            hasPointerCapture = true;
+          } catch (error) {
+            // Ignore browsers that do not allow pointer capture on this element.
+          }
+        }
+      }
+
+      if (!isPointerDragging) {
         return;
       }
 
-      desktopDragMoved = true;
-      pendingReorder = null;
-      isProgrammaticScroll = false;
-      track.scrollLeft = desktopDragStartLeft - deltaX;
-
-      if (event.cancelable) {
-        event.preventDefault();
-      }
+      event.preventDefault();
+      pendingDragScrollLeft = Math.max(0, Math.min(getMaxScrollLeft(), dragStartScrollLeft - deltaX));
+      scheduleDragScroll();
     }
 
-    function finishDesktopDrag(event) {
-      var didMove = desktopDragMoved;
-      var nearestSlide;
+    function stopViewportDrag() {
+      var shouldUpdateActiveCard;
 
-      if (!isDesktopDragging || event.pointerId !== desktopDragPointerId) {
-        return false;
+      if (!isPointerDown) {
+        return;
       }
 
-      if (typeof track.releasePointerCapture === "function" && event.pointerId !== undefined) {
+      shouldUpdateActiveCard = isPointerDragging;
+      isPointerDown = false;
+      isPointerDragging = false;
+      track.classList.remove("is-pointer-down", "is-dragging");
+
+      if (hasPointerCapture && typeof track.releasePointerCapture === "function" && activePointerId !== null) {
         try {
-          track.releasePointerCapture(event.pointerId);
+          track.releasePointerCapture(activePointerId);
         } catch (error) {
           // Ignore browsers that already released pointer capture.
         }
       }
 
-      isDesktopDragging = false;
-      desktopDragPointerId = null;
-      desktopDragMoved = false;
-      track.classList.remove("is-dragging");
+      activePointerId = null;
+      hasPointerCapture = false;
 
-      if (didMove) {
-        holdSuppressCardClick();
-
-        nearestSlide = getNearestSlide();
-        scrollToSlideIndex(getRealIndexFromSlide(nearestSlide));
+      if (shouldUpdateActiveCard) {
+        setCurrentIndex(getNearestSlideIndex(pendingDragScrollLeft !== null ? pendingDragScrollLeft : track.scrollLeft));
+        window.setTimeout(function () {
+          suppressNextClick = false;
+        }, 250);
       }
-
-      return didMove;
     }
 
-    function getCardLinkFromTarget(target) {
-      var slide;
-      var directLink;
-      var detailLink;
-      var link;
-
-      if (!target || typeof target.closest !== "function") {
-        return null;
-      }
-
-      slide = target.closest(selectors.slide);
-
-      if (!slide || !track.contains(slide)) {
-        return null;
-      }
-
-      directLink = target.closest("a[href]");
-      detailLink = slide.querySelector(".ttpr-button");
-      link = directLink || detailLink;
-
-      if (!link || !link.href || link.getAttribute("href") === "#") {
-        return null;
-      }
-
-      if (!directLink && target.closest("button, input, textarea, select")) {
-        return null;
-      }
-
-      return link;
-    }
-
-    function openCardLinkFromPointer(event) {
-      var link;
-
-      if (suppressCardClick || (event.pointerType === "mouse" && event.button !== 0)) {
-        return false;
-      }
-
-      link = pointerDownCardLink || getCardLinkFromTarget(event.target);
-
-      if (!link) {
-        return false;
-      }
-
-      holdSuppressCardClick(260);
-
-      if (event.cancelable) {
-        event.preventDefault();
-      }
-
-      if (link.target && link.target !== "_self") {
-        window.open(link.href, link.target);
-      } else {
-        window.location.href = link.href;
-      }
-
-      return true;
-    }
+    syncDesktopContainerInset();
+    renderPagination();
 
     if (prev) {
       prev.addEventListener("click", function () {
-        scrollToSlide(-1);
+        scrollToReachableDirection(-1);
       });
     }
 
     if (next) {
       next.addEventListener("click", function () {
-        scrollToSlide(1);
+        scrollToReachableDirection(1);
       });
     }
 
-    track.addEventListener("pointerdown", function (event) {
-      isPointerDown = true;
-      pointerStartX = event.clientX;
-      pointerStartY = event.clientY;
-      pointerDownCardLink = getCardLinkFromTarget(event.target);
-      suppressCardClick = false;
-      if (suppressCardClickTimer) {
-        window.clearTimeout(suppressCardClickTimer);
-        suppressCardClickTimer = null;
-      }
-      pendingReorder = null;
-      isProgrammaticScroll = false;
-      startDesktopDrag(event);
-    });
-
-    track.addEventListener("pointermove", moveDesktopDrag);
-
-    track.addEventListener("pointerup", function (event) {
-      var deltaX = Math.abs(event.clientX - pointerStartX);
-      var deltaY = Math.abs(event.clientY - pointerStartY);
-      var didDesktopDrag;
-
-      if (deltaX > 8 || deltaY > 8) {
-        pointerDownCardLink = null;
-        holdSuppressCardClick();
-      }
-
-      didDesktopDrag = finishDesktopDrag(event);
-      isPointerDown = false;
-
-      if (!didDesktopDrag) {
-        if (!openCardLinkFromPointer(event)) {
-          syncCurrentIndexFromViewport();
-        }
-      }
-
-      pointerDownCardLink = null;
-    });
-
-    track.addEventListener("pointercancel", function (event) {
-      pointerDownCardLink = null;
-      holdSuppressCardClick();
-      finishDesktopDrag(event);
-      isPointerDown = false;
-      syncCurrentIndexFromViewport();
-    });
-
+    track.addEventListener("pointerdown", startViewportDrag);
+    track.addEventListener("pointermove", dragViewport);
+    track.addEventListener("pointerup", stopViewportDrag);
+    track.addEventListener("pointercancel", stopViewportDrag);
     track.addEventListener("click", function (event) {
-      if (!suppressCardClick) {
+      if (!suppressNextClick) {
         return;
       }
 
       event.preventDefault();
       event.stopPropagation();
-      suppressCardClick = false;
-
-      if (suppressCardClickTimer) {
-        window.clearTimeout(suppressCardClickTimer);
-        suppressCardClickTimer = null;
-      }
+      suppressNextClick = false;
     }, true);
-
-    track.addEventListener("dragstart", function (event) {
-      if (isDesktopViewport()) {
-        event.preventDefault();
-      }
-    });
-
-    track.addEventListener("wheel", handleDesktopWheel, { passive: false });
-
-    track.addEventListener("keydown", function (event) {
-      if (!isDesktopViewport()) {
-        return;
-      }
-
-      if (event.key === "ArrowRight" && scrollToSlide(1)) {
-        event.preventDefault();
-      } else if (event.key === "ArrowLeft" && scrollToSlide(-1)) {
-        event.preventDefault();
-      }
-    });
-
-    track.addEventListener("scroll", function () {
-      var currentScrollLeft = track.scrollLeft;
-
-      if (!isProgrammaticScroll) {
-        var delta = currentScrollLeft - lastScrollLeft;
-
-        if (Math.abs(delta) > 1) {
-          lastManualDirection = Math.sign(delta);
-        }
-      }
-
-      lastScrollLeft = currentScrollLeft;
-
-      if (!isProgrammaticScroll && !isPointerDown && !pendingReorder) {
-        var nearestSlide = getNearestSlide();
-        setCurrentIndex(getRealIndexFromSlide(nearestSlide));
-      }
-
-      if (scrollSettleTimer) {
-        window.clearTimeout(scrollSettleTimer);
-      }
-
-      scrollSettleTimer = window.setTimeout(function () {
-        if (!isPointerDown) {
-          var shouldSkipBoundaryLoop = skipBoundaryLoopOnSettle;
-          var nearestSlide = getSettledSlide(lastManualDirection);
-
-          if (pendingReorder) {
-            finalizeReorder();
-          } else {
-            isProgrammaticScroll = false;
-          }
-
-          if (!shouldSkipBoundaryLoop) {
-            setCurrentIndex(getRealIndexFromSlide(nearestSlide));
-          } else {
-            setActiveSlide(root, currentIndex);
-          }
-
-          skipBoundaryLoopOnSettle = false;
-          lastManualDirection = 0;
-        }
-      }, 140);
-    });
-
-    slides.forEach(function (slide) {
-      slide.addEventListener("click", function (event) {
-        var target = event.target;
-        var detailLink = slide.querySelector(".ttpr-button");
-
-        if (!detailLink || suppressCardClick) {
-          return;
-        }
-
-        if (target && target.closest("a, button, input, textarea, select")) {
-          return;
-        }
-
-        window.location.href = detailLink.href;
-      });
-    });
 
     window.addEventListener("resize", function () {
       syncDesktopContainerInset();
       renderPagination();
-      scrollToSlideIndex(currentIndex, "auto");
-    });
+    }, { passive: true });
 
-    syncDesktopContainerInset();
-    renderPagination();
-    if (!track.hasAttribute("tabindex")) {
-      track.setAttribute("tabindex", "0");
-    }
     setCurrentIndex(0);
   }
 
   document.addEventListener("DOMContentLoaded", function () {
-    var sliders = document.querySelectorAll(selectors.root);
+    var sliders = document.querySelectorAll(config.root);
 
     if (sliders.length) {
       document.documentElement.classList.add("ttpr-slider-page");

@@ -36,35 +36,31 @@
 
   const setupSlider = (root) => {
     const track = root.querySelector(selectors.track);
-    let slides = [...root.querySelectorAll(selectors.slide)];
+    const slides = [...root.querySelectorAll(selectors.slide)];
     const dotsWrap = root.querySelector(selectors.dots);
     const prev = root.querySelector(selectors.prev);
     const next = root.querySelector(selectors.next);
-    let currentIndex = 0;
     const slideVisibility = new Map();
+    let currentIndex = 0;
     let isProgrammaticScroll = false;
     let programmaticScrollTimer = null;
-    const desktopInputQuery = window.matchMedia ? window.matchMedia("(min-width: 1025px)") : null;
-    let isDesktopDragging = false;
-    let desktopDragPointerId = null;
-    let desktopDragStartX = 0;
-    let desktopDragStartLeft = 0;
-    let desktopDragMoved = false;
-    let pointerDownCardLink = null;
-    let suppressTrackClick = false;
-    let suppressTrackClickTimer = null;
-    let wheelStepLocked = false;
-    let wheelStepTimer = null;
+    let scrollAnimationFrame = null;
+    let isPointerDown = false;
+    let isPointerDragging = false;
+    let suppressNextClick = false;
+    let dragStartX = 0;
+    let dragStartScrollLeft = 0;
+    let activePointerId = null;
+    let hasPointerCapture = false;
+    let dragAnimationFrame = null;
+    let pendingDragScrollLeft = null;
+    const dragFollowEase = 0.28;
 
     if (!track || !slides.length) {
       return;
     }
 
     const totalSlides = slides.length;
-
-    const refreshSlides = () => {
-      slides = [...track.querySelectorAll(selectors.slide)];
-    };
 
     const getPixelValue = (value) => {
       const parsed = Number.parseFloat(value || "");
@@ -135,6 +131,7 @@
     };
 
     syncDesktopContainerInset();
+    window.addEventListener("resize", syncDesktopContainerInset, { passive: true });
 
     slides.forEach((slide, index) => {
       slide.dataset.realIndex = index.toString();
@@ -150,42 +147,27 @@
 
     const findSlideByRealIndex = (realIndex) =>
       slides.find(
-        (slide) =>
-          getRealIndexFromSlide(slide) ===
-          ((realIndex % totalSlides) + totalSlides) % totalSlides
+        (slide) => getRealIndexFromSlide(slide) === realIndex
       ) || null;
 
     const getMaxScrollLeft = () => Math.max(track.scrollWidth - track.clientWidth, 0);
+
+    const getTrackPaddingLeft = () =>
+      getPixelValue(window.getComputedStyle(track).paddingLeft);
 
     const getSlideRawScrollLeft = (slide) => {
       if (!slide) {
         return 0;
       }
 
-      const raw = slide.offsetLeft - track.offsetLeft;
-      if (window.innerWidth < 768) {
-        return raw - (track.clientWidth - slide.clientWidth) / 2;
-      }
+      const slideRect = slide.getBoundingClientRect();
+      const trackRect = track.getBoundingClientRect();
 
-      const trackStyle = window.getComputedStyle(track);
-      const trackPaddingLeft = getPixelValue(trackStyle.paddingLeft);
-      const firstCardInset = getPixelValue(
-        window.getComputedStyle(root).getPropertyValue("--ttbs-first-card-inset")
-      );
-
-      return raw - Math.max(trackPaddingLeft, firstCardInset);
+      return slideRect.left - trackRect.left + track.scrollLeft - getTrackPaddingLeft();
     };
 
-    const getSlideScrollLeft = (slide) => {
-      if (!slide) {
-        return 0;
-      }
-
-      return Math.max(
-        0,
-        Math.min(getMaxScrollLeft(), getSlideRawScrollLeft(slide))
-      );
-    };
+    const getSlideScrollLeft = (slide) =>
+      Math.max(0, Math.min(getMaxScrollLeft(), getSlideRawScrollLeft(slide)));
 
     const getReachableIndexes = () => {
       const positions = [];
@@ -202,26 +184,181 @@
       return positions.map((position) => position.index);
     };
 
-    const getCurrentPageIndex = (reachableIndexes) => {
-      let bestPageIndex = 0;
-      let bestDistance = Number.POSITIVE_INFINITY;
+    const getCurrentReachableIndex = (reachableIndexes = getReachableIndexes()) => {
+      let pageIndex = 0;
 
-      reachableIndexes.forEach((slideIndex, pageIndex) => {
-        const slide = findSlideByRealIndex(slideIndex);
-        const distance = Math.abs((slide ? getSlideScrollLeft(slide) : 0) - track.scrollLeft);
-
-        if (distance < bestDistance) {
-          bestDistance = distance;
-          bestPageIndex = pageIndex;
+      reachableIndexes.forEach((slideIndex, index) => {
+        if (slideIndex <= currentIndex) {
+          pageIndex = index;
         }
       });
 
-      return bestPageIndex;
+      return pageIndex;
+    };
+
+    const setCurrentIndex = (targetIndex) => {
+      const reachableIndexes = getReachableIndexes();
+
+      currentIndex = Math.max(0, Math.min(totalSlides - 1, targetIndex));
+      setActiveSlide(root, currentIndex);
+
+      if (prev) {
+        prev.disabled = getCurrentReachableIndex(reachableIndexes) <= 0;
+      }
+
+      if (next) {
+        next.disabled = getCurrentReachableIndex(reachableIndexes) >= reachableIndexes.length - 1;
+      }
+    };
+
+    const getNearestSlideIndex = (scrollLeft = track.scrollLeft) => {
+      let nearestIndex = currentIndex;
+      let nearestDistance = Number.POSITIVE_INFINITY;
+
+      slides.forEach((slide) => {
+        const distance = Math.abs(getSlideScrollLeft(slide) - scrollLeft);
+
+        if (distance < nearestDistance) {
+          nearestDistance = distance;
+          nearestIndex = getRealIndexFromSlide(slide);
+        }
+      });
+
+      return nearestIndex;
+    };
+
+    const cancelScrollAnimation = () => {
+      if (!scrollAnimationFrame) {
+        return;
+      }
+
+      window.cancelAnimationFrame(scrollAnimationFrame);
+      scrollAnimationFrame = null;
+    };
+
+    const cancelDragAnimation = () => {
+      if (dragAnimationFrame) {
+        window.cancelAnimationFrame(dragAnimationFrame);
+      }
+
+      dragAnimationFrame = null;
+      pendingDragScrollLeft = null;
+    };
+
+    const scheduleDragScroll = () => {
+      if (dragAnimationFrame) {
+        return;
+      }
+
+      dragAnimationFrame = window.requestAnimationFrame(() => {
+        const targetLeft = pendingDragScrollLeft;
+
+        dragAnimationFrame = null;
+
+        if (targetLeft === null) {
+          return;
+        }
+
+        const distance = targetLeft - track.scrollLeft;
+
+        if (Math.abs(distance) < 0.5) {
+          track.scrollLeft = targetLeft;
+
+          if (!isPointerDown) {
+            pendingDragScrollLeft = null;
+          }
+
+          return;
+        }
+
+        track.scrollLeft += distance * dragFollowEase;
+        scheduleDragScroll();
+      });
+    };
+
+    const animateScrollTo = (targetLeft, duration = 560) => {
+      const startLeft = track.scrollLeft;
+      const distance = targetLeft - startLeft;
+      const startTime = window.performance.now();
+
+      cancelScrollAnimation();
+      cancelDragAnimation();
+
+      if (Math.abs(distance) < 1) {
+        track.scrollLeft = targetLeft;
+        return;
+      }
+
+      const easeOutCubic = (progress) => 1 - Math.pow(1 - progress, 3);
+
+      const step = (currentTime) => {
+        const elapsed = currentTime - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+
+        track.scrollLeft = startLeft + distance * easeOutCubic(progress);
+
+        if (progress < 1) {
+          scrollAnimationFrame = window.requestAnimationFrame(step);
+          return;
+        }
+
+        track.scrollLeft = targetLeft;
+        scrollAnimationFrame = null;
+      };
+
+      scrollAnimationFrame = window.requestAnimationFrame(step);
+    };
+
+    const scrollToSlideIndex = (targetIndex, behavior = "smooth") => {
+      const safeIndex = Math.max(0, Math.min(totalSlides - 1, targetIndex));
+      const targetSlide = findSlideByRealIndex(safeIndex);
+
+      if (!targetSlide) {
+        return;
+      }
+
+      isProgrammaticScroll = true;
+
+      if (programmaticScrollTimer) {
+        window.clearTimeout(programmaticScrollTimer);
+      }
+
+      setCurrentIndex(safeIndex);
+
+      if (behavior === "auto") {
+        cancelScrollAnimation();
+        cancelDragAnimation();
+        track.scrollTo({
+          left: getSlideScrollLeft(targetSlide),
+          behavior,
+        });
+      } else {
+        animateScrollTo(getSlideScrollLeft(targetSlide));
+      }
+
+      programmaticScrollTimer = window.setTimeout(() => {
+        isProgrammaticScroll = false;
+      }, behavior === "auto" ? 0 : 620);
+    };
+
+    const scrollToReachableDirection = (direction) => {
+      const reachableIndexes = getReachableIndexes();
+      const currentReachableIndex = getCurrentReachableIndex(reachableIndexes);
+      const nextReachableIndex = Math.max(
+        0,
+        Math.min(reachableIndexes.length - 1, currentReachableIndex + direction)
+      );
+      const targetIndex = reachableIndexes[nextReachableIndex];
+
+      if (targetIndex === undefined || nextReachableIndex === currentReachableIndex) {
+        return;
+      }
+
+      scrollToSlideIndex(targetIndex);
     };
 
     const renderPagination = () => {
-      const reachableIndexes = getReachableIndexes();
-      const canScroll = reachableIndexes.length > 1;
+      const canScroll = slides.length > 1 && getMaxScrollLeft() > 1;
 
       if (dotsWrap) {
         dotsWrap.innerHTML = "";
@@ -240,311 +377,150 @@
         return;
       }
 
-      reachableIndexes.forEach((slideIndex, pageIndex) => {
+      getReachableIndexes().forEach((slideIndex, dotIndex) => {
         const dot = document.createElement("button");
         dot.type = "button";
-        dot.className = `ttbs-showcase__dot${pageIndex === 0 ? " is-active" : ""}`;
+        dot.className = `ttbs-showcase__dot${dotIndex === getCurrentReachableIndex() ? " is-active" : ""}`;
         dot.dataset.slideIndex = slideIndex.toString();
-        dot.setAttribute("aria-label", `Go to slide group ${pageIndex + 1}`);
+        dot.setAttribute("aria-label", `Go to slide ${slideIndex + 1}`);
         dot.addEventListener("click", () => {
           scrollToSlideIndex(slideIndex);
         });
         dotsWrap.appendChild(dot);
       });
-    };
 
-    const getNearestSlide = () => {
-      const currentLeft = track.scrollLeft;
-      let nearestSlide = slides[0] || null;
-      let nearestDistance = Number.POSITIVE_INFINITY;
-
-      slides.forEach((slide) => {
-        const distance = Math.abs(getSlideScrollLeft(slide) - currentLeft);
-
-        if (distance < nearestDistance) {
-          nearestDistance = distance;
-          nearestSlide = slide;
-        }
-      });
-
-      return nearestSlide;
-    };
-
-    const preserveViewportWhile = (mutateSlides) => {
-      const anchorSlide = findSlideByRealIndex(currentIndex) || getNearestSlide();
-      const anchorOffset = anchorSlide ? getSlideRawScrollLeft(anchorSlide) : 0;
-
-      mutateSlides();
-      refreshSlides();
-
-      if (anchorSlide) {
-        track.scrollLeft += getSlideRawScrollLeft(anchorSlide) - anchorOffset;
-      }
-    };
-
-    const setCurrentIndex = (targetIndex) => {
-      currentIndex = ((targetIndex % totalSlides) + totalSlides) % totalSlides;
       setActiveSlide(root, currentIndex);
     };
 
-    const scrollToSlideIndex = (targetIndex, behavior = "smooth") => {
-      const safeIndex = ((targetIndex % totalSlides) + totalSlides) % totalSlides;
+    const isSliderControl = (target) =>
+      !!target.closest("button, input, textarea, select, iframe");
 
-      isProgrammaticScroll = true;
+    const startViewportDrag = (event) => {
+      if (event.button !== undefined && event.button !== 0) {
+        return;
+      }
+
+      if (isSliderControl(event.target)) {
+        return;
+      }
+
+      isPointerDown = true;
+      isPointerDragging = false;
+      activePointerId = event.pointerId ?? null;
+      hasPointerCapture = false;
+      dragStartX = event.clientX;
+      dragStartScrollLeft = track.scrollLeft;
+      suppressNextClick = false;
+
       if (programmaticScrollTimer) {
         window.clearTimeout(programmaticScrollTimer);
+        programmaticScrollTimer = null;
       }
 
-      currentIndex = safeIndex;
-      setActiveSlide(root, safeIndex);
-
-      const targetSlide = findSlideByRealIndex(safeIndex);
-      if (targetSlide) {
-        track.scrollTo({
-          left: getSlideScrollLeft(targetSlide),
-          behavior,
-        });
-      }
-
-      programmaticScrollTimer = window.setTimeout(() => {
-        isProgrammaticScroll = false;
-      }, 500);
-    };
-
-    const scrollToSlide = (direction, behavior = "smooth") => {
-      if (!direction || totalSlides < 2) {
-        return false;
-      }
-
-      const reachableIndexes = getReachableIndexes();
-      const currentPageIndex = getCurrentPageIndex(reachableIndexes);
-      const targetPageIndex = Math.max(0, Math.min(reachableIndexes.length - 1, currentPageIndex + direction));
-      const targetIndex = reachableIndexes[targetPageIndex];
-
-      if (targetIndex === undefined || targetPageIndex === currentPageIndex) {
-        return false;
-      }
-
-      scrollToSlideIndex(targetIndex, behavior);
-      return true;
-    };
-
-    const isDesktopViewport = () =>
-      desktopInputQuery ? desktopInputQuery.matches : window.innerWidth >= 1025;
-
-    const isDesktopSliderInput = (event) =>
-      isDesktopViewport() && (!event.pointerType || event.pointerType === "mouse" || event.pointerType === "pen");
-
-    const holdSuppressTrackClick = (delay = 180) => {
-      suppressTrackClick = true;
-
-      if (suppressTrackClickTimer) {
-        window.clearTimeout(suppressTrackClickTimer);
-      }
-
-      suppressTrackClickTimer = window.setTimeout(() => {
-        suppressTrackClick = false;
-        suppressTrackClickTimer = null;
-      }, delay);
-    };
-
-    const getCardLinkFromTarget = (target) => {
-      let slide;
-      let directLink;
-      let cardLink;
-
-      if (!target || typeof target.closest !== "function") {
-        return null;
-      }
-
-      slide = target.closest(selectors.slide);
-
-      if (!slide || !track.contains(slide)) {
-        return null;
-      }
-
-      directLink = target.closest("a[href]");
-      cardLink = directLink || slide.querySelector(".ttbs-showcase__card-link");
-
-      if (!cardLink || !cardLink.href || cardLink.getAttribute("href") === "#") {
-        return null;
-      }
-
-      if (!directLink && target.closest("button, input, textarea, select")) {
-        return null;
-      }
-
-      return cardLink;
-    };
-
-    const openCardLinkFromPointer = (event) => {
-      let link;
-
-      if (suppressTrackClick || (event.pointerType === "mouse" && event.button !== 0)) {
-        return false;
-      }
-
-      link = pointerDownCardLink || getCardLinkFromTarget(event.target);
-
-      if (!link) {
-        return false;
-      }
-
-      holdSuppressTrackClick(260);
-
-      if (event.cancelable) {
-        event.preventDefault();
-      }
-
-      if (link.target && link.target !== "_self") {
-        window.open(link.href, link.target);
-      } else {
-        window.location.href = link.href;
-      }
-
-      return true;
-    };
-
-    const getWheelDirection = (event) => {
-      const delta = Math.abs(event.deltaX) > Math.abs(event.deltaY) ? event.deltaX : event.deltaY;
-
-      if (Math.abs(delta) < 10) {
-        return 0;
-      }
-
-      return delta > 0 ? 1 : -1;
-    };
-
-    const lockWheelStep = () => {
-      wheelStepLocked = true;
-
-      if (wheelStepTimer) {
-        window.clearTimeout(wheelStepTimer);
-      }
-
-      wheelStepTimer = window.setTimeout(() => {
-        wheelStepLocked = false;
-        wheelStepTimer = null;
-      }, 360);
-    };
-
-    const handleDesktopWheel = (event) => {
-      let direction;
-      let didMove;
-
-      if (!isDesktopViewport() || event.ctrlKey || event.metaKey || totalSlides < 2) {
-        return;
-      }
-
-      direction = getWheelDirection(event);
-
-      if (!direction) {
-        return;
-      }
-
-      if (wheelStepLocked) {
-        if (event.cancelable) {
-          event.preventDefault();
-        }
-        return;
-      }
-
-      didMove = scrollToSlide(direction);
-
-      if (!didMove) {
-        return;
-      }
-
-      if (event.cancelable) {
-        event.preventDefault();
-      }
-
-      lockWheelStep();
-    };
-
-    const startDesktopDrag = (event) => {
-      pointerDownCardLink =
-        !event.button || event.button === 0 ? getCardLinkFromTarget(event.target) : null;
-
-      if (!isDesktopSliderInput(event) || totalSlides < 2) {
-        return;
-      }
-
-      isDesktopDragging = true;
-      desktopDragPointerId = event.pointerId;
-      desktopDragStartX = event.clientX;
-      desktopDragStartLeft = track.scrollLeft;
-      desktopDragMoved = false;
-      suppressTrackClick = false;
-      if (suppressTrackClickTimer) {
-        window.clearTimeout(suppressTrackClickTimer);
-        suppressTrackClickTimer = null;
-      }
-      track.classList.add("is-dragging");
-
-      if (typeof track.setPointerCapture === "function" && event.pointerId !== undefined) {
-        try {
-          track.setPointerCapture(event.pointerId);
-        } catch (error) {
-          // Ignore browsers that decline pointer capture for this event.
-        }
-      }
-    };
-
-    const moveDesktopDrag = (event) => {
-      let deltaX;
-
-      if (!isDesktopDragging || event.pointerId !== desktopDragPointerId) {
-        return;
-      }
-
-      deltaX = event.clientX - desktopDragStartX;
-
-      if (Math.abs(deltaX) < 3) {
-        return;
-      }
-
-      desktopDragMoved = true;
-      pointerDownCardLink = null;
+      cancelScrollAnimation();
+      cancelDragAnimation();
       isProgrammaticScroll = false;
-      track.scrollLeft = desktopDragStartLeft - deltaX;
-
-      if (event.cancelable) {
-        event.preventDefault();
-      }
+      track.classList.add("is-pointer-down");
     };
 
-    const finishDesktopDrag = (event) => {
-      const didMove = desktopDragMoved;
-      const nearestSlide = getNearestSlide();
-
-      if (!isDesktopDragging || event.pointerId !== desktopDragPointerId) {
-        return false;
+    const dragViewport = (event) => {
+      if (!isPointerDown) {
+        return;
       }
 
-      if (typeof track.releasePointerCapture === "function" && event.pointerId !== undefined) {
+      const deltaX = event.clientX - dragStartX;
+
+      if (!isPointerDragging && Math.abs(deltaX) > 5) {
+        isPointerDragging = true;
+        suppressNextClick = true;
+        track.classList.add("is-dragging");
+
+        if (
+          !hasPointerCapture &&
+          typeof track.setPointerCapture === "function" &&
+          activePointerId !== null
+        ) {
+          try {
+            track.setPointerCapture(activePointerId);
+            hasPointerCapture = true;
+          } catch (error) {
+            // Ignore browsers that do not allow pointer capture on this element.
+          }
+        }
+      }
+
+      if (!isPointerDragging) {
+        return;
+      }
+
+      event.preventDefault();
+      pendingDragScrollLeft = Math.max(
+        0,
+        Math.min(getMaxScrollLeft(), dragStartScrollLeft - deltaX)
+      );
+      scheduleDragScroll();
+    };
+
+    const stopViewportDrag = (event) => {
+      if (!isPointerDown) {
+        return;
+      }
+
+      const shouldUpdateActiveCard = isPointerDragging;
+      isPointerDown = false;
+      isPointerDragging = false;
+      track.classList.remove("is-pointer-down", "is-dragging");
+
+      if (
+        hasPointerCapture &&
+        typeof track.releasePointerCapture === "function" &&
+        activePointerId !== null
+      ) {
         try {
-          track.releasePointerCapture(event.pointerId);
+          track.releasePointerCapture(activePointerId);
         } catch (error) {
           // Ignore browsers that already released pointer capture.
         }
       }
 
-      isDesktopDragging = false;
-      desktopDragPointerId = null;
-      desktopDragMoved = false;
-      track.classList.remove("is-dragging");
+      activePointerId = null;
+      hasPointerCapture = false;
 
-      if (didMove) {
-        holdSuppressTrackClick();
-
-        scrollToSlideIndex(getRealIndexFromSlide(nearestSlide));
+      if (shouldUpdateActiveCard) {
+        setCurrentIndex(getNearestSlideIndex(pendingDragScrollLeft ?? track.scrollLeft));
+        window.setTimeout(() => {
+          suppressNextClick = false;
+        }, 250);
       }
-
-      return didMove;
     };
 
     renderPagination();
+
+    prev?.addEventListener("click", () => {
+      scrollToReachableDirection(-1);
+    });
+
+    next?.addEventListener("click", () => {
+      scrollToReachableDirection(1);
+    });
+
+    track.addEventListener("pointerdown", startViewportDrag);
+    track.addEventListener("pointermove", dragViewport);
+    track.addEventListener("pointerup", stopViewportDrag);
+    track.addEventListener("pointercancel", stopViewportDrag);
+    track.addEventListener(
+      "click",
+      (event) => {
+        if (!suppressNextClick) {
+          return;
+        }
+
+        event.preventDefault();
+        event.stopPropagation();
+        suppressNextClick = false;
+      },
+      true
+    );
 
     const observer = new IntersectionObserver(
       (entries) => {
@@ -552,7 +528,7 @@
           slideVisibility.set(entry.target, entry.intersectionRatio || 0);
         });
 
-        if (isProgrammaticScroll) {
+        if (isProgrammaticScroll || isPointerDown) {
           return;
         }
 
@@ -561,6 +537,7 @@
 
         slides.forEach((slide) => {
           const ratio = slideVisibility.get(slide) || 0;
+
           if (ratio > maxRatio) {
             maxRatio = ratio;
             activeSlide = slide;
@@ -569,9 +546,10 @@
 
         if (activeSlide && maxRatio >= 0.5) {
           const realIndex = getRealIndexFromSlide(activeSlide);
+
           if (realIndex !== currentIndex) {
             currentIndex = realIndex;
-            setActiveSlide(root, currentIndex);
+            setCurrentIndex(currentIndex);
           }
         }
       },
@@ -580,79 +558,15 @@
 
     slides.forEach((slide) => observer.observe(slide));
 
-    prev?.addEventListener("click", () => {
-      scrollToSlide(-1);
-    });
-
-    next?.addEventListener("click", () => {
-      scrollToSlide(1);
-    });
-
-    track.addEventListener("pointerdown", startDesktopDrag);
-    track.addEventListener("pointermove", moveDesktopDrag);
-    track.addEventListener("pointerup", (event) => {
-      const didDesktopDrag = finishDesktopDrag(event);
-
-      if (!didDesktopDrag) {
-        openCardLinkFromPointer(event);
-      }
-
-      pointerDownCardLink = null;
-    });
-    track.addEventListener("pointercancel", (event) => {
-      pointerDownCardLink = null;
-      finishDesktopDrag(event);
-    });
-    track.addEventListener(
-      "click",
-      (event) => {
-        if (!suppressTrackClick) {
-          return;
-        }
-
-        event.preventDefault();
-        event.stopPropagation();
-        suppressTrackClick = false;
-
-        if (suppressTrackClickTimer) {
-          window.clearTimeout(suppressTrackClickTimer);
-          suppressTrackClickTimer = null;
-        }
-      },
-      true
-    );
-    track.addEventListener("dragstart", (event) => {
-      if (isDesktopViewport()) {
-        event.preventDefault();
-      }
-    });
-    track.addEventListener("wheel", handleDesktopWheel, { passive: false });
-    track.addEventListener("keydown", (event) => {
-      if (!isDesktopViewport()) {
-        return;
-      }
-
-      if (event.key === "ArrowRight" && scrollToSlide(1)) {
-        event.preventDefault();
-      } else if (event.key === "ArrowLeft" && scrollToSlide(-1)) {
-        event.preventDefault();
-      }
-    });
-
     window.addEventListener(
       "resize",
       () => {
         syncDesktopContainerInset();
         renderPagination();
-        scrollToSlideIndex(currentIndex, "auto");
       },
       { passive: true }
     );
 
-    renderPagination();
-    if (!track.hasAttribute("tabindex")) {
-      track.setAttribute("tabindex", "0");
-    }
     setCurrentIndex(0);
   };
 
