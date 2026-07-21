@@ -30,7 +30,7 @@
     var hasPointerCapture = false;
     var dragAnimationFrame = null;
     var pendingDragScrollLeft = null;
-    var dragFollowEase = 0.28;
+    var dragFollowEase = 0.72;
 
     if (!track || !slides.length) {
       return;
@@ -295,7 +295,7 @@
       var startLeft = track.scrollLeft;
       var distance = targetLeft - startLeft;
       var startTime = window.performance.now();
-      var scrollDuration = duration || 560;
+      var scrollDuration = duration || 360;
 
       cancelScrollAnimation();
       cancelDragAnimation();
@@ -519,10 +519,6 @@
       });
     }
 
-    track.addEventListener("pointerdown", startViewportDrag);
-    track.addEventListener("pointermove", dragViewport);
-    track.addEventListener("pointerup", stopViewportDrag);
-    track.addEventListener("pointercancel", stopViewportDrag);
     track.addEventListener("wheel", releaseNativeWheelScroll, { passive: true });
     track.addEventListener("click", function (event) {
       if (!suppressNextClick) {

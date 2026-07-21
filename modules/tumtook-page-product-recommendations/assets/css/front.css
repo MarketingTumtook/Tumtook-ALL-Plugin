@@ -147,26 +147,26 @@ body.ttpr-slider-page {
   width: 100%;
   max-width: 100%;
   box-sizing: border-box;
-  overflow-x: auto;
+  overflow-x: scroll;
   padding: 6px 0 16px var(--ttpr-first-card-inset);
   scroll-padding-left: var(--ttpr-first-card-inset);
   scroll-padding-right: 0;
   scroll-snap-type: none;
   scrollbar-width: none;
-  overscroll-behavior-x: contain;
-  touch-action: pan-y;
+  overscroll-behavior-x: auto;
+  touch-action: auto;
   user-select: none;
-  cursor: grab;
+  -webkit-overflow-scrolling: touch;
 }
 
-.ttpr-track.is-dragging,
-.ttpr-track.is-pointer-down {
-  cursor: grabbing;
-}
-
-.ttpr-track.is-dragging a,
-.ttpr-track.is-dragging img {
-  pointer-events: none;
+@media (max-width: 767px) {
+  .ttpr-track {
+    overflow-x: scroll !important;
+    overscroll-behavior-x: auto !important;
+    scroll-snap-type: none !important;
+    touch-action: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
 }
 
 .ttpr-track img {
@@ -791,12 +791,14 @@ body.ttpr-slider-page {
     --ttpr-card-width: 320px;
     --ttpr-card-radius: 12px;
     --ttpr-media-radius: 20px;
-    --ttpr-slides-per-view: 1;
-    --ttpr-mobile-peek: 0px;
+    --ttpr-slides-per-view: 2.2;
   }
 
   .ttpr-track {
-    grid-auto-columns: min(220px, calc((var(--ttpr-viewport-width, 100%) - 46px - var(--ttpr-gap) - var(--ttpr-mobile-peek)) / 2));
+    grid-auto-columns: calc(
+      (var(--ttpr-viewport-width, 100%) - 30px - (var(--ttpr-gap) * (var(--ttpr-slides-per-view) - 1))) /
+        var(--ttpr-slides-per-view)
+    );
     padding: 6px 15px 16px;
     scroll-padding-inline: 15px;
   }
@@ -812,6 +814,11 @@ body.ttpr-slider-page {
     border: 1px solid var(--ttpr-border);
     border-radius: var(--ttpr-card-radius);
     box-shadow: none;
+    touch-action: auto;
+  }
+
+  .ttpr-card-link {
+    pointer-events: none;
   }
 
   .ttpr-image-link {
@@ -952,25 +959,8 @@ body.ttpr-slider-page {
     ) !important;
   }
 
-  .ttpr-section[data-ttpr-slider] .ttpr-track {
-    cursor: grab;
-  }
-
-  .ttpr-section[data-ttpr-slider] .ttpr-card,
-  .ttpr-section[data-ttpr-slider] .ttpr-image-link,
-  .ttpr-section[data-ttpr-slider] .ttpr-image {
-    cursor: grab;
-  }
-
   .ttpr-section[data-ttpr-slider] .ttpr-track a,
   .ttpr-section[data-ttpr-slider] .ttpr-track img {
     -webkit-user-drag: none;
-  }
-
-  .ttpr-section[data-ttpr-slider] .ttpr-track.is-dragging,
-  .ttpr-section[data-ttpr-slider] .ttpr-track.is-dragging * {
-    cursor: grabbing !important;
-    -webkit-user-select: none;
-    user-select: none;
   }
 }

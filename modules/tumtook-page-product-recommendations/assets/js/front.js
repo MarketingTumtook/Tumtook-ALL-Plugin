@@ -21,16 +21,9 @@
     var isProgrammaticScroll = false;
     var programmaticScrollTimer = null;
     var scrollAnimationFrame = null;
-    var isPointerDown = false;
-    var isPointerDragging = false;
-    var suppressNextClick = false;
-    var dragStartX = 0;
-    var dragStartScrollLeft = 0;
-    var activePointerId = null;
-    var hasPointerCapture = false;
-    var dragAnimationFrame = null;
-    var pendingDragScrollLeft = null;
-    var dragFollowEase = 0.28;
+    var touchStartX = 0;
+    var touchStartY = 0;
+    var touchMoved = false;
 
     if (!track || !slides.length) {
       return;
@@ -239,15 +232,6 @@
       scrollAnimationFrame = null;
     }
 
-    function cancelDragAnimation() {
-      if (dragAnimationFrame) {
-        window.cancelAnimationFrame(dragAnimationFrame);
-      }
-
-      dragAnimationFrame = null;
-      pendingDragScrollLeft = null;
-    }
-
     function releaseNativeWheelScroll() {
       if (programmaticScrollTimer) {
         window.clearTimeout(programmaticScrollTimer);
@@ -255,50 +239,16 @@
       }
 
       cancelScrollAnimation();
-      cancelDragAnimation();
       isProgrammaticScroll = false;
-    }
-
-    function scheduleDragScroll() {
-      if (dragAnimationFrame) {
-        return;
-      }
-
-      dragAnimationFrame = window.requestAnimationFrame(function () {
-        var targetLeft = pendingDragScrollLeft;
-        var distance;
-
-        dragAnimationFrame = null;
-
-        if (targetLeft === null) {
-          return;
-        }
-
-        distance = targetLeft - track.scrollLeft;
-
-        if (Math.abs(distance) < 0.5) {
-          track.scrollLeft = targetLeft;
-
-          if (!isPointerDown) {
-            pendingDragScrollLeft = null;
-          }
-
-          return;
-        }
-
-        track.scrollLeft += distance * dragFollowEase;
-        scheduleDragScroll();
-      });
     }
 
     function animateScrollTo(targetLeft, duration) {
       var startLeft = track.scrollLeft;
       var distance = targetLeft - startLeft;
       var startTime = window.performance.now();
-      var scrollDuration = duration || 560;
+      var scrollDuration = duration || 360;
 
       cancelScrollAnimation();
-      cancelDragAnimation();
 
       if (Math.abs(distance) < 1) {
         track.scrollLeft = targetLeft;
@@ -345,7 +295,6 @@
 
       if (behavior === "auto") {
         cancelScrollAnimation();
-        cancelDragAnimation();
         track.scrollTo({
           left: getSlideScrollLeft(targetSlide),
           behavior: "auto"
@@ -412,98 +361,6 @@
       return !!target.closest("button, input, textarea, select, iframe");
     }
 
-    function startViewportDrag(event) {
-      if (event.button !== undefined && event.button !== 0) {
-        return;
-      }
-
-      if (isSliderControl(event.target)) {
-        return;
-      }
-
-      isPointerDown = true;
-      isPointerDragging = false;
-      activePointerId = event.pointerId !== undefined ? event.pointerId : null;
-      hasPointerCapture = false;
-      dragStartX = event.clientX;
-      dragStartScrollLeft = track.scrollLeft;
-      suppressNextClick = false;
-
-      if (programmaticScrollTimer) {
-        window.clearTimeout(programmaticScrollTimer);
-        programmaticScrollTimer = null;
-      }
-
-      cancelScrollAnimation();
-      cancelDragAnimation();
-      isProgrammaticScroll = false;
-      track.classList.add("is-pointer-down");
-    }
-
-    function dragViewport(event) {
-      var deltaX;
-
-      if (!isPointerDown) {
-        return;
-      }
-
-      deltaX = event.clientX - dragStartX;
-
-      if (!isPointerDragging && Math.abs(deltaX) > 5) {
-        isPointerDragging = true;
-        suppressNextClick = true;
-        track.classList.add("is-dragging");
-
-        if (!hasPointerCapture && typeof track.setPointerCapture === "function" && activePointerId !== null) {
-          try {
-            track.setPointerCapture(activePointerId);
-            hasPointerCapture = true;
-          } catch (error) {
-            // Ignore browsers that do not allow pointer capture on this element.
-          }
-        }
-      }
-
-      if (!isPointerDragging) {
-        return;
-      }
-
-      event.preventDefault();
-      pendingDragScrollLeft = Math.max(0, Math.min(getMaxScrollLeft(), dragStartScrollLeft - deltaX));
-      scheduleDragScroll();
-    }
-
-    function stopViewportDrag() {
-      var shouldUpdateActiveCard;
-
-      if (!isPointerDown) {
-        return;
-      }
-
-      shouldUpdateActiveCard = isPointerDragging;
-      isPointerDown = false;
-      isPointerDragging = false;
-      track.classList.remove("is-pointer-down", "is-dragging");
-
-      if (hasPointerCapture && typeof track.releasePointerCapture === "function" && activePointerId !== null) {
-        try {
-          track.releasePointerCapture(activePointerId);
-        } catch (error) {
-          // Ignore browsers that already released pointer capture.
-        }
-      }
-
-      activePointerId = null;
-      hasPointerCapture = false;
-
-      if (shouldUpdateActiveCard) {
-        setCurrentIndex(getNearestSlideIndex(pendingDragScrollLeft !== null ? pendingDragScrollLeft : track.scrollLeft));
-        window.setTimeout(function () {
-          suppressNextClick = false;
-        }, 250);
-      }
-    }
-
     syncDesktopContainerInset();
     renderPagination();
 
@@ -519,19 +376,62 @@
       });
     }
 
-    track.addEventListener("pointerdown", startViewportDrag);
-    track.addEventListener("pointermove", dragViewport);
-    track.addEventListener("pointerup", stopViewportDrag);
-    track.addEventListener("pointercancel", stopViewportDrag);
     track.addEventListener("wheel", releaseNativeWheelScroll, { passive: true });
-    track.addEventListener("click", function (event) {
-      if (!suppressNextClick) {
+    track.addEventListener("touchstart", function (event) {
+      var touch = event.touches && event.touches[0];
+
+      if (!touch) {
         return;
       }
 
-      event.preventDefault();
-      event.stopPropagation();
-      suppressNextClick = false;
+      touchStartX = touch.clientX;
+      touchStartY = touch.clientY;
+      touchMoved = false;
+      cancelScrollAnimation();
+      isProgrammaticScroll = false;
+    }, { passive: true });
+    track.addEventListener("touchmove", function (event) {
+      var touch = event.touches && event.touches[0];
+      var deltaX;
+      var deltaY;
+
+      if (!touch) {
+        return;
+      }
+
+      deltaX = touch.clientX - touchStartX;
+      deltaY = touch.clientY - touchStartY;
+
+      if (Math.abs(deltaX) > 8 && Math.abs(deltaX) > Math.abs(deltaY)) {
+        touchMoved = true;
+      }
+    }, { passive: true });
+    track.addEventListener("click", function (event) {
+      var card;
+      var url;
+
+      if (touchMoved) {
+        event.preventDefault();
+        event.stopPropagation();
+        touchMoved = false;
+        return;
+      }
+
+      if (event.target.closest("a, button, input, textarea, select, iframe")) {
+        return;
+      }
+
+      card = event.target.closest(".ttpr-card[data-card-url]");
+
+      if (!card || !track.contains(card)) {
+        return;
+      }
+
+      url = card.getAttribute("data-card-url");
+
+      if (url) {
+        window.location.assign(url);
+      }
     }, true);
 
     window.addEventListener("resize", function () {

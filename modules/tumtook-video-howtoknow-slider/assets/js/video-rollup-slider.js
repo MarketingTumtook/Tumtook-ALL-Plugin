@@ -93,7 +93,7 @@
     let hasPointerCapture = false;
     let dragAnimationFrame = null;
     let pendingDragScrollLeft = null;
-    const dragFollowEase = 0.28;
+    const dragFollowEase = 0.72;
     const isCoarsePointer = window.matchMedia
       ? window.matchMedia("(hover: none), (pointer: coarse)").matches
       : false;
@@ -400,7 +400,7 @@
       });
     };
 
-    const animateScrollTo = (targetLeft, duration = 560) => {
+    const animateScrollTo = (targetLeft, duration = 360) => {
       const startLeft = track.scrollLeft;
       const distance = targetLeft - startLeft;
       const startTime = window.performance.now();
@@ -612,10 +612,6 @@
       scrollToReachableDirection(1);
     });
 
-    track.addEventListener("pointerdown", startViewportDrag);
-    track.addEventListener("pointermove", dragViewport);
-    track.addEventListener("pointerup", stopViewportDrag);
-    track.addEventListener("pointercancel", stopViewportDrag);
     track.addEventListener("wheel", releaseNativeWheelScroll, { passive: true });
     track.addEventListener(
       "click",

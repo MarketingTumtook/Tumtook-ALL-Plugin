@@ -114,26 +114,25 @@
       var(--ttar-slides-per-view)
   );
   gap: var(--ttar-gap);
-  overflow-x: auto;
+  overflow-x: scroll;
   padding: 6px 0 14px var(--ttar-first-card-inset);
   scroll-padding-left: var(--ttar-first-card-inset);
   scroll-padding-right: 0;
   scroll-snap-type: none;
   scrollbar-width: none;
-  overscroll-behavior-x: contain;
-  touch-action: pan-y;
+  overscroll-behavior-x: auto;
+  touch-action: auto;
   user-select: none;
-  cursor: grab;
 }
 
-.ttar-track.is-dragging,
-.ttar-track.is-pointer-down {
-  cursor: grabbing;
-}
-
-.ttar-track.is-dragging a,
-.ttar-track.is-dragging img {
-  pointer-events: none;
+@media (max-width: 767px) {
+  .ttar-track {
+    overflow-x: scroll !important;
+    overscroll-behavior-x: auto !important;
+    scroll-snap-type: none !important;
+    touch-action: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
 }
 
 .ttar-track img {
@@ -549,7 +548,7 @@
 
   .ttar-track {
     grid-auto-columns: calc(
-      (100% - (var(--ttar-gap) * (var(--ttar-slides-per-view) - 1))) /
+      (var(--ttar-viewport-width, 100%) - 30px - (var(--ttar-gap) * (var(--ttar-slides-per-view) - 1))) /
         var(--ttar-slides-per-view)
     );
     padding-inline: 15px;
@@ -564,8 +563,8 @@
   }
 
   .ttar-section[data-ttar-slider] {
-    --ttar-gap: 12px;
-    --ttar-slides-per-view: 2.15;
+    --ttar-gap: 10px;
+    --ttar-slides-per-view: 2.2;
   }
 
   .ttar-article-title {
@@ -620,25 +619,8 @@
     ) !important;
   }
 
-  .ttar-section[data-ttar-slider] .ttar-track {
-    cursor: grab;
-  }
-
-  .ttar-section[data-ttar-slider] .ttar-card,
-  .ttar-section[data-ttar-slider] .ttar-image-link,
-  .ttar-section[data-ttar-slider] .ttar-image {
-    cursor: grab;
-  }
-
   .ttar-section[data-ttar-slider] .ttar-track a,
   .ttar-section[data-ttar-slider] .ttar-track img {
     -webkit-user-drag: none;
-  }
-
-  .ttar-section[data-ttar-slider] .ttar-track.is-dragging,
-  .ttar-section[data-ttar-slider] .ttar-track.is-dragging * {
-    cursor: grabbing !important;
-    -webkit-user-select: none;
-    user-select: none;
   }
 }

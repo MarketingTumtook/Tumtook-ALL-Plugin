@@ -1,8 +1,8 @@
 <?php
 /**
  * Plugin Name: Tumtook All-in-One Modules
- * Description: Combined Tumtook page modules: API catalog viewer, brand showcase, PDF catalog, gallery, article recommendations, Card Products  ทั้งหมด, product recommendations, and video how-to slider.
- * Version: 1.0.30
+ * Description: Combined Tumtook page modules: API catalog viewer, brand showcase, comparison table, PDF catalog, gallery, article recommendations, Card Products  ทั้งหมด, product recommendations, and video how-to slider.
+ * Version: 1.0.31
  * Author: Tumtook
  * Text Domain: tumtook-all-in-one
  */
@@ -12,7 +12,7 @@ if (!defined('ABSPATH')) {
 }
 
 if (!defined('TUMTOOK_AIO_VERSION')) {
-	define('TUMTOOK_AIO_VERSION', '1.0.30');
+	define('TUMTOOK_AIO_VERSION', '1.0.31');
 }
 
 if (!defined('TUMTOOK_AIO_PLUGIN_FILE')) {
@@ -87,6 +87,11 @@ function tumtook_aio_get_modules()
 			'name' => 'Tumtook Gallery',
 			'file' => 'tumtook-gallery/tumtook-gallery.php',
 			'guard' => array('type' => 'class', 'name' => 'Tumtook_Gallery_Plugin'),
+		),
+		array(
+			'name' => 'Tumtook Dynamic Comparison Table',
+			'file' => 'tumtook-dynamic-comparison-table/tumtook-dynamic-comparison-table.php',
+			'guard' => array('type' => 'class', 'name' => 'TTCT_Plugin'),
 		),
 		array(
 			'name' => 'Tumtook Page FAQ',

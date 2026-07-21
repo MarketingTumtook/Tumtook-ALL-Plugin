@@ -149,26 +149,26 @@ body.ttpc-slider-page {
   width: 100%;
   max-width: 100%;
   box-sizing: border-box;
-  overflow-x: auto;
+  overflow-x: scroll;
   padding: 5px 0 15px var(--ttpc-first-card-inset);
   scroll-padding-left: var(--ttpc-first-card-inset);
   scroll-padding-right: 0;
   scroll-snap-type: none;
   scrollbar-width: none;
-  overscroll-behavior-x: contain;
-  touch-action: pan-y;
+  overscroll-behavior-x: auto;
+  touch-action: auto;
   user-select: none;
-  cursor: grab;
+  -webkit-overflow-scrolling: touch;
 }
 
-.ttpc-track.is-dragging,
-.ttpc-track.is-pointer-down {
-  cursor: grabbing;
-}
-
-.ttpc-track.is-dragging a,
-.ttpc-track.is-dragging img {
-  pointer-events: none;
+@media (max-width: 767px) {
+  .ttpc-track {
+    overflow-x: scroll !important;
+    overscroll-behavior-x: auto !important;
+    scroll-snap-type: none !important;
+    touch-action: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
 }
 
 .ttpc-track img {
@@ -638,13 +638,13 @@ body.ttpc-slider-page {
 
   .ttpc-section[data-ttpc-slider] {
     --ttpc-gap: 10px;
-    --ttpc-slides-per-view: 2;
+    --ttpc-slides-per-view: 2.2;
   }
 
   .ttpc-track {
     grid-template-rows: repeat(2, auto);
     grid-auto-columns: calc(
-      (var(--ttpc-viewport-width, 100%) - 30px - var(--ttpc-gap)) /
+      (var(--ttpc-viewport-width, 100%) - 30px - (var(--ttpc-gap) * (var(--ttpc-slides-per-view) - 1))) /
         var(--ttpc-slides-per-view)
     );
     padding-inline: 15px;
@@ -738,25 +738,8 @@ body.ttpc-slider-page {
     ) !important;
   }
 
-  .ttpc-section[data-ttpc-slider] .ttpc-track {
-    cursor: grab;
-  }
-
-  .ttpc-section[data-ttpc-slider] .ttpc-card,
-  .ttpc-section[data-ttpc-slider] .ttpc-image-link,
-  .ttpc-section[data-ttpc-slider] .ttpc-image {
-    cursor: grab;
-  }
-
   .ttpc-section[data-ttpc-slider] .ttpc-track a,
   .ttpc-section[data-ttpc-slider] .ttpc-track img {
     -webkit-user-drag: none;
-  }
-
-  .ttpc-section[data-ttpc-slider] .ttpc-track.is-dragging,
-  .ttpc-section[data-ttpc-slider] .ttpc-track.is-dragging * {
-    cursor: grabbing !important;
-    -webkit-user-select: none;
-    user-select: none;
   }
 }

@@ -1,16 +1,17 @@
 # Tumtook All-in-One Modules
 
-ปลั๊กอินนี้รวมปลั๊กอิน Tumtook ทั้งหมดที่แนบมาไว้ในปลั๊กอินเดียว โดยเก็บโค้ดเดิมไว้ใน `modules/` เพื่อให้ asset path, vendor, shortcode และ logic เดิมทำงานเหมือนเดิมมากที่สุด
+ปลั๊กอินนี้รวมปลั๊กอิน Tumtook ทั้งหมดที่แนบมาไว้ในปลั๊กอินเดียว โดยเก็บโค้ดเดิมไว้ใน `modules/` เพื่อให้ asset path, vendor, shortcode, Gutenberg block และ logic เดิมทำงานเหมือนเดิมมากที่สุด
 
 ## Modules Included
 
 1. Tumtook Brand Showcase
 2. Tumtook Download PDF Catalog
 3. Tumtook Gallery
-4. Tumtook Page Article Recommendations
-5. Tumtook Page Card Products ทั้งหมด
-6. Tumtook Page Product Recommendations
-7. Tumtook Video How To Slider
+4. Tumtook Dynamic Comparison Table
+5. Tumtook Page Article Recommendations
+6. Tumtook Page Card Products ทั้งหมด
+7. Tumtook Page Product Recommendations
+8. Tumtook Video How To Slider
 
 ## Shortcodes Included
 
@@ -19,6 +20,7 @@
 - `[tumtook_catalog code="PDF"]`
 - `[gallery_pdf code="PDF" text="ดาวน์โหลด PDF"]`
 - `[tumtook_gallery]`
+- `[tumtook_comparison]`
 - `[tumtook_recommended_articles]`
 - `[tumtook_product_cards]`
 - `[tumtook_recommended_products]`

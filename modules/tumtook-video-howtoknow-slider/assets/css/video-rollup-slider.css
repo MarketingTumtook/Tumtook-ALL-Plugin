@@ -113,29 +113,27 @@ section:has(.video-rollup-slider),
   grid-auto-columns: var(--video-rollup-slide-width);
   grid-auto-flow: column;
   margin-bottom: 24px;
-  overflow-x: auto;
-  overscroll-behavior-x: contain;
+  overflow-x: scroll;
+  overscroll-behavior-x: auto;
   padding-bottom: 6px;
   scroll-padding-inline: 0;
   scroll-snap-type: none;
   scrollbar-width: none;
-  touch-action: pan-y;
+  touch-action: auto;
   user-select: none;
   -webkit-overflow-scrolling: touch;
   contain: layout paint;
-  cursor: grab;
   transform: translateZ(0);
 }
 
-.video-rollup-slider__viewport.is-dragging,
-.video-rollup-slider__viewport.is-pointer-down {
-  cursor: grabbing;
-}
-
-.video-rollup-slider__viewport.is-dragging a,
-.video-rollup-slider__viewport.is-dragging img,
-.video-rollup-slider__viewport.is-dragging video {
-  pointer-events: none;
+@media (max-width: 767px) {
+  .video-rollup-slider__viewport {
+    overflow-x: scroll !important;
+    overscroll-behavior-x: auto !important;
+    scroll-snap-type: none !important;
+    touch-action: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
 }
 
 .video-rollup-slider__viewport img {
@@ -1000,19 +998,19 @@ section:has(.video-rollup-slider),
   }
 
   .video-rollup-slider {
-    --video-rollup-slides-per-view: 1.25;
+    --video-rollup-slides-per-view: 1.42;
     max-width: 100vw;
     width: 100vw;
   }
 
   .video-rollup-slider--recommended {
     --video-rollup-gap: 15px;
-    --video-rollup-slides-per-view: 1.25;
+    --video-rollup-slides-per-view: 1.42;
   }
 
   .video-rollup-slider--youtube {
     --video-rollup-gap: 15px;
-    --video-rollup-slides-per-view: 1.25;
+    --video-rollup-slides-per-view: 1.42;
   }
 
   .video-rollup-slider__viewport {
@@ -1026,7 +1024,7 @@ section:has(.video-rollup-slider),
 
 .video-rollup-media-item,
 .video-rollup-recommended-item {
-  min-height: 340px;
+  min-height: 300px;
   padding: 0;
   scroll-snap-align: none;
 }
@@ -1078,13 +1076,13 @@ section:has(.video-rollup-slider),
     --video-card-control-width: 56px;
     --video-card-volume-height: 158px;
     max-width: none;
-    min-height: 340px;
+    min-height: 300px;
     padding: 0;
   }
 
   .video-rollup-video-card__video {
     border-radius: 25px;
-    min-height: 340px;
+    min-height: 300px;
   }
 
   .video-rollup-video-card__overlay {
@@ -1113,11 +1111,11 @@ section:has(.video-rollup-slider),
     --video-card-duration-min-width: 64px;
     --video-card-control-width: 48px;
     --video-card-volume-height: 178px;
-    min-height: 300px;
+    min-height: 264px;
   }
 
   .video-rollup-video-card__video {
-    min-height: 300px;
+    min-height: 264px;
   }
 
   .video-rollup-video-card__heading {

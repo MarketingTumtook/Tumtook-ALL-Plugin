@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Tumtook Video How To Slider
  * Description: Add page-level promo media fields and display a rounded promo slider with one video plus six image slides.
- * Version: 1.3.5
+ * Version: 1.3.9
  * Author: Tumtook
  * Text Domain: tumtook-video-rollup-slider
  */
@@ -16,7 +16,7 @@ final class Video_Howtoknow_Slider_Plugin
 	const META_KEY = '_tumtook_video_howtoknow_data';
 	const PRODUCT_PRICE_META_KEY = '_tumtook_recommended_price';
 	const PRODUCT_RECOMMENDED_META_KEY = '_tumtook_recommended_enabled';
-	const VERSION = '1.3.5';
+	const VERSION = '1.3.9';
 	const FONT_HANDLE = 'tumtook-kanit-font';
 
 	private $rendered_page_ids = array();
