@@ -21,9 +21,6 @@
     var isProgrammaticScroll = false;
     var programmaticScrollTimer = null;
     var scrollAnimationFrame = null;
-    var touchStartX = 0;
-    var touchStartY = 0;
-    var touchMoved = false;
 
     if (!track || !slides.length) {
       return;
@@ -377,45 +374,9 @@
     }
 
     track.addEventListener("wheel", releaseNativeWheelScroll, { passive: true });
-    track.addEventListener("touchstart", function (event) {
-      var touch = event.touches && event.touches[0];
-
-      if (!touch) {
-        return;
-      }
-
-      touchStartX = touch.clientX;
-      touchStartY = touch.clientY;
-      touchMoved = false;
-      cancelScrollAnimation();
-      isProgrammaticScroll = false;
-    }, { passive: true });
-    track.addEventListener("touchmove", function (event) {
-      var touch = event.touches && event.touches[0];
-      var deltaX;
-      var deltaY;
-
-      if (!touch) {
-        return;
-      }
-
-      deltaX = touch.clientX - touchStartX;
-      deltaY = touch.clientY - touchStartY;
-
-      if (Math.abs(deltaX) > 8 && Math.abs(deltaX) > Math.abs(deltaY)) {
-        touchMoved = true;
-      }
-    }, { passive: true });
     track.addEventListener("click", function (event) {
       var card;
       var url;
-
-      if (touchMoved) {
-        event.preventDefault();
-        event.stopPropagation();
-        touchMoved = false;
-        return;
-      }
 
       if (event.target.closest("a, button, input, textarea, select, iframe")) {
         return;
@@ -432,7 +393,7 @@
       if (url) {
         window.location.assign(url);
       }
-    }, true);
+    });
 
     window.addEventListener("resize", function () {
       syncDesktopContainerInset();

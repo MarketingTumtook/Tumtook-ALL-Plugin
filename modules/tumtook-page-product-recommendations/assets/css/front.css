@@ -164,8 +164,19 @@ body.ttpr-slider-page {
     overflow-x: scroll !important;
     overscroll-behavior-x: auto !important;
     scroll-snap-type: none !important;
-    touch-action: auto !important;
+    touch-action: pan-x !important;
     -webkit-overflow-scrolling: touch;
+  }
+
+  .ttpr-track-wrap {
+    overflow-x: visible;
+  }
+
+  .ttpr-card,
+  .ttpr-card-media,
+  .ttpr-image-link,
+  .ttpr-image {
+    touch-action: pan-x;
   }
 }
 
@@ -193,6 +204,7 @@ body.ttpr-slider-page {
 
 .ttpr-card-link {
   inset: 0;
+  pointer-events: none;
   position: absolute;
   text-decoration: none;
   z-index: 20;
@@ -815,10 +827,6 @@ body.ttpr-slider-page {
     border-radius: var(--ttpr-card-radius);
     box-shadow: none;
     touch-action: auto;
-  }
-
-  .ttpr-card-link {
-    pointer-events: none;
   }
 
   .ttpr-image-link {
