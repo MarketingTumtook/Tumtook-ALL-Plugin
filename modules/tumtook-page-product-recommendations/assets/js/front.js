@@ -21,10 +21,12 @@
     var isProgrammaticScroll = false;
     var programmaticScrollTimer = null;
     var scrollAnimationFrame = null;
+    var isMousePointerDown = false;
     var isMouseDragging = false;
     var mouseDragStartX = 0;
     var mouseDragStartScrollLeft = 0;
     var activePointerId = null;
+    var hasPointerCapture = false;
     var suppressNextClick = false;
 
     if (!track || !slides.length) {
@@ -360,7 +362,7 @@
     }
 
     function isSliderControl(target) {
-      return !!target.closest("button, input, textarea, select, iframe");
+      return !!target.closest("a, button, input, textarea, select, iframe");
     }
 
     function startMouseDrag(event) {
@@ -376,35 +378,43 @@
         return;
       }
 
-      isMouseDragging = true;
+      isMousePointerDown = true;
+      isMouseDragging = false;
       mouseDragStartX = event.clientX;
       mouseDragStartScrollLeft = track.scrollLeft;
       activePointerId = event.pointerId !== undefined ? event.pointerId : null;
+      hasPointerCapture = false;
       suppressNextClick = false;
       cancelScrollAnimation();
       isProgrammaticScroll = false;
-      track.classList.add("is-dragging");
-
-      if (typeof track.setPointerCapture === "function" && activePointerId !== null) {
-        try {
-          track.setPointerCapture(activePointerId);
-        } catch (error) {
-          // Some browsers disallow capture on fast pointer transitions.
-        }
-      }
     }
 
     function moveMouseDrag(event) {
       var deltaX;
 
-      if (!isMouseDragging) {
+      if (!isMousePointerDown) {
         return;
       }
 
       deltaX = event.clientX - mouseDragStartX;
 
-      if (Math.abs(deltaX) > 4) {
+      if (!isMouseDragging && Math.abs(deltaX) <= 8) {
+        return;
+      }
+
+      if (!isMouseDragging) {
+        isMouseDragging = true;
         suppressNextClick = true;
+        track.classList.add("is-dragging");
+
+        if (typeof track.setPointerCapture === "function" && activePointerId !== null) {
+          try {
+            track.setPointerCapture(activePointerId);
+            hasPointerCapture = true;
+          } catch (error) {
+            // Some browsers disallow capture on fast pointer transitions.
+          }
+        }
       }
 
       event.preventDefault();
@@ -412,15 +422,21 @@
     }
 
     function stopMouseDrag() {
-      if (!isMouseDragging) {
+      var shouldUpdateActiveCard = isMouseDragging;
+
+      if (!isMousePointerDown && !isMouseDragging) {
         return;
       }
 
+      isMousePointerDown = false;
       isMouseDragging = false;
       track.classList.remove("is-dragging");
-      setCurrentIndex(getNearestSlideIndex(track.scrollLeft));
 
-      if (typeof track.releasePointerCapture === "function" && activePointerId !== null) {
+      if (shouldUpdateActiveCard) {
+        setCurrentIndex(getNearestSlideIndex(track.scrollLeft));
+      }
+
+      if (hasPointerCapture && typeof track.releasePointerCapture === "function" && activePointerId !== null) {
         try {
           track.releasePointerCapture(activePointerId);
         } catch (error) {
@@ -429,6 +445,7 @@
       }
 
       activePointerId = null;
+      hasPointerCapture = false;
     }
 
     syncDesktopContainerInset();

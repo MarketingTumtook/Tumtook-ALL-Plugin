@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Tumtook Page Product Recommendations
  * Description: Adds a page-based Card Products ทั้งหมด slider with manual page selection, price fields, and a layout tailored for Tumtook landing pages.
- * Version: 1.1.16
+ * Version: 1.1.17
  * Author: Tumtook
  * Text Domain: tumtook-page-product-recommendations
  */
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
 
 final class Tumtook_Page_Product_Recommendations
 {
-	const VERSION = '1.1.16';
+	const VERSION = '1.1.17';
 	const META_KEY = '_tt_page_product_recommendations';
 	const PAGE_PRICE_META = '_ttpr_page_price';
 	const PAGE_BADGE_META = '_ttpr_page_badge';
@@ -123,10 +123,10 @@ final class Tumtook_Page_Product_Recommendations
 	private function get_asset_version($relative_path)
 	{
 		if (function_exists('tumtook_aio_asset_version')) {
-			return tumtook_aio_asset_version(__FILE__, $relative_path, '1.1.1');
+			return tumtook_aio_asset_version(__FILE__, $relative_path, self::VERSION);
 		}
 
-		return '1.1.1';
+		return self::VERSION;
 	}
 
 	private function get_settings($post_id)
