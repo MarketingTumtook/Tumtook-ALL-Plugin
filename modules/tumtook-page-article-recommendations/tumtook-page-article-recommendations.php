@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Tumtook Page Article Recommendations
  * Description: Adds a random article slider section for Tumtook pages and posts with a layout tailored to article recommendations.
- * Version: 1.0.9
+ * Version: 1.0.13
  * Author: Tumtook
  * Text Domain: tumtook-page-article-recommendations
  */
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
 
 final class Tumtook_Page_Article_Recommendations
 {
-	const VERSION = '1.0.9';
+	const VERSION = '1.0.13';
 	const META_KEY = '_tt_page_article_recommendations';
 	const SHORTCODE = 'tumtook_recommended_articles';
 	const FONT_HANDLE = 'tumtook-kanit-font';
@@ -436,12 +436,12 @@ final class Tumtook_Page_Article_Recommendations
 
 					<div class="ttar-track-wrap">
 						<div class="ttar-track" data-ttar-track>
-							<?php foreach ($items as $item): ?>
-								<article class="ttar-card">
-									<a class="ttar-card-link" href="<?php echo esc_url($item['url']); ?>"
-										aria-label="<?php echo esc_attr($item['title']); ?>"></a>
-									<a class="ttar-image-link<?php echo empty($item['image']) ? ' ttar-image-link--missing' : ''; ?>"
-										href="<?php echo esc_url($item['url']); ?>">
+								<?php foreach ($items as $item): ?>
+									<article class="ttar-card" data-card-url="<?php echo esc_url($item['url']); ?>">
+										<a class="ttar-card-link" href="<?php echo esc_url($item['url']); ?>"
+											aria-label="<?php echo esc_attr($item['title']); ?>" draggable="false"></a>
+										<a class="ttar-image-link<?php echo empty($item['image']) ? ' ttar-image-link--missing' : ''; ?>"
+											href="<?php echo esc_url($item['url']); ?>" draggable="false">
 										<?php if (!empty($item['badge'])): ?>
 											<span class="ttar-badge"
 												style="<?php echo esc_attr($this->get_badge_style($item['badge'])); ?>">

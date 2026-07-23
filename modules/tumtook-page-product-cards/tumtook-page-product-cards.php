@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Tumtook Page Card Products  ทั้งหมด
  * Description: Adds a page-based product card slider with manual page selection and price support for Tumtook landing pages.
- * Version: 1.0.14
+ * Version: 1.0.15
  * Author: Tumtook
  * Text Domain: tumtook-page-product-cards
  */
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
 
 final class Tumtook_Page_Product_Cards
 {
-	const VERSION = '1.0.14';
+	const VERSION = '1.0.15';
 	const META_KEY = '_tt_page_product_cards';
 	const PAGE_IMAGE_META = '_ttpc_page_image_id';
 	const PAGE_TITLE_META = '_ttpc_page_card_title';
@@ -592,10 +592,10 @@ final class Tumtook_Page_Product_Cards
 
 				<div class="ttpc-track-wrap">
 					<div class="ttpc-track" data-ttpc-track>
-						<?php foreach ($items as $item): ?>
-							<article class="ttpc-card">
-								<a class="ttpc-card-link" href="<?php echo esc_url($item['url']); ?>"
-									aria-label="<?php echo esc_attr($item['title']); ?>"></a>
+							<?php foreach ($items as $item): ?>
+								<article class="ttpc-card" data-card-url="<?php echo esc_url($item['url']); ?>">
+									<a class="ttpc-card-link" href="<?php echo esc_url($item['url']); ?>"
+										aria-label="<?php echo esc_attr($item['title']); ?>" draggable="false"></a>
 								<div class="ttpc-image-link<?php echo empty($item['image']) ? ' ttpc-image-link--missing' : ''; ?>">
 									<?php if (!empty($item['image'])): ?>
 										<img class="ttpc-image" src="<?php echo esc_url($item['image']); ?>"

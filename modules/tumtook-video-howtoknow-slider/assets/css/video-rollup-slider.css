@@ -136,6 +136,19 @@ section:has(.video-rollup-slider),
   }
 }
 
+@media (min-width: 768px) {
+  .video-rollup-slider__viewport {
+    cursor: grab;
+  }
+
+  .video-rollup-slider__viewport.is-dragging,
+  .video-rollup-slider__viewport.is-dragging * {
+    cursor: grabbing !important;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+}
+
 .video-rollup-slider__viewport img {
   -webkit-user-drag: none;
   cursor: inherit;

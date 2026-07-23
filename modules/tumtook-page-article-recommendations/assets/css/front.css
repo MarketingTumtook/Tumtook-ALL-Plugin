@@ -130,8 +130,19 @@
     overflow-x: scroll !important;
     overscroll-behavior-x: auto !important;
     scroll-snap-type: none !important;
-    touch-action: auto !important;
+    touch-action: pan-y !important;
     -webkit-overflow-scrolling: touch;
+  }
+
+  .ttar-track-wrap {
+    overflow-x: visible;
+  }
+
+  .ttar-card,
+  .ttar-card-link,
+  .ttar-image-link,
+  .ttar-image {
+    touch-action: pan-y;
   }
 }
 
@@ -171,6 +182,19 @@
   background: linear-gradient(180deg, #f8f8f8 0%, #ededed 100%);
   overflow: hidden;
   z-index: 21;
+}
+
+@media (min-width: 768px) {
+  .ttar-track {
+    cursor: grab;
+  }
+
+  .ttar-track.is-dragging,
+  .ttar-track.is-dragging * {
+    cursor: grabbing !important;
+    -webkit-user-select: none;
+    user-select: none;
+  }
 }
 
 .ttar-image {

@@ -180,6 +180,19 @@ body.ttpr-slider-page {
   }
 }
 
+@media (min-width: 768px) {
+  .ttpr-track {
+    cursor: grab;
+  }
+
+  .ttpr-track.is-dragging,
+  .ttpr-track.is-dragging * {
+    cursor: grabbing !important;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+}
+
 .ttpr-track img {
   -webkit-user-drag: none;
   user-select: none;

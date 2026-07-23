@@ -197,9 +197,23 @@ body.ttpc-slider-page {
 
 .ttpc-card-link {
   inset: 0;
+  pointer-events: none;
   position: absolute;
   text-decoration: none;
   z-index: 20;
+}
+
+@media (min-width: 768px) {
+  .ttpc-track {
+    cursor: grab;
+  }
+
+  .ttpc-track.is-dragging,
+  .ttpc-track.is-dragging * {
+    cursor: grabbing !important;
+    -webkit-user-select: none;
+    user-select: none;
+  }
 }
 
 .ttpc-image-link {

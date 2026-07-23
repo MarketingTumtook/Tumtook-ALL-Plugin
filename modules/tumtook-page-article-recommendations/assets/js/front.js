@@ -25,6 +25,7 @@
     var isPointerDragging = false;
     var suppressNextClick = false;
     var dragStartX = 0;
+    var dragStartY = 0;
     var dragStartScrollLeft = 0;
     var activePointerId = null;
     var hasPointerCapture = false;
@@ -426,6 +427,7 @@
       activePointerId = event.pointerId !== undefined ? event.pointerId : null;
       hasPointerCapture = false;
       dragStartX = event.clientX;
+      dragStartY = event.clientY;
       dragStartScrollLeft = track.scrollLeft;
       suppressNextClick = false;
 
@@ -442,14 +444,21 @@
 
     function dragViewport(event) {
       var deltaX;
+      var deltaY;
 
       if (!isPointerDown) {
         return;
       }
 
       deltaX = event.clientX - dragStartX;
+      deltaY = event.clientY - dragStartY;
 
-      if (!isPointerDragging && Math.abs(deltaX) > 5) {
+      if (!isPointerDragging && Math.abs(deltaY) > 5 && Math.abs(deltaY) > Math.abs(deltaX)) {
+        stopViewportDrag();
+        return;
+      }
+
+      if (!isPointerDragging && Math.abs(deltaX) > 5 && Math.abs(deltaX) >= Math.abs(deltaY)) {
         isPointerDragging = true;
         suppressNextClick = true;
         track.classList.add("is-dragging");
@@ -520,8 +529,31 @@
     }
 
     track.addEventListener("wheel", releaseNativeWheelScroll, { passive: true });
+    track.addEventListener("pointerdown", startViewportDrag);
+    track.addEventListener("pointermove", dragViewport);
+    track.addEventListener("pointerup", stopViewportDrag);
+    track.addEventListener("pointercancel", stopViewportDrag);
     track.addEventListener("click", function (event) {
+      var card;
+      var url;
+
       if (!suppressNextClick) {
+        if (event.target.closest("a, button, input, textarea, select, iframe")) {
+          return;
+        }
+
+        card = event.target.closest(".ttar-card[data-card-url]");
+
+        if (!card || !track.contains(card)) {
+          return;
+        }
+
+        url = card.getAttribute("data-card-url");
+
+        if (url) {
+          window.location.assign(url);
+        }
+
         return;
       }
 

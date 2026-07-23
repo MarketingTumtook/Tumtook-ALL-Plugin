@@ -21,6 +21,11 @@
     var isProgrammaticScroll = false;
     var programmaticScrollTimer = null;
     var scrollAnimationFrame = null;
+    var isMouseDragging = false;
+    var mouseDragStartX = 0;
+    var mouseDragStartScrollLeft = 0;
+    var activePointerId = null;
+    var suppressNextClick = false;
 
     if (!track || !slides.length) {
       return;
@@ -358,6 +363,74 @@
       return !!target.closest("button, input, textarea, select, iframe");
     }
 
+    function startMouseDrag(event) {
+      if (event.pointerType && event.pointerType !== "mouse") {
+        return;
+      }
+
+      if (event.button !== undefined && event.button !== 0) {
+        return;
+      }
+
+      if (isSliderControl(event.target)) {
+        return;
+      }
+
+      isMouseDragging = true;
+      mouseDragStartX = event.clientX;
+      mouseDragStartScrollLeft = track.scrollLeft;
+      activePointerId = event.pointerId !== undefined ? event.pointerId : null;
+      suppressNextClick = false;
+      cancelScrollAnimation();
+      isProgrammaticScroll = false;
+      track.classList.add("is-dragging");
+
+      if (typeof track.setPointerCapture === "function" && activePointerId !== null) {
+        try {
+          track.setPointerCapture(activePointerId);
+        } catch (error) {
+          // Some browsers disallow capture on fast pointer transitions.
+        }
+      }
+    }
+
+    function moveMouseDrag(event) {
+      var deltaX;
+
+      if (!isMouseDragging) {
+        return;
+      }
+
+      deltaX = event.clientX - mouseDragStartX;
+
+      if (Math.abs(deltaX) > 4) {
+        suppressNextClick = true;
+      }
+
+      event.preventDefault();
+      track.scrollLeft = Math.max(0, Math.min(getMaxScrollLeft(), mouseDragStartScrollLeft - deltaX));
+    }
+
+    function stopMouseDrag() {
+      if (!isMouseDragging) {
+        return;
+      }
+
+      isMouseDragging = false;
+      track.classList.remove("is-dragging");
+      setCurrentIndex(getNearestSlideIndex(track.scrollLeft));
+
+      if (typeof track.releasePointerCapture === "function" && activePointerId !== null) {
+        try {
+          track.releasePointerCapture(activePointerId);
+        } catch (error) {
+          // Ignore browsers that already released pointer capture.
+        }
+      }
+
+      activePointerId = null;
+    }
+
     syncDesktopContainerInset();
     renderPagination();
 
@@ -374,9 +447,20 @@
     }
 
     track.addEventListener("wheel", releaseNativeWheelScroll, { passive: true });
+    track.addEventListener("pointerdown", startMouseDrag);
+    track.addEventListener("pointermove", moveMouseDrag);
+    track.addEventListener("pointerup", stopMouseDrag);
+    track.addEventListener("pointercancel", stopMouseDrag);
     track.addEventListener("click", function (event) {
       var card;
       var url;
+
+      if (suppressNextClick) {
+        event.preventDefault();
+        event.stopPropagation();
+        suppressNextClick = false;
+        return;
+      }
 
       if (event.target.closest("a, button, input, textarea, select, iframe")) {
         return;

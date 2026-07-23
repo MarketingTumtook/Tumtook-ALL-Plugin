@@ -407,6 +407,10 @@
       !!target.closest("button, input, textarea, select, iframe");
 
     const startViewportDrag = (event) => {
+      if (event.pointerType && event.pointerType !== "mouse") {
+        return;
+      }
+
       if (event.button !== undefined && event.button !== 0) {
         return;
       }
@@ -526,6 +530,10 @@
     });
 
     track.addEventListener("wheel", releaseNativeWheelScroll, { passive: true });
+    track.addEventListener("pointerdown", startViewportDrag);
+    track.addEventListener("pointermove", dragViewport);
+    track.addEventListener("pointerup", stopViewportDrag);
+    track.addEventListener("pointercancel", stopViewportDrag);
     track.addEventListener("dragstart", (event) => {
       event.preventDefault();
     });
