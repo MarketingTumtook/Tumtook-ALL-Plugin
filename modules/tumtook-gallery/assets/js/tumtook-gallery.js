@@ -183,13 +183,9 @@ document.addEventListener('DOMContentLoaded', function () {
 			var parentGallery = article.closest('.ttg-gallery');
 			var galleryImages = Array.prototype.slice.call(parentGallery.querySelectorAll('.ttg-media img:not([hidden])'));
 			var items = galleryImages.map(function (galleryImage) {
-				var card = galleryImage.closest('.ttg-card');
-				var title = card ? card.getAttribute('data-title') || '' : '';
-
 				return {
 					src: galleryImage.currentSrc || galleryImage.src,
-					alt: galleryImage.alt || '',
-					title: title
+					alt: galleryImage.alt || ''
 				};
 			});
 			var currentIndex = galleryImages.indexOf(image);
@@ -226,15 +222,6 @@ document.addEventListener('DOMContentLoaded', function () {
 		media.appendChild(noImage);
 		media.appendChild(image);
 		article.appendChild(media);
-
-		if (item.title) {
-			var title = document.createElement('h3');
-
-			article.setAttribute('data-title', item.title);
-			title.className = 'ttg-title';
-			title.textContent = item.title;
-			article.appendChild(title);
-		}
 
 		return article;
 	}

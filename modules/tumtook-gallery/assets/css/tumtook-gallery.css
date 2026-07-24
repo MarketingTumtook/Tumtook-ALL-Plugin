@@ -195,13 +195,6 @@
 	letter-spacing: 0.01em;
 }
 
-.ttg-title {
-	margin: 0;
-	font-size: 15px;
-	line-height: 1.45;
-	color: #111827;
-}
-
 .ttg-gallery-shell .ttg-media img {
 	cursor: zoom-in;
 	transform: none !important;
@@ -508,7 +501,4 @@
 		min-height: clamp(154px, 58vw, 238px);
 	}
 
-	.ttg-title {
-		font-size: 14px;
-	}
 }

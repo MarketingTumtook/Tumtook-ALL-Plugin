@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Tumtook Gallery
  * Description: Fetch images from an API and display them in a masonry gallery via shortcode.
- * Version: 1.0.17
+ * Version: 1.0.19
  * Author: Tumtook
  * Text Domain: tumtook-gallery
  */
@@ -16,7 +16,7 @@ final class Tumtook_Gallery_Plugin
 	const OPTION_KEY = 'tumtook_gallery_settings';
 	const SHORTCODE = 'tumtook_gallery';
 	const META_KEY = '_tumtook_gallery_settings';
-	const VERSION = '1.0.17';
+	const VERSION = '1.0.19';
 	const FONT_HANDLE = 'tumtook-kanit-font';
 
 	public function __construct()
@@ -597,7 +597,7 @@ final class Tumtook_Gallery_Plugin
 
 	private function get_gallery_items($endpoint, $settings, $limit, $page_id = 0)
 	{
-		$cache_key = 'ttg_' . md5($endpoint . wp_json_encode($settings) . $limit . self::VERSION . '_dedupe_ordered');
+		$cache_key = 'ttg_' . md5($endpoint . wp_json_encode($settings) . $limit . self::VERSION . '_dedupe_shuffle');
 		$cached = get_transient($cache_key);
 
 		if (false !== $cached) {
@@ -701,6 +701,10 @@ final class Tumtook_Gallery_Plugin
 					break 2;
 				}
 			}
+		}
+
+		if (count($gallery_items) > 1) {
+			shuffle($gallery_items);
 		}
 
 		set_transient($cache_key, $gallery_items, max(1, absint($settings['cache_minutes'])) * MINUTE_IN_SECONDS);
