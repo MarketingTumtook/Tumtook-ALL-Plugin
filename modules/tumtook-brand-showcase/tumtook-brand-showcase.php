@@ -1,8 +1,8 @@
 <?php
 /**
  * Plugin Name: Tumtook brand showCase
- * Description: Add up to 5 page-level brand showcase images and display them in a looping slider.
- * Version: 1.0.17
+ * Description: Add up to 6 page-level brand showcase images and display them in a looping slider.
+ * Version: 1.0.20
  * Author: Tumtook
  * Text Domain: tumtook-brand-showcase
  */
@@ -15,8 +15,9 @@ final class Tumtook_Brand_Showcase_Plugin
 {
 	const META_KEY = '_tumtook_brand_showcase_data';
 	const SHORTCODE = 'tumtook_brand_showcase';
-	const VERSION = '1.0.17';
+	const VERSION = '1.0.20';
 	const FONT_HANDLE = 'tumtook-kanit-font';
+	const SLIDE_COUNT = 6;
 
 	private $rendered_page_ids = array();
 
@@ -128,7 +129,7 @@ final class Tumtook_Brand_Showcase_Plugin
 			'subtitle' => __('แบรนด์แอสเซ็ทไอเดียภาพที่ปรับเครื่องมือ Tumtook', 'tumtook-brand-showcase'),
 			'view_all_label' => __('ดูทั้งหมด', 'tumtook-brand-showcase'),
 			'view_all_url' => '',
-			'slides' => array_fill(0, 5, $this->get_default_slide()),
+			'slides' => array_fill(0, self::SLIDE_COUNT, $this->get_default_slide()),
 		);
 	}
 
@@ -166,7 +167,7 @@ final class Tumtook_Brand_Showcase_Plugin
 		$data['view_all_url'] = esc_url_raw(isset($data['view_all_url']) ? $data['view_all_url'] : '');
 		$data['slides'] = isset($data['slides']) && is_array($data['slides']) ? array_values($data['slides']) : array();
 
-		for ($index = 0; $index < 5; $index++) {
+		for ($index = 0; $index < self::SLIDE_COUNT; $index++) {
 			$slide = isset($data['slides'][$index]) && is_array($data['slides'][$index]) ? $data['slides'][$index] : array();
 			$slide = wp_parse_args($slide, $this->get_default_slide());
 
@@ -375,7 +376,7 @@ final class Tumtook_Brand_Showcase_Plugin
 		</style>
 		<div class="ttbs-admin-wrap">
 			<p class="ttbs-admin-intro">
-				<?php esc_html_e('Upload brand showcase images one by one from the media library. You can add up to 5 images for this page.', 'tumtook-brand-showcase'); ?>
+				<?php esc_html_e('Upload brand showcase images one by one from the media library. You can add up to 6 images for this page.', 'tumtook-brand-showcase'); ?>
 			</p>
 
 			<section class="ttbs-admin-section">
@@ -462,7 +463,7 @@ final class Tumtook_Brand_Showcase_Plugin
 
 		$raw_slides = isset($raw_data['slides']) && is_array($raw_data['slides']) ? $raw_data['slides'] : array();
 
-		for ($index = 0; $index < 5; $index++) {
+		for ($index = 0; $index < self::SLIDE_COUNT; $index++) {
 			$slide = isset($raw_slides[$index]) && is_array($raw_slides[$index]) ? $raw_slides[$index] : array();
 
 			$sanitized['slides'][] = array(

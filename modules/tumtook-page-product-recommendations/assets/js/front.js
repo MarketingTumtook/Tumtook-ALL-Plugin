@@ -28,6 +28,13 @@
     var activePointerId = null;
     var hasPointerCapture = false;
     var suppressNextClick = false;
+    var momentumAnimationFrame = null;
+    var mouseDragLastX = 0;
+    var mouseDragLastTime = 0;
+    var mouseDragVelocity = 0;
+    var dragMomentumFriction = 0.94;
+    var dragMomentumMinVelocity = 0.04;
+    var dragMomentumMaxVelocity = 2.8;
 
     if (!track || !slides.length) {
       return;
@@ -243,7 +250,16 @@
       }
 
       cancelScrollAnimation();
+      cancelMomentumAnimation();
       isProgrammaticScroll = false;
+    }
+
+    function cancelMomentumAnimation() {
+      if (momentumAnimationFrame) {
+        window.cancelAnimationFrame(momentumAnimationFrame);
+      }
+
+      momentumAnimationFrame = null;
     }
 
     function animateScrollTo(targetLeft, duration) {
@@ -253,6 +269,7 @@
       var scrollDuration = duration || 360;
 
       cancelScrollAnimation();
+      cancelMomentumAnimation();
 
       if (Math.abs(distance) < 1) {
         track.scrollLeft = targetLeft;
@@ -279,6 +296,49 @@
       }
 
       scrollAnimationFrame = window.requestAnimationFrame(step);
+    }
+
+    function startMomentumScroll(initialVelocity, onComplete) {
+      var velocity = Math.max(-dragMomentumMaxVelocity, Math.min(dragMomentumMaxVelocity, initialVelocity));
+      var previousTime = window.performance.now();
+
+      cancelMomentumAnimation();
+
+      if (Math.abs(velocity) < dragMomentumMinVelocity) {
+        if (onComplete) {
+          onComplete();
+        }
+        return false;
+      }
+
+      function step(currentTime) {
+        var elapsed = Math.min(currentTime - previousTime, 32);
+        var maxScrollLeft = getMaxScrollLeft();
+        var nextLeft;
+
+        previousTime = currentTime;
+        nextLeft = Math.max(0, Math.min(maxScrollLeft, track.scrollLeft + velocity * elapsed));
+        track.scrollLeft = nextLeft;
+
+        if ((nextLeft <= 0 && velocity < 0) || (nextLeft >= maxScrollLeft && velocity > 0)) {
+          velocity = 0;
+        } else {
+          velocity *= Math.pow(dragMomentumFriction, elapsed / 16.67);
+        }
+
+        if (Math.abs(velocity) < dragMomentumMinVelocity) {
+          momentumAnimationFrame = null;
+          if (onComplete) {
+            onComplete();
+          }
+          return;
+        }
+
+        momentumAnimationFrame = window.requestAnimationFrame(step);
+      }
+
+      momentumAnimationFrame = window.requestAnimationFrame(step);
+      return true;
     }
 
     function scrollToSlideIndex(targetIndex, behavior) {
@@ -382,10 +442,14 @@
       isMouseDragging = false;
       mouseDragStartX = event.clientX;
       mouseDragStartScrollLeft = track.scrollLeft;
+      mouseDragLastX = event.clientX;
+      mouseDragLastTime = window.performance.now();
+      mouseDragVelocity = 0;
       activePointerId = event.pointerId !== undefined ? event.pointerId : null;
       hasPointerCapture = false;
       suppressNextClick = false;
       cancelScrollAnimation();
+      cancelMomentumAnimation();
       isProgrammaticScroll = false;
     }
 
@@ -418,6 +482,13 @@
       }
 
       event.preventDefault();
+      var currentTime = window.performance.now();
+      var elapsed = Math.max(currentTime - mouseDragLastTime, 8);
+      var instantVelocity = (mouseDragLastX - event.clientX) / elapsed;
+
+      mouseDragVelocity = mouseDragVelocity * 0.55 + instantVelocity * 0.45;
+      mouseDragLastX = event.clientX;
+      mouseDragLastTime = currentTime;
       track.scrollLeft = Math.max(0, Math.min(getMaxScrollLeft(), mouseDragStartScrollLeft - deltaX));
     }
 
@@ -433,7 +504,11 @@
       track.classList.remove("is-dragging");
 
       if (shouldUpdateActiveCard) {
-        setCurrentIndex(getNearestSlideIndex(track.scrollLeft));
+        if (!startMomentumScroll(mouseDragVelocity, function () {
+          setCurrentIndex(getNearestSlideIndex(track.scrollLeft));
+        })) {
+          setCurrentIndex(getNearestSlideIndex(track.scrollLeft));
+        }
       }
 
       if (hasPointerCapture && typeof track.releasePointerCapture === "function" && activePointerId !== null) {

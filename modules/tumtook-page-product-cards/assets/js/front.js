@@ -31,7 +31,14 @@
     var hasPointerCapture = false;
     var dragAnimationFrame = null;
     var pendingDragScrollLeft = null;
+    var momentumAnimationFrame = null;
+    var dragLastX = 0;
+    var dragLastTime = 0;
+    var dragVelocity = 0;
     var dragFollowEase = 0.72;
+    var dragMomentumFriction = 0.94;
+    var dragMomentumMinVelocity = 0.04;
+    var dragMomentumMaxVelocity = 2.8;
 
     if (!track || !slides.length) {
       return;
@@ -261,6 +268,15 @@
       pendingDragScrollLeft = null;
     }
 
+    function cancelMomentumAnimation() {
+      if (momentumAnimationFrame) {
+        window.cancelAnimationFrame(momentumAnimationFrame);
+      }
+
+      momentumAnimationFrame = null;
+      track.classList.remove("is-momentum-scrolling");
+    }
+
     function releaseNativeWheelScroll() {
       if (programmaticScrollTimer) {
         window.clearTimeout(programmaticScrollTimer);
@@ -269,6 +285,7 @@
 
       cancelScrollAnimation();
       cancelDragAnimation();
+      cancelMomentumAnimation();
       isProgrammaticScroll = false;
     }
 
@@ -312,6 +329,7 @@
 
       cancelScrollAnimation();
       cancelDragAnimation();
+      cancelMomentumAnimation();
 
       if (Math.abs(distance) < 1) {
         track.scrollLeft = targetLeft;
@@ -338,6 +356,53 @@
       }
 
       scrollAnimationFrame = window.requestAnimationFrame(step);
+    }
+
+    function startMomentumScroll(initialVelocity, onComplete) {
+      var velocity = Math.max(-dragMomentumMaxVelocity, Math.min(dragMomentumMaxVelocity, initialVelocity));
+      var previousTime = window.performance.now();
+
+      cancelMomentumAnimation();
+      cancelDragAnimation();
+
+      if (Math.abs(velocity) < dragMomentumMinVelocity) {
+        if (onComplete) {
+          onComplete();
+        }
+        return false;
+      }
+
+      track.classList.add("is-momentum-scrolling");
+
+      function step(currentTime) {
+        var elapsed = Math.min(currentTime - previousTime, 32);
+        var maxScrollLeft = getMaxScrollLeft();
+        var nextLeft;
+
+        previousTime = currentTime;
+        nextLeft = Math.max(0, Math.min(maxScrollLeft, track.scrollLeft + velocity * elapsed));
+        track.scrollLeft = nextLeft;
+
+        if ((nextLeft <= 0 && velocity < 0) || (nextLeft >= maxScrollLeft && velocity > 0)) {
+          velocity = 0;
+        } else {
+          velocity *= Math.pow(dragMomentumFriction, elapsed / 16.67);
+        }
+
+        if (Math.abs(velocity) < dragMomentumMinVelocity) {
+          momentumAnimationFrame = null;
+          track.classList.remove("is-momentum-scrolling");
+          if (onComplete) {
+            onComplete();
+          }
+          return;
+        }
+
+        momentumAnimationFrame = window.requestAnimationFrame(step);
+      }
+
+      momentumAnimationFrame = window.requestAnimationFrame(step);
+      return true;
     }
 
     function scrollToSlideIndex(targetIndex, behavior) {
@@ -444,6 +509,9 @@
       hasPointerCapture = false;
       dragStartX = event.clientX;
       dragStartScrollLeft = track.scrollLeft;
+      dragLastX = event.clientX;
+      dragLastTime = window.performance.now();
+      dragVelocity = 0;
       suppressNextClick = false;
 
       if (programmaticScrollTimer) {
@@ -453,6 +521,7 @@
 
       cancelScrollAnimation();
       cancelDragAnimation();
+      cancelMomentumAnimation();
       isProgrammaticScroll = false;
       track.classList.add("is-pointer-down");
     }
@@ -486,6 +555,13 @@
       }
 
       event.preventDefault();
+      var currentTime = window.performance.now();
+      var elapsed = Math.max(currentTime - dragLastTime, 8);
+      var instantVelocity = (dragLastX - event.clientX) / elapsed;
+
+      dragVelocity = dragVelocity * 0.55 + instantVelocity * 0.45;
+      dragLastX = event.clientX;
+      dragLastTime = currentTime;
       pendingDragScrollLeft = Math.max(0, Math.min(getMaxScrollLeft(), dragStartScrollLeft - deltaX));
       scheduleDragScroll();
     }
@@ -514,7 +590,11 @@
       hasPointerCapture = false;
 
       if (shouldUpdateActiveCard) {
-        setCurrentIndex(getNearestSlideIndex(pendingDragScrollLeft !== null ? pendingDragScrollLeft : track.scrollLeft));
+        if (!startMomentumScroll(dragVelocity, function () {
+          setCurrentIndex(getNearestSlideIndex(track.scrollLeft));
+        })) {
+          setCurrentIndex(getNearestSlideIndex(pendingDragScrollLeft !== null ? pendingDragScrollLeft : track.scrollLeft));
+        }
         window.setTimeout(function () {
           suppressNextClick = false;
         }, 250);

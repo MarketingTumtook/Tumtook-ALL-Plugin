@@ -1,0 +1,20 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "tumtook/comparison-table",
+	"title": "Tumtook Comparison Table",
+	"category": "widgets",
+	"icon": "columns",
+	"description": "Display the comparison table configured on the current Page.",
+	"textdomain": "tumtook-dynamic-comparison-table",
+	"usesContext": ["postId"],
+	"supports": {
+		"customClassName": false,
+		"className": false
+	},
+	"attributes": {},
+	"editorScript": "file:./index.js",
+	"editorStyle": "file:./editor.css",
+	"style": "ttct-frontend",
+	"render": "file:./render.php"
+}

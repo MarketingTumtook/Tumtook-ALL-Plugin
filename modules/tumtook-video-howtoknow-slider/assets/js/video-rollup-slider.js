@@ -93,7 +93,14 @@
     let hasPointerCapture = false;
     let dragAnimationFrame = null;
     let pendingDragScrollLeft = null;
+    let momentumAnimationFrame = null;
+    let dragLastX = 0;
+    let dragLastTime = 0;
+    let dragVelocity = 0;
     const dragFollowEase = 0.72;
+    const dragMomentumFriction = 0.94;
+    const dragMomentumMinVelocity = 0.04;
+    const dragMomentumMaxVelocity = 2.8;
     const isCoarsePointer = window.matchMedia
       ? window.matchMedia("(hover: none), (pointer: coarse)").matches
       : false;
@@ -358,6 +365,14 @@
       pendingDragScrollLeft = null;
     };
 
+    const cancelMomentumAnimation = () => {
+      if (momentumAnimationFrame) {
+        window.cancelAnimationFrame(momentumAnimationFrame);
+      }
+
+      momentumAnimationFrame = null;
+    };
+
     const releaseNativeWheelScroll = () => {
       if (programmaticScrollTimer) {
         window.clearTimeout(programmaticScrollTimer);
@@ -366,6 +381,7 @@
 
       cancelScrollAnimation();
       cancelDragAnimation();
+      cancelMomentumAnimation();
       isProgrammaticScroll = false;
     };
 
@@ -407,6 +423,7 @@
 
       cancelScrollAnimation();
       cancelDragAnimation();
+      cancelMomentumAnimation();
 
       if (Math.abs(distance) < 1) {
         track.scrollLeft = targetLeft;
@@ -431,6 +448,53 @@
       };
 
       scrollAnimationFrame = window.requestAnimationFrame(step);
+    };
+
+    const startMomentumScroll = (initialVelocity, onComplete) => {
+      cancelMomentumAnimation();
+      cancelDragAnimation();
+
+      let velocity = Math.max(
+        -dragMomentumMaxVelocity,
+        Math.min(dragMomentumMaxVelocity, initialVelocity)
+      );
+
+      if (Math.abs(velocity) < dragMomentumMinVelocity) {
+        onComplete?.();
+        return false;
+      }
+
+      let previousTime = window.performance.now();
+
+      const step = (currentTime) => {
+        const elapsed = Math.min(currentTime - previousTime, 32);
+        previousTime = currentTime;
+
+        const maxScrollLeft = getMaxScrollLeft();
+        const nextLeft = Math.max(
+          0,
+          Math.min(maxScrollLeft, track.scrollLeft + velocity * elapsed)
+        );
+
+        track.scrollLeft = nextLeft;
+
+        if ((nextLeft <= 0 && velocity < 0) || (nextLeft >= maxScrollLeft && velocity > 0)) {
+          velocity = 0;
+        } else {
+          velocity *= Math.pow(dragMomentumFriction, elapsed / 16.67);
+        }
+
+        if (Math.abs(velocity) < dragMomentumMinVelocity) {
+          momentumAnimationFrame = null;
+          onComplete?.();
+          return;
+        }
+
+        momentumAnimationFrame = window.requestAnimationFrame(step);
+      };
+
+      momentumAnimationFrame = window.requestAnimationFrame(step);
+      return true;
     };
 
     const scrollToSlideIndex = (targetIndex, behavior = "smooth") => {
@@ -522,6 +586,9 @@
       hasPointerCapture = false;
       dragStartX = event.clientX;
       dragStartScrollLeft = track.scrollLeft;
+      dragLastX = event.clientX;
+      dragLastTime = window.performance.now();
+      dragVelocity = 0;
       suppressNextClick = false;
 
       if (programmaticScrollTimer) {
@@ -531,6 +598,7 @@
 
       cancelScrollAnimation();
       cancelDragAnimation();
+      cancelMomentumAnimation();
       isProgrammaticScroll = false;
       track.classList.add("is-pointer-down");
     };
@@ -566,6 +634,15 @@
       }
 
       event.preventDefault();
+
+      const currentTime = window.performance.now();
+      const elapsed = Math.max(currentTime - dragLastTime, 8);
+      const instantVelocity = (dragLastX - event.clientX) / elapsed;
+
+      dragVelocity = dragVelocity * 0.55 + instantVelocity * 0.45;
+      dragLastX = event.clientX;
+      dragLastTime = currentTime;
+
       pendingDragScrollLeft = Math.max(
         0,
         Math.min(getMaxScrollLeft(), dragStartScrollLeft - deltaX)
@@ -599,7 +676,14 @@
       hasPointerCapture = false;
 
       if (shouldUpdateActiveCard) {
-        setCurrentIndex(getNearestSlideIndex(pendingDragScrollLeft ?? track.scrollLeft));
+        const completedWithMomentum = startMomentumScroll(dragVelocity, () => {
+          setCurrentIndex(getNearestSlideIndex(track.scrollLeft));
+        });
+
+        if (!completedWithMomentum) {
+          setCurrentIndex(getNearestSlideIndex(pendingDragScrollLeft ?? track.scrollLeft));
+        }
+
         window.setTimeout(() => {
           suppressNextClick = false;
         }, 250);

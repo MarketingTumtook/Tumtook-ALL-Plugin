@@ -64,6 +64,31 @@
       $hidden.val(ids.join(','));
     }
 
+    function initSortable() {
+      if (!$.fn.sortable) {
+        return;
+      }
+
+      if ($selected.data('ui-sortable')) {
+        $selected.sortable('destroy');
+      }
+
+      $selected.sortable({
+        items: '.ttpc-page-chip',
+        placeholder: 'ttpc-page-chip-placeholder',
+        tolerance: 'pointer',
+        forcePlaceholderSize: true,
+        start: function (event, ui) {
+          ui.item.addClass('is-dragging');
+        },
+        stop: function (event, ui) {
+          ui.item.removeClass('is-dragging');
+          syncHidden();
+        },
+        update: syncHidden
+      });
+    }
+
     function addChip(id, label) {
       if (!id || !label) {
         return;
@@ -93,6 +118,7 @@
 
       $selected.append($chip);
       syncHidden();
+      initSortable();
       $picker.val('');
     }
 
@@ -107,6 +133,8 @@
       $(this).closest('.ttpc-page-chip').remove();
       syncHidden();
     });
+
+    initSortable();
   }
 
   $(initImagePicker);

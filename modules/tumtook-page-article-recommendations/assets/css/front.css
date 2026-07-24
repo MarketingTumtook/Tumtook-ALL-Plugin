@@ -190,6 +190,7 @@
   }
 
   .ttar-track.is-dragging,
+  .ttar-track.is-momentum-scrolling,
   .ttar-track.is-dragging * {
     cursor: grabbing !important;
     -webkit-user-select: none;

@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Tumtook Page Article Recommendations
  * Description: Adds a random article slider section for Tumtook pages and posts with a layout tailored to article recommendations.
- * Version: 1.0.13
+ * Version: 1.0.15
  * Author: Tumtook
  * Text Domain: tumtook-page-article-recommendations
  */
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
 
 final class Tumtook_Page_Article_Recommendations
 {
-	const VERSION = '1.0.13';
+	const VERSION = '1.0.15';
 	const META_KEY = '_tt_page_article_recommendations';
 	const SHORTCODE = 'tumtook_recommended_articles';
 	const FONT_HANDLE = 'tumtook-kanit-font';

@@ -148,6 +148,7 @@
   }
 
   .ttbs-showcase__viewport.is-dragging,
+  .ttbs-showcase__viewport.is-momentum-scrolling,
   .ttbs-showcase__viewport.is-dragging * {
     cursor: grabbing !important;
     -webkit-user-select: none;

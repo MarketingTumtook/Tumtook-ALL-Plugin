@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Tumtook Page Card Products  ทั้งหมด
  * Description: Adds a page-based product card slider with manual page selection and price support for Tumtook landing pages.
- * Version: 1.0.15
+ * Version: 1.0.18
  * Author: Tumtook
  * Text Domain: tumtook-page-product-cards
  */
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
 
 final class Tumtook_Page_Product_Cards
 {
-	const VERSION = '1.0.15';
+	const VERSION = '1.0.18';
 	const META_KEY = '_tt_page_product_cards';
 	const PAGE_IMAGE_META = '_ttpc_page_image_id';
 	const PAGE_TITLE_META = '_ttpc_page_card_title';
@@ -58,7 +58,7 @@ final class Tumtook_Page_Product_Cards
 		wp_enqueue_script(
 			'ttpc-admin',
 			plugin_dir_url(__FILE__) . 'assets/js/admin.js',
-			array('jquery'),
+			array('jquery', 'jquery-ui-sortable'),
 			$this->get_asset_version('assets/js/admin.js'),
 			true
 		);
@@ -270,7 +270,8 @@ final class Tumtook_Page_Product_Cards
 				display: flex;
 				flex-wrap: wrap;
 				gap: 8px;
-				margin-top: 10px
+				margin-top: 10px;
+				min-height: 38px
 			}
 
 			.ttpc-page-chip {
@@ -280,7 +281,22 @@ final class Tumtook_Page_Product_Cards
 				padding: 8px 10px;
 				border: 1px solid #dcdcde;
 				border-radius: 999px;
-				background: #f6f7f7
+				background: #f6f7f7;
+				cursor: move;
+				user-select: none
+			}
+
+			.ttpc-page-chip.is-dragging {
+				opacity: .72;
+				box-shadow: 0 8px 18px rgba(0, 0, 0, .12)
+			}
+
+			.ttpc-page-chip-placeholder {
+				min-width: 92px;
+				min-height: 34px;
+				border: 1px dashed #8c8f94;
+				border-radius: 999px;
+				background: #fff
 			}
 
 			.ttpc-page-chip__label {
@@ -432,7 +448,7 @@ final class Tumtook_Page_Product_Cards
 							<?php endforeach; ?>
 						</div>
 						<p class="ttpc-admin-hint">
-							<?php esc_html_e('เลือกชื่อ page จาก dropdown ได้เลย และกด x เพื่อลบออกจากรายการ', 'tumtook-page-product-cards'); ?>
+							<?php esc_html_e('เลือกชื่อ page จาก dropdown ได้เลย ลากเพื่อสลับตำแหน่ง และกด x เพื่อลบออกจากรายการ', 'tumtook-page-product-cards'); ?>
 						</p>
 					</div>
 				</div>

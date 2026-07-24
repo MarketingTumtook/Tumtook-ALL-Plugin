@@ -209,6 +209,7 @@ body.ttpc-slider-page {
   }
 
   .ttpc-track.is-dragging,
+  .ttpc-track.is-momentum-scrolling,
   .ttpc-track.is-dragging * {
     cursor: grabbing !important;
     -webkit-user-select: none;

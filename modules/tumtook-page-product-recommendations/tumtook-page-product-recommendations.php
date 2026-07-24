@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Tumtook Page Product Recommendations
  * Description: Adds a page-based Card Products ทั้งหมด slider with manual page selection, price fields, and a layout tailored for Tumtook landing pages.
- * Version: 1.1.17
+ * Version: 1.1.19
  * Author: Tumtook
  * Text Domain: tumtook-page-product-recommendations
  */
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
 
 final class Tumtook_Page_Product_Recommendations
 {
-	const VERSION = '1.1.17';
+	const VERSION = '1.1.19';
 	const META_KEY = '_tt_page_product_recommendations';
 	const PAGE_PRICE_META = '_ttpr_page_price';
 	const PAGE_BADGE_META = '_ttpr_page_badge';
@@ -37,7 +37,7 @@ final class Tumtook_Page_Product_Recommendations
 	{
 		add_meta_box(
 			'tt-page-product-recommendations',
-			__('Card Products ทั้งหมด', 'tumtook-page-product-recommendations'),
+			__('Card Category ทั้งหมด', 'tumtook-page-product-recommendations'),
 			array($this, 'render_meta_box'),
 			'page',
 			'normal',
@@ -59,7 +59,7 @@ final class Tumtook_Page_Product_Recommendations
 		wp_enqueue_script(
 			'ttpr-admin',
 			plugin_dir_url(__FILE__) . 'assets/js/admin.js',
-			array('jquery'),
+			array('jquery', 'jquery-ui-sortable'),
 			$this->get_asset_version('assets/js/admin.js'),
 			true
 		);
@@ -272,7 +272,8 @@ final class Tumtook_Page_Product_Recommendations
 				display: flex;
 				flex-wrap: wrap;
 				gap: 8px;
-				margin-top: 10px
+				margin-top: 10px;
+				min-height: 38px
 			}
 
 			.ttpr-page-chip {
@@ -282,7 +283,22 @@ final class Tumtook_Page_Product_Recommendations
 				padding: 8px 10px;
 				border: 1px solid #dcdcde;
 				border-radius: 999px;
-				background: #f6f7f7
+				background: #f6f7f7;
+				cursor: move;
+				user-select: none
+			}
+
+			.ttpr-page-chip.is-dragging {
+				opacity: .72;
+				box-shadow: 0 8px 18px rgba(0, 0, 0, .12)
+			}
+
+			.ttpr-page-chip-placeholder {
+				min-width: 92px;
+				min-height: 34px;
+				border: 1px dashed #8c8f94;
+				border-radius: 999px;
+				background: #fff
 			}
 
 			.ttpr-page-chip__label {
@@ -454,7 +470,7 @@ final class Tumtook_Page_Product_Recommendations
 							<?php endforeach; ?>
 						</div>
 						<p class="ttpr-admin-hint">
-							<?php esc_html_e('เลือกชื่อ page จาก dropdown ได้เลย และกด x เพื่อลบออกจากรายการ', 'tumtook-page-product-recommendations'); ?>
+							<?php esc_html_e('เลือกชื่อ page จาก dropdown ได้เลย ลากเพื่อสลับตำแหน่ง และกด x เพื่อลบออกจากรายการ', 'tumtook-page-product-recommendations'); ?>
 						</p>
 					</div>
 				</div>
