@@ -228,15 +228,12 @@ document.addEventListener('DOMContentLoaded', function () {
 		article.appendChild(media);
 
 		if (item.title) {
-			var content = document.createElement('div');
 			var title = document.createElement('h3');
 
 			article.setAttribute('data-title', item.title);
-			content.className = 'ttg-content';
 			title.className = 'ttg-title';
 			title.textContent = item.title;
-			content.appendChild(title);
-			article.appendChild(content);
+			article.appendChild(title);
 		}
 
 		return article;
