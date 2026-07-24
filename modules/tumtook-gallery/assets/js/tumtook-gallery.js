@@ -160,8 +160,10 @@ document.addEventListener('DOMContentLoaded', function () {
 		var noImageIcon = document.createElement('span');
 		var noImageText = document.createElement('span');
 		var image = document.createElement('img');
+		var itemKey = getItemKey(item);
 
 		article.className = 'ttg-card';
+		article.setAttribute('data-ttg-key', itemKey);
 		media.className = 'ttg-media';
 		noImage.className = 'ttg-noimage';
 		noImage.hidden = true;
@@ -232,11 +234,20 @@ document.addEventListener('DOMContentLoaded', function () {
 			article.setAttribute('data-title', item.title);
 			content.className = 'ttg-content';
 			title.className = 'ttg-title';
+			title.textContent = item.title;
 			content.appendChild(title);
 			article.appendChild(content);
 		}
 
 		return article;
+	}
+
+	function getItemKey(item) {
+		if (item && item.key) {
+			return String(item.key);
+		}
+
+		return item && item.image ? String(item.image).trim() : '';
 	}
 
 	function resizeMasonryItems(gallery, cards) {
@@ -360,19 +371,6 @@ document.addEventListener('DOMContentLoaded', function () {
 		return Math.max(columns * 2, 12);
 	}
 
-	function shuffleArray(items) {
-		var shuffled = items.slice();
-
-		for (var i = shuffled.length - 1; i > 0; i -= 1) {
-			var j = Math.floor(Math.random() * (i + 1));
-			var temp = shuffled[i];
-			shuffled[i] = shuffled[j];
-			shuffled[j] = temp;
-		}
-
-		return shuffled;
-	}
-
 	shells.forEach(function (shell) {
 		var gallery = shell.querySelector('.ttg-gallery');
 		var loader = shell.querySelector('.ttg-loader');
@@ -387,6 +385,7 @@ document.addEventListener('DOMContentLoaded', function () {
 		var observer;
 		var resizeFrame;
 		var scrollFrame;
+		var seenItems = {};
 
 		function setLoaderState(message, hidden) {
 			loader.textContent = message;
@@ -448,15 +447,24 @@ document.addEventListener('DOMContentLoaded', function () {
 				})
 				.then(function (data) {
 					var items = Array.isArray(data.items) ? data.items : [];
-					var randomizedItems = shuffleArray(items);
+					var uniqueItems = items.filter(function (item) {
+						var itemKey = getItemKey(item);
 
-					if (!randomizedItems.length && page === 1) {
+						if (!itemKey || seenItems[itemKey]) {
+							return false;
+						}
+
+						seenItems[itemKey] = true;
+						return true;
+					});
+
+					if (!uniqueItems.length && page === 1) {
 						complete = true;
 						setLoaderState(TumtookGalleryData.strings.empty, false);
 						return;
 					}
 
-					var newCards = randomizedItems.map(createCard);
+					var newCards = uniqueItems.map(createCard);
 					var fragment = document.createDocumentFragment();
 
 					newCards.forEach(function (card) {

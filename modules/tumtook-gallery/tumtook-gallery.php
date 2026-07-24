@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Tumtook Gallery
  * Description: Fetch images from an API and display them in a masonry gallery via shortcode.
- * Version: 1.0.15
+ * Version: 1.0.16
  * Author: Tumtook
  * Text Domain: tumtook-gallery
  */
@@ -16,7 +16,7 @@ final class Tumtook_Gallery_Plugin
 	const OPTION_KEY = 'tumtook_gallery_settings';
 	const SHORTCODE = 'tumtook_gallery';
 	const META_KEY = '_tumtook_gallery_settings';
-	const VERSION = '1.0.15';
+	const VERSION = '1.0.16';
 	const FONT_HANDLE = 'tumtook-kanit-font';
 
 	public function __construct()
@@ -597,7 +597,7 @@ final class Tumtook_Gallery_Plugin
 
 	private function get_gallery_items($endpoint, $settings, $limit, $page_id = 0)
 	{
-		$cache_key = 'ttg_' . md5($endpoint . wp_json_encode($settings) . $limit . self::VERSION . '_shuffle');
+		$cache_key = 'ttg_' . md5($endpoint . wp_json_encode($settings) . $limit . self::VERSION . '_dedupe_ordered');
 		$cached = get_transient($cache_key);
 
 		if (false !== $cached) {
@@ -656,6 +656,7 @@ final class Tumtook_Gallery_Plugin
 		}
 
 		$gallery_items = array();
+		$seen_images = array();
 
 		foreach ($items as $item) {
 			if (!is_array($item)) {
@@ -679,10 +680,17 @@ final class Tumtook_Gallery_Plugin
 					continue;
 				}
 
+				$item_key = $this->get_gallery_item_key($image);
+				if (isset($seen_images[$item_key])) {
+					continue;
+				}
+				$seen_images[$item_key] = true;
+
 				$item_alt = isset($alts[$index]) && is_scalar($alts[$index]) ? $alts[$index] : $alt;
 				$item_title = $this->extract_filename_title($raw_image);
 
 				$gallery_items[] = array(
+					'key' => $item_key,
 					'image' => $image,
 					'title' => is_scalar($item_title) ? wp_strip_all_tags((string) $item_title) : '',
 					'link' => is_string($link) ? $this->normalize_url($link, $endpoint) : '',
@@ -695,25 +703,14 @@ final class Tumtook_Gallery_Plugin
 			}
 		}
 
-		if (count($gallery_items) > 1) {
-			$gallery_items = $this->shuffle_gallery_items($gallery_items);
-		}
-
 		set_transient($cache_key, $gallery_items, max(1, absint($settings['cache_minutes'])) * MINUTE_IN_SECONDS);
 
 		return $gallery_items;
 	}
 
-	private function shuffle_gallery_items($items)
+	private function get_gallery_item_key($image)
 	{
-		$items = array_values($items);
-		if (count($items) <= 1) {
-			return $items;
-		}
-
-		// Keep random visual order while preserving item structure for page pagination.
-		shuffle($items);
-		return $items;
+		return md5(trim((string) $image));
 	}
 
 	private function get_page_settings($page_id)
