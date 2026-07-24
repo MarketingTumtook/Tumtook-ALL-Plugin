@@ -11,7 +11,7 @@
 
     var frame;
 
-    $selectButton.on('click', function (event) {
+    $selectButton.off('click.ttpcImage').on('click.ttpcImage', function (event) {
       event.preventDefault();
 
       if (!frame) {
@@ -32,7 +32,7 @@
       frame.open();
     });
 
-    $clearButton.on('click', function (event) {
+    $clearButton.off('click.ttpcImage').on('click.ttpcImage', function (event) {
       event.preventDefault();
       $idField.val('');
       $preview.attr('src', '');
@@ -75,6 +75,8 @@
 
       $selected.sortable({
         items: '.ttpc-page-chip',
+        handle: '.ttpc-page-chip__label',
+        cancel: 'button, input, select, textarea, a',
         placeholder: 'ttpc-page-chip-placeholder',
         tolerance: 'pointer',
         forcePlaceholderSize: true,
@@ -134,11 +136,20 @@
       syncHidden();
     });
 
+    $(document).off('submit.ttpcPagePicker', 'form#post').on('submit.ttpcPagePicker', 'form#post', function () {
+      syncHidden();
+      if ($selected.data('ui-sortable')) {
+        $selected.sortable('disable');
+      }
+    });
+
     initSortable();
   }
 
   $(initImagePicker);
   $(initPagePicker);
-  $(document).on('elementor/popup/show', initImagePicker);
-  $(document).on('elementor/popup/show', initPagePicker);
+  $(document).off('elementor/popup/show.ttpcAdmin').on('elementor/popup/show.ttpcAdmin', function () {
+    initImagePicker();
+    initPagePicker();
+  });
 })(jQuery);
