@@ -617,6 +617,11 @@
     }
 
     track.addEventListener("wheel", releaseNativeWheelScroll, { passive: true });
+    track.addEventListener("scroll", function () {
+      if (!isProgrammaticScroll) {
+        setCurrentIndex(getNearestSlideIndex(track.scrollLeft));
+      }
+    }, { passive: true });
     track.addEventListener("pointerdown", startViewportDrag);
     track.addEventListener("pointermove", dragViewport);
     track.addEventListener("pointerup", stopViewportDrag);
