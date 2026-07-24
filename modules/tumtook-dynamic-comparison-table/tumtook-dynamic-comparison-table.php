@@ -3,7 +3,7 @@
  * Plugin Name: Tumtook Dynamic Comparison Table
  * Plugin URI: https://tumtook.local/
  * Description: Dynamic product comparison tables per Page with admin table builder, shortcode, and Gutenberg block.
- * Version: 1.0.0
+ * Version: 1.0.1
  * Author: Tumtook
  * Text Domain: tumtook-dynamic-comparison-table
  * Domain Path: /languages
@@ -18,7 +18,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 if ( ! defined( 'TTCT_VERSION' ) ) {
-	define( 'TTCT_VERSION', '1.0.0' );
+	define( 'TTCT_VERSION', '1.0.1' );
 }
 if ( ! defined( 'TTCT_FILE' ) ) {
 	define( 'TTCT_FILE', __FILE__ );

@@ -350,7 +350,7 @@
 						<summary>CTA และขั้นสูง</summary>
 						<div class="ttct-field-grid">
 							<label>ข้อความ CTA<input type="text" data-column-field="button_text" value="${escapeAttr(column.button_text)}" placeholder="สอบถามราคา"><small>ปุ่มนี้จะแสดงในหัวคอลัมน์</small></label>
-							<label>URL CTA<input type="url" data-column-field="button_url" value="${escapeAttr(column.button_url)}" placeholder="https://example.com"><small>ใส่ # ได้ถ้ายังไม่มีลิงก์จริง</small></label>
+							<label>URL CTA<input type="text" inputmode="url" data-column-field="button_url" value="${escapeAttr(column.button_url)}" placeholder="https://example.com"><small>ใส่ # ได้ถ้ายังไม่มีลิงก์จริง</small></label>
 							<label class="ttct-compact-check"><input type="checkbox" data-column-field="button_new_tab" ${checked(column.button_new_tab)}> เปิด CTA ในแท็บใหม่</label>
 						</div>
 					</details>
@@ -408,7 +408,7 @@
 			case 'yesno':
 				return `<label class="ttct-cell-check"><input type="checkbox" data-cell-field="content" ${checked(cell.content === '1' || cell.content === true)}> เปิดค่า</label>`;
 			case 'button':
-				return `<input type="text" data-cell-field="content" placeholder="ข้อความปุ่ม" value="${escapeAttr(cell.content)}"><input type="url" data-cell-field="url" placeholder="URL" value="${escapeAttr(cell.url)}"><label class="ttct-cell-hint"><input type="checkbox" data-cell-field="new_tab" ${checked(cell.new_tab)}> เปิดแท็บใหม่</label><small>ใช้เมื่อ cell นี้ต้องเป็นปุ่มเฉพาะรุ่น</small>`;
+				return `<input type="text" data-cell-field="content" placeholder="ข้อความปุ่ม" value="${escapeAttr(cell.content)}"><input type="text" inputmode="url" data-cell-field="url" placeholder="URL" value="${escapeAttr(cell.url)}"><label class="ttct-cell-hint"><input type="checkbox" data-cell-field="new_tab" ${checked(cell.new_tab)}> เปิดแท็บใหม่</label><small>ใช้เมื่อ cell นี้ต้องเป็นปุ่มเฉพาะรุ่น</small>`;
 			case 'image':
 				return `<input type="number" data-cell-field="content" placeholder="Attachment ID" value="${escapeAttr(cell.content)}"><input type="text" data-cell-field="alt" placeholder="Alt text" value="${escapeAttr(cell.alt)}"><button type="button" class="button ttct-btn ttct-btn--small" data-ttct-media-cell><span class="dashicons dashicons-format-image" aria-hidden="true"></span>Media</button><small>เลือกรูปจาก Media Library หรือใส่ Attachment ID</small>`;
 			default:
