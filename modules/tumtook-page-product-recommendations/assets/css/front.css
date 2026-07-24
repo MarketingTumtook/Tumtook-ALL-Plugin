@@ -186,6 +186,7 @@ body.ttpr-slider-page {
   }
 
   .ttpr-track.is-dragging,
+  .ttpr-track.is-momentum-scrolling,
   .ttpr-track.is-dragging * {
     cursor: grabbing !important;
     -webkit-user-select: none;

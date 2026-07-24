@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Tumtook Video How To Slider
  * Description: Add page-level promo media fields and display a rounded promo slider with one video plus six image slides.
- * Version: 1.3.11
+ * Version: 1.3.12
  * Author: Tumtook
  * Text Domain: tumtook-video-rollup-slider
  */
@@ -16,7 +16,7 @@ final class Video_Howtoknow_Slider_Plugin
 	const META_KEY = '_tumtook_video_howtoknow_data';
 	const PRODUCT_PRICE_META_KEY = '_tumtook_recommended_price';
 	const PRODUCT_RECOMMENDED_META_KEY = '_tumtook_recommended_enabled';
-	const VERSION = '1.3.11';
+	const VERSION = '1.3.12';
 	const FONT_HANDLE = 'tumtook-kanit-font';
 
 	private $rendered_page_ids = array();
@@ -28,6 +28,7 @@ final class Video_Howtoknow_Slider_Plugin
 		add_action('admin_enqueue_scripts', array($this, 'enqueue_admin_assets'));
 		add_shortcode('video_how_to_slider', array($this, 'render_shortcode'));
 		add_shortcode('tumtook_video_how_to_slider', array($this, 'render_shortcode'));
+		add_shortcode('tumtook_video_how_to_youtube', array($this, 'render_youtube_shortcode'));
 		add_shortcode('tumtook_video_how_to_recommended_products', array($this, 'render_recommended_products_shortcode'));
 	}
 
@@ -37,6 +38,15 @@ final class Video_Howtoknow_Slider_Plugin
 			'tumtook-video-rollup-slider-page',
 			__('Apple Slide Card', 'tumtook-video-rollup-slider'),
 			array($this, 'render_page_meta_box'),
+			'page',
+			'normal',
+			'default'
+		);
+
+		add_meta_box(
+			'tumtook-video-rollup-slider-youtube',
+			__('ส่วนที่ 2: คลิป YouTube', 'tumtook-video-rollup-slider'),
+			array($this, 'render_youtube_meta_box'),
 			'page',
 			'normal',
 			'default'
@@ -1070,6 +1080,40 @@ final class Video_Howtoknow_Slider_Plugin
 		}
 
 		return $this->build_slider_markup($slides, $atts);
+	}
+
+	public function render_youtube_shortcode($atts)
+	{
+		$this->register_front_assets();
+
+		$atts = shortcode_atts(
+			array(
+				'title' => '',
+				'page_id' => 0,
+			),
+			$atts,
+			'tumtook_video_how_to_youtube'
+		);
+
+		$page_id = $this->resolve_page_id($atts);
+
+		if (!$page_id) {
+			return '';
+		}
+
+		$youtube_section = $this->get_youtube_slides_for_page($page_id);
+
+		if (empty($youtube_section['slides'])) {
+			return '';
+		}
+
+		return $this->build_slider_markup(
+			$youtube_section['slides'],
+			array(
+				'title' => !empty($atts['title']) ? $atts['title'] : $youtube_section['title'],
+			),
+			'video-rollup-slider--youtube'
+		);
 	}
 
 	public function render_recommended_products_shortcode($atts)

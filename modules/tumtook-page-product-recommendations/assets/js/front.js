@@ -260,6 +260,7 @@
       }
 
       momentumAnimationFrame = null;
+      track.classList.remove("is-momentum-scrolling");
     }
 
     function animateScrollTo(targetLeft, duration) {
@@ -311,6 +312,8 @@
         return false;
       }
 
+      track.classList.add("is-momentum-scrolling");
+
       function step(currentTime) {
         var elapsed = Math.min(currentTime - previousTime, 32);
         var maxScrollLeft = getMaxScrollLeft();
@@ -328,6 +331,7 @@
 
         if (Math.abs(velocity) < dragMomentumMinVelocity) {
           momentumAnimationFrame = null;
+          track.classList.remove("is-momentum-scrolling");
           if (onComplete) {
             onComplete();
           }
