@@ -88,11 +88,12 @@ function tumtook_aio_get_modules()
 			'file' => 'tumtook-gallery/tumtook-gallery.php',
 			'guard' => array('type' => 'class', 'name' => 'Tumtook_Gallery_Plugin'),
 		),
-		array(
-			'name' => 'Tumtook Dynamic Comparison Table',
-			'file' => 'tumtook-dynamic-comparison-table/tumtook-dynamic-comparison-table.php',
-			'guard' => array('type' => 'class', 'name' => 'TTCT_Plugin'),
-		),
+		// Temporarily disabled. Keep module files in place for later re-enable.
+		// array(
+		// 	'name' => 'Tumtook Dynamic Comparison Table',
+		// 	'file' => 'tumtook-dynamic-comparison-table/tumtook-dynamic-comparison-table.php',
+		// 	'guard' => array('type' => 'class', 'name' => 'TTCT_Plugin'),
+		// ),
 		array(
 			'name' => 'Tumtook Page FAQ',
 			'file' => 'tumtook-page-faq/tumtook-page-faq.php',
