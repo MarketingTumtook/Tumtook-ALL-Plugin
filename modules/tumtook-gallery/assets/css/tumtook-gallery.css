@@ -1,19 +1,16 @@
 .ttg-gallery-shell {
 	--ttg-effective-gap: min(var(--ttg-gap, 18px), 18px);
+	--ttg-active-columns: var(--ttg-columns, 6);
 	position: relative;
 	font-family: "Kanit", sans-serif;
 	/* padding: min(var(--ttg-gap, 18px), 18px); */
-	padding-inline: calc(var(--ttg-effective-gap) + 24px);
+	padding-inline: var(--ttg-effective-gap);
 }
 
 .ttg-gallery-shell .ttg-gallery {
-	display: grid;
-	grid-template-columns: repeat(var(--ttg-columns, 6), minmax(0, 1fr));
+	display: block;
+	column-count: var(--ttg-active-columns);
 	column-gap: var(--ttg-effective-gap);
-	row-gap: var(--ttg-effective-gap);
-	grid-auto-flow: dense;
-	grid-auto-rows: 3px;
-	align-items: start;
 	min-height: 40vh;
 	position: relative;
 }
@@ -23,9 +20,15 @@
 	border-radius: 18px;
 	background: #ffffff;
 	box-shadow: 0 14px 30px rgba(15, 23, 42, 0.08);
+	break-inside: avoid;
+	break-inside: avoid-column;
+	display: block;
+	margin: 0 0 var(--ttg-effective-gap);
 	overflow: hidden;
 	opacity: 0;
+	page-break-inside: avoid;
 	transform: translateY(28px);
+	width: 100%;
 	filter: saturate(0.92);
 	will-change: transform, opacity, filter;
 	transition:
@@ -432,23 +435,17 @@
 @media (max-width: 1024px) {
 	.ttg-gallery-shell {
 		--ttg-effective-gap: min(var(--ttg-gap, 14px), 14px);
-		padding-inline: calc(var(--ttg-effective-gap) + 12px);
-	}
-
-	.ttg-gallery-shell .ttg-gallery {
-		grid-template-columns: repeat(min(3, var(--ttg-columns, 4)), minmax(0, 1fr));
+		--ttg-active-columns: 3;
+		padding-inline: var(--ttg-effective-gap);
 	}
 }
 
 @media (max-width: 767px) {
 	.ttg-gallery-shell {
 		--ttg-effective-gap: min(var(--ttg-gap, 8px), 8px);
+		--ttg-active-columns: 2;
 		padding: var(--ttg-effective-gap);
 		padding-inline: var(--ttg-effective-gap);
-	}
-
-	.ttg-gallery-shell .ttg-gallery {
-		grid-template-columns: repeat(2, minmax(0, 1fr));
 	}
 
 	.ttg-gallery-shell .ttg-media {
@@ -505,12 +502,9 @@
 @media (max-width: 479px) {
 	.ttg-gallery-shell {
 		--ttg-effective-gap: min(var(--ttg-gap, 6px), 6px);
+		--ttg-active-columns: 2;
 		padding: var(--ttg-effective-gap);
 		padding-inline: var(--ttg-effective-gap);
-	}
-
-	.ttg-gallery-shell .ttg-gallery {
-		grid-template-columns: repeat(2, minmax(0, 1fr));
 	}
 
 	.ttg-gallery-shell .ttg-media {
