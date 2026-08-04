@@ -997,7 +997,7 @@
       video.muted = true;
       video.defaultMuted = true;
       video.playsInline = true;
-      video.preload = "metadata";
+      video.preload = "none";
       video.setAttribute("playsinline", "");
       video.setAttribute("webkit-playsinline", "");
       video.setAttribute("x5-playsinline", "");
@@ -1212,7 +1212,6 @@
     });
 
     setCurrentIndex(0);
-    startAutoAdvance();
     startAutoAdvance();
   };
 

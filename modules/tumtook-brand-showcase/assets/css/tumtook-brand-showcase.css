@@ -335,9 +335,48 @@
   background: transparent !important;
   background-color: transparent !important;
   border: 0 !important;
-  color: inherit !important;
+  box-shadow: none !important;
+  color: transparent !important;
   text-decoration: none !important;
-  outline: none !important;
+  outline: 0 !important;
+  -webkit-appearance: none !important;
+  appearance: none !important;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.ttbs-showcase__dot::-moz-focus-inner {
+  border: 0;
+  padding: 0;
+}
+
+.ttbs-showcase .ttbs-showcase__dot,
+.ttbs-showcase .ttbs-showcase__dot:hover,
+.ttbs-showcase .ttbs-showcase__dot:focus,
+.ttbs-showcase .ttbs-showcase__dot:focus-visible,
+.ttbs-showcase .ttbs-showcase__dot:active {
+  -webkit-appearance: none !important;
+  appearance: none !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  border: 0 !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+  color: transparent !important;
+  outline: 0 !important;
+  text-decoration: none !important;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.ttbs-showcase .ttbs-showcase__dot:focus::before,
+.ttbs-showcase .ttbs-showcase__dot:focus-visible::before,
+.ttbs-showcase .ttbs-showcase__dot:active::before {
+  background-color: var(--ttbs-accent) !important;
 }
 
 .ttbs-showcase__buttons {

@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Tumtook Catalog Image Data
  * Description: Fetch and display image catalog data from API inside WordPress pages.
- * Version: 1.1.14
+ * Version: 1.1.15
  * Author: Tumtook
  * Text Domain: api-catalog-images-viewer
  */
@@ -17,7 +17,7 @@ final class API_Catalog_Images_Plugin
 	const META_KEY = '_tumtook_catalog_images_page_settings';
 	const ITEM_CONTENT_META_KEY = '_tumtook_catalog_images_item_content';
 	const SHORTCODE = 'catalog_images';
-	const VERSION = '1.1.14';
+		const VERSION = '1.1.15';
 	const NONCE_KEY = 'tumtook_catalog_images_nonce';
 	const FONT_HANDLE = 'tumtook-kanit-font';
 
@@ -94,9 +94,9 @@ final class API_Catalog_Images_Plugin
 		);
 	}
 
-	public function enqueue_frontend_assets()
-	{
-		$this->enqueue_kanit_font();
+		public function enqueue_frontend_assets()
+		{
+			$this->register_kanit_font();
 
 		wp_register_script(
 			'api-catalog-images-viewer-frontend',
@@ -114,17 +114,26 @@ final class API_Catalog_Images_Plugin
 		);
 	}
 
-	private function enqueue_kanit_font()
-	{
-		wp_register_style(
-			self::FONT_HANDLE,
-			'https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700;800&display=swap',
-			array(),
-			null
-		);
+		private function enqueue_kanit_font()
+		{
+			$this->register_kanit_font();
+			wp_enqueue_style(self::FONT_HANDLE);
+		}
 
-		wp_enqueue_style(self::FONT_HANDLE);
-	}
+		private function register_kanit_font()
+		{
+			if (function_exists('tumtook_aio_register_kanit_font')) {
+				tumtook_aio_register_kanit_font(self::FONT_HANDLE);
+				return;
+			}
+
+			wp_register_style(
+				self::FONT_HANDLE,
+				'https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700;800&display=swap',
+				array(),
+				null
+			);
+		}
 
 	public function render_settings_page()
 	{
@@ -391,7 +400,7 @@ final class API_Catalog_Images_Plugin
 			$settings['api_url'],
 			array(
 				'headers' => $headers,
-				'timeout' => 20,
+					'timeout' => 8,
 			)
 		);
 

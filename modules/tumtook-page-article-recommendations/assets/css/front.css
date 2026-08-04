@@ -449,6 +449,38 @@
   background-color: transparent;
 }
 
+.ttar-section[data-ttar-slider] .ttar-dot,
+.ttar-section[data-ttar-slider] .ttar-dot:hover,
+.ttar-section[data-ttar-slider] .ttar-dot:focus,
+.ttar-section[data-ttar-slider] .ttar-dot:focus-visible,
+.ttar-section[data-ttar-slider] .ttar-dot:active {
+  -webkit-appearance: none !important;
+  appearance: none !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  border: 0 !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+  color: transparent !important;
+  outline: 0 !important;
+  text-decoration: none !important;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.ttar-section[data-ttar-slider] .ttar-dot::-moz-focus-inner {
+  border: 0;
+  padding: 0;
+}
+
+.ttar-section[data-ttar-slider] .ttar-dot:focus::before,
+.ttar-section[data-ttar-slider] .ttar-dot:focus-visible::before,
+.ttar-section[data-ttar-slider] .ttar-dot:active::before {
+  background-color: var(--ttar-accentdot) !important;
+}
+
 .ttar-dot:hover::before{
   background-color: var(--ttar-accentdot) !important;
 }

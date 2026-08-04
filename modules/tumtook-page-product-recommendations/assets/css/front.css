@@ -523,6 +523,38 @@ body.ttpr-slider-page {
   background-color: transparent !important;
 }
 
+.ttpr-section[data-ttpr-slider] .ttpr-dot,
+.ttpr-section[data-ttpr-slider] .ttpr-dot:hover,
+.ttpr-section[data-ttpr-slider] .ttpr-dot:focus,
+.ttpr-section[data-ttpr-slider] .ttpr-dot:focus-visible,
+.ttpr-section[data-ttpr-slider] .ttpr-dot:active {
+  -webkit-appearance: none !important;
+  appearance: none !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  border: 0 !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+  color: transparent !important;
+  outline: 0 !important;
+  text-decoration: none !important;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.ttpr-section[data-ttpr-slider] .ttpr-dot::-moz-focus-inner {
+  border: 0;
+  padding: 0;
+}
+
+.ttpr-section[data-ttpr-slider] .ttpr-dot:focus::before,
+.ttpr-section[data-ttpr-slider] .ttpr-dot:focus-visible::before,
+.ttpr-section[data-ttpr-slider] .ttpr-dot:active::before {
+  background-color: var(--ttpr-accent) !important;
+}
+
 .ttpr-dot:hover::before{
   background-color: var(--ttpr-accent) !important;
 }

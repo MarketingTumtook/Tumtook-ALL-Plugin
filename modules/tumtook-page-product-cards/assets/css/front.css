@@ -467,6 +467,38 @@ body.ttpc-slider-page {
   background-color: transparent !important;
 }
 
+.ttpc-section[data-ttpc-slider] .ttpc-dot,
+.ttpc-section[data-ttpc-slider] .ttpc-dot:hover,
+.ttpc-section[data-ttpc-slider] .ttpc-dot:focus,
+.ttpc-section[data-ttpc-slider] .ttpc-dot:focus-visible,
+.ttpc-section[data-ttpc-slider] .ttpc-dot:active {
+  -webkit-appearance: none !important;
+  appearance: none !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  border: 0 !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+  color: transparent !important;
+  outline: 0 !important;
+  text-decoration: none !important;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.ttpc-section[data-ttpc-slider] .ttpc-dot::-moz-focus-inner {
+  border: 0;
+  padding: 0;
+}
+
+.ttpc-section[data-ttpc-slider] .ttpc-dot:focus::before,
+.ttpc-section[data-ttpc-slider] .ttpc-dot:focus-visible::before,
+.ttpc-section[data-ttpc-slider] .ttpc-dot:active::before {
+  background-color: var(--ttpc-accent) !important;
+}
+
 .ttpc-dot:hover::before{
     background-color: var(--ttpc-accent) !important;
 }

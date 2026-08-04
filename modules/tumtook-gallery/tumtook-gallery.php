@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Tumtook Gallery
  * Description: Fetch images from an API and display them in a masonry gallery via shortcode.
- * Version: 1.0.19
+ * Version: 1.0.22
  * Author: Tumtook
  * Text Domain: tumtook-gallery
  */
@@ -16,7 +16,9 @@ final class Tumtook_Gallery_Plugin
 	const OPTION_KEY = 'tumtook_gallery_settings';
 	const SHORTCODE = 'tumtook_gallery';
 	const META_KEY = '_tumtook_gallery_settings';
-	const VERSION = '1.0.19';
+	const VERSION = '1.0.22';
+	const DEFAULT_LIMIT = 50;
+	const MATCH_CODE_IMAGE_LIMIT = 25;
 	const FONT_HANDLE = 'tumtook-kanit-font';
 
 	public function __construct()
@@ -141,7 +143,7 @@ final class Tumtook_Gallery_Plugin
 						'sanitize_callback' => 'esc_url_raw',
 					),
 					'limit' => array(
-						'default' => 0,
+						'default' => self::DEFAULT_LIMIT,
 						'sanitize_callback' => 'absint',
 					),
 					'page' => array(
@@ -523,7 +525,7 @@ final class Tumtook_Gallery_Plugin
 		$settings = $this->get_page_settings($page_id);
 		$atts = shortcode_atts(
 			array(
-				'limit' => 0,
+				'limit' => self::DEFAULT_LIMIT,
 				'columns' => 6,
 				'gap' => 12,
 				'endpoint' => '',
@@ -542,7 +544,7 @@ final class Tumtook_Gallery_Plugin
 
 		$columns = min(12, max(6, absint($atts['columns'])));
 		$gap = max(0, absint($atts['gap']));
-		$limit = absint($atts['limit']);
+		$limit = $this->normalize_gallery_limit($atts['limit']);
 		$end_panel_background = !empty($settings['end_panel_background']) ? $settings['end_panel_background'] : '#f9f9f9';
 
 		ob_start();
@@ -567,7 +569,7 @@ final class Tumtook_Gallery_Plugin
 		$page_id = absint($request->get_param('page_id'));
 		$settings = $this->get_page_settings($page_id);
 		$endpoint = esc_url_raw($request->get_param('endpoint'));
-		$limit = absint($request->get_param('limit'));
+		$limit = $this->normalize_gallery_limit($request->get_param('limit'));
 		$page = max(1, absint($request->get_param('page')));
 		$per_page = min(48, max(1, absint($request->get_param('per_page'))));
 
@@ -597,7 +599,14 @@ final class Tumtook_Gallery_Plugin
 
 	private function get_gallery_items($endpoint, $settings, $limit, $page_id = 0)
 	{
-		$cache_key = 'ttg_' . md5($endpoint . wp_json_encode($settings) . $limit . self::VERSION . '_dedupe_shuffle');
+		$limit = $this->normalize_gallery_limit($limit);
+		$match_code = !empty($settings['match_code']) ? $settings['match_code'] : '';
+
+		if (empty($match_code)) {
+			return array();
+		}
+
+		$cache_key = 'ttg_' . md5($endpoint . wp_json_encode($settings) . $limit . self::VERSION . '_required_code_priority_fill');
 		$cached = get_transient($cache_key);
 
 		if (false !== $cached) {
@@ -610,7 +619,7 @@ final class Tumtook_Gallery_Plugin
 				'headers' => array(
 					'Accept' => 'application/json',
 				),
-				'timeout' => 20,
+				'timeout' => 8,
 			)
 		);
 
@@ -634,29 +643,85 @@ final class Tumtook_Gallery_Plugin
 			return new WP_Error('ttg_invalid_items', __('The configured items path does not point to an array.', 'tumtook-gallery'));
 		}
 
-		$match_code = !empty($settings['match_code']) ? $settings['match_code'] : '';
+		$primary_items = array();
+		$fallback_items = $items;
 
-		if (!empty($match_code)) {
-			$items = array_values(
-				array_filter(
-					$items,
-					function ($item) use ($match_code) {
-						if (!is_array($item) || empty($item['code']) || !is_string($item['code'])) {
-							return false;
-						}
-
-						return $this->codes_match($item['code'], $match_code);
+		$primary_items = array_values(
+			array_filter(
+				$items,
+				function ($item) use ($match_code) {
+					if (!is_array($item) || empty($item['code']) || !is_string($item['code'])) {
+						return false;
 					}
-				)
-			);
 
-			if (empty($items)) {
-				return new WP_Error('ttg_no_matching_code', __('ไม่พบข้อมูลสำหรับ Item Code Filter ที่ระบุ', 'tumtook-gallery'));
-			}
+					return $this->codes_match($item['code'], $match_code);
+				}
+			)
+		);
+		$fallback_items = array_values(
+			array_filter(
+				$items,
+				function ($item) use ($match_code) {
+					if (!is_array($item) || empty($item['code']) || !is_string($item['code'])) {
+						return true;
+					}
+
+					return !$this->codes_match($item['code'], $match_code);
+				}
+			)
+		);
+
+		if (empty($primary_items)) {
+			return new WP_Error('ttg_no_matching_code', __('ไม่พบข้อมูลสำหรับ Item Code Filter ที่ระบุ', 'tumtook-gallery'));
 		}
 
 		$gallery_items = array();
 		$seen_images = array();
+
+		$this->append_gallery_items_from_items(
+			$primary_items,
+			$endpoint,
+			$settings,
+			$gallery_items,
+			$seen_images,
+			min(self::MATCH_CODE_IMAGE_LIMIT, $limit)
+		);
+
+		if (count($gallery_items) < $limit && count($fallback_items) > 1) {
+			shuffle($fallback_items);
+		}
+
+		$this->append_gallery_items_from_items(
+			$fallback_items,
+			$endpoint,
+			$settings,
+			$gallery_items,
+			$seen_images,
+			$limit - count($gallery_items)
+		);
+
+		set_transient($cache_key, $gallery_items, max(1, absint($settings['cache_minutes'])) * MINUTE_IN_SECONDS);
+
+		return $gallery_items;
+	}
+
+	private function normalize_gallery_limit($limit)
+	{
+		$limit = absint($limit);
+
+		if ($limit <= 0) {
+			return self::DEFAULT_LIMIT;
+		}
+
+		return min($limit, self::DEFAULT_LIMIT);
+	}
+
+	private function append_gallery_items_from_items($items, $endpoint, $settings, &$gallery_items, &$seen_images, $max_items)
+	{
+		$max_items = absint($max_items);
+		if ($max_items <= 0) {
+			return;
+		}
 
 		foreach ($items as $item) {
 			if (!is_array($item)) {
@@ -697,19 +762,13 @@ final class Tumtook_Gallery_Plugin
 					'alt' => is_scalar($item_alt) ? wp_strip_all_tags((string) $item_alt) : (is_scalar($item_title) ? wp_strip_all_tags((string) $item_title) : ''),
 				);
 
-				if ($limit > 0 && count($gallery_items) >= $limit) {
-					break 2;
+				if ($max_items <= 1) {
+					return;
 				}
+
+				$max_items--;
 			}
 		}
-
-		if (count($gallery_items) > 1) {
-			shuffle($gallery_items);
-		}
-
-		set_transient($cache_key, $gallery_items, max(1, absint($settings['cache_minutes'])) * MINUTE_IN_SECONDS);
-
-		return $gallery_items;
 	}
 
 	private function get_gallery_item_key($image)
