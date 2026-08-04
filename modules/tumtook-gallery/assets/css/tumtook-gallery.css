@@ -10,7 +10,7 @@
 	grid-template-columns: repeat(var(--ttg-columns, 6), minmax(0, 1fr));
 	column-gap: min(var(--ttg-gap, 18px), 20px);
 	row-gap: min(var(--ttg-gap, 18px), 25px);
-	grid-auto-flow: row;
+	grid-auto-flow: dense;
 	grid-auto-rows: 3px;
 	align-items: start;
 	min-height: 40vh;
@@ -72,8 +72,10 @@
 .ttg-gallery-shell .ttg-media {
 	display: block;
 	position: relative;
+	aspect-ratio: 1 / 1;
 	background: #f3f4f6;
 	min-height: clamp(170px, 24vw, 280px);
+	overflow: hidden;
 }
 
 .ttg-gallery-shell .ttg-media.ttg-media--loaded {
@@ -83,7 +85,43 @@
 .ttg-gallery-shell .ttg-media img {
 	display: block;
 	width: 100%;
-	height: auto;
+	height: 100%;
+	object-fit: cover;
+	object-position: center;
+	transition: transform 0.25s ease, filter 0.2s ease;
+}
+
+.ttg-gallery-shell .ttg-card:nth-child(12n + 2) .ttg-media,
+.ttg-gallery-shell .ttg-card:nth-child(12n + 9) .ttg-media {
+	aspect-ratio: 4 / 5;
+}
+
+.ttg-gallery-shell .ttg-card:nth-child(12n + 4) .ttg-media,
+.ttg-gallery-shell .ttg-card:nth-child(12n + 11) .ttg-media {
+	aspect-ratio: 5 / 4;
+}
+
+.ttg-gallery-shell .ttg-card:nth-child(12n + 6) .ttg-media {
+	aspect-ratio: 3 / 4;
+}
+
+.ttg-gallery-shell .ttg-card:nth-child(12n + 8) .ttg-media {
+	aspect-ratio: 6 / 5;
+}
+
+@media (min-width: 768px) {
+	.ttg-gallery-shell .ttg-card:nth-child(14n + 5),
+	.ttg-gallery-shell .ttg-card:nth-child(14n + 12) {
+		grid-column: span 2;
+	}
+
+	.ttg-gallery-shell .ttg-card:nth-child(14n + 5) .ttg-media {
+		aspect-ratio: 16 / 9;
+	}
+
+	.ttg-gallery-shell .ttg-card:nth-child(14n + 12) .ttg-media {
+		aspect-ratio: 7 / 4;
+	}
 }
 
 .ttg-gallery-shell .ttg-media img[hidden] {
@@ -197,8 +235,6 @@
 
 .ttg-gallery-shell .ttg-media img {
 	cursor: zoom-in;
-	transform: none !important;
-	transition: filter 0.2s ease;
 }
 
 .ttg-lightbox-open {
