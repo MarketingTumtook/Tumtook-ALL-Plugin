@@ -1,15 +1,16 @@
 .ttg-gallery-shell {
+	--ttg-effective-gap: min(var(--ttg-gap, 18px), 18px);
 	position: relative;
 	font-family: "Kanit", sans-serif;
 	/* padding: min(var(--ttg-gap, 18px), 18px); */
-	padding-inline: calc(min(var(--ttg-gap, 18px), 18px) + 24px);
+	padding-inline: calc(var(--ttg-effective-gap) + 24px);
 }
 
 .ttg-gallery-shell .ttg-gallery {
 	display: grid;
 	grid-template-columns: repeat(var(--ttg-columns, 6), minmax(0, 1fr));
-	column-gap: min(var(--ttg-gap, 18px), 20px);
-	row-gap: min(var(--ttg-gap, 18px), 25px);
+	column-gap: var(--ttg-effective-gap);
+	row-gap: var(--ttg-effective-gap);
 	grid-auto-flow: dense;
 	grid-auto-rows: 3px;
 	align-items: start;
@@ -91,37 +92,15 @@
 	transition: transform 0.25s ease, filter 0.2s ease;
 }
 
-.ttg-gallery-shell .ttg-card:nth-child(12n + 2) .ttg-media,
-.ttg-gallery-shell .ttg-card:nth-child(12n + 9) .ttg-media {
+.ttg-gallery-shell .ttg-card:nth-child(10n + 2) .ttg-media,
+.ttg-gallery-shell .ttg-card:nth-child(10n + 6) .ttg-media,
+.ttg-gallery-shell .ttg-card:nth-child(10n + 9) .ttg-media {
 	aspect-ratio: 4 / 5;
 }
 
-.ttg-gallery-shell .ttg-card:nth-child(12n + 4) .ttg-media,
-.ttg-gallery-shell .ttg-card:nth-child(12n + 11) .ttg-media {
-	aspect-ratio: 5 / 4;
-}
-
-.ttg-gallery-shell .ttg-card:nth-child(12n + 6) .ttg-media {
-	aspect-ratio: 3 / 4;
-}
-
-.ttg-gallery-shell .ttg-card:nth-child(12n + 8) .ttg-media {
-	aspect-ratio: 6 / 5;
-}
-
-@media (min-width: 768px) {
-	.ttg-gallery-shell .ttg-card:nth-child(14n + 5),
-	.ttg-gallery-shell .ttg-card:nth-child(14n + 12) {
-		grid-column: span 2;
-	}
-
-	.ttg-gallery-shell .ttg-card:nth-child(14n + 5) .ttg-media {
-		aspect-ratio: 16 / 9;
-	}
-
-	.ttg-gallery-shell .ttg-card:nth-child(14n + 12) .ttg-media {
-		aspect-ratio: 7 / 4;
-	}
+.ttg-gallery-shell .ttg-card:nth-child(10n + 4) .ttg-media,
+.ttg-gallery-shell .ttg-card:nth-child(10n + 8) .ttg-media {
+	aspect-ratio: 9 / 16;
 }
 
 .ttg-gallery-shell .ttg-media img[hidden] {
@@ -451,22 +430,24 @@
 }
 
 @media (max-width: 1024px) {
+	.ttg-gallery-shell {
+		--ttg-effective-gap: min(var(--ttg-gap, 14px), 14px);
+		padding-inline: calc(var(--ttg-effective-gap) + 12px);
+	}
+
 	.ttg-gallery-shell .ttg-gallery {
-		column-gap: 14px;
-		row-gap: 14px;
 		grid-template-columns: repeat(min(3, var(--ttg-columns, 4)), minmax(0, 1fr));
 	}
 }
 
 @media (max-width: 767px) {
 	.ttg-gallery-shell {
-		padding: 8px;
-		padding-inline: 8px;
+		--ttg-effective-gap: min(var(--ttg-gap, 8px), 8px);
+		padding: var(--ttg-effective-gap);
+		padding-inline: var(--ttg-effective-gap);
 	}
 
 	.ttg-gallery-shell .ttg-gallery {
-		column-gap: 6px;
-		row-gap: 6px;
 		grid-template-columns: repeat(2, minmax(0, 1fr));
 	}
 
@@ -523,13 +504,12 @@
 
 @media (max-width: 479px) {
 	.ttg-gallery-shell {
-		padding: 6px;
-		padding-inline: 6px;
+		--ttg-effective-gap: min(var(--ttg-gap, 6px), 6px);
+		padding: var(--ttg-effective-gap);
+		padding-inline: var(--ttg-effective-gap);
 	}
 
 	.ttg-gallery-shell .ttg-gallery {
-		column-gap: 15px;
-		row-gap: 5px;
 		grid-template-columns: repeat(2, minmax(0, 1fr));
 	}
 
