@@ -528,7 +528,7 @@
 	}
 
 	.ttg-gallery-shell .ttg-gallery {
-		column-gap: 5px;
+		column-gap: 15px;
 		row-gap: 5px;
 		grid-template-columns: repeat(2, minmax(0, 1fr));
 	}
