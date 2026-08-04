@@ -11,6 +11,9 @@
 	display: grid;
 	grid-template-columns: repeat(var(--ttg-active-columns), minmax(0, 1fr));
 	gap: var(--ttg-effective-gap);
+	grid-auto-flow: dense;
+	grid-auto-rows: 3px;
+	align-items: start;
 	min-height: 40vh;
 	position: relative;
 }
