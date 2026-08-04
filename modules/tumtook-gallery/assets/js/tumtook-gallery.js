@@ -235,14 +235,8 @@ document.addEventListener('DOMContentLoaded', function () {
 	}
 
 	function resizeMasonryItems(gallery, cards) {
-		var galleryStyles = window.getComputedStyle(gallery);
-		var rowGap = parseFloat(galleryStyles.getPropertyValue('row-gap')) || parseFloat(galleryStyles.getPropertyValue('gap')) || 0;
-		var rowSize = parseFloat(galleryStyles.getPropertyValue('grid-auto-rows')) || 8;
-
 		cards.forEach(function (card) {
 			card.style.gridRowEnd = '';
-			var span = Math.ceil((card.getBoundingClientRect().height + rowGap) / (rowSize + rowGap));
-			card.style.gridRowEnd = 'span ' + Math.max(span, 1);
 		});
 	}
 
