@@ -1,6 +1,7 @@
 .ttfaq-section,
 .ttfaq-section * {
   box-sizing: border-box;
+  fill:#fff
 }
 
 .ttfaq-section {
@@ -203,8 +204,8 @@
   gap: 8px;
   min-height: 45px;
   padding: 0 24px;
-  border-radius: 30px;
-  font-size: 16px;
+  border-radius: 10px;
+  font-size: 20px;
   font-weight: 500;
   line-height: 1;
   text-decoration: none;
