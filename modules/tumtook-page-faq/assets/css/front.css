@@ -197,6 +197,16 @@
   gap: 14px;
 }
 
+.ttfaq-support-shortcode {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
+.ttfaq-support-shortcode > * {
+  max-width: 100%;
+}
+
 .ttfaq-button {
   display: inline-flex;
   align-items: center;
