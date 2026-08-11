@@ -775,13 +775,6 @@ final class Tumtook_Page_FAQ
 					<?php endif; ?>
 				</div>
 			</div>
-
-			<?php if ($using_placeholders && $this->is_editor_preview_context()): ?>
-				<p class="ttfaq-preview-note">
-					<?php esc_html_e('กำลังแสดงตัวอย่าง FAQ เพราะหน้านี้ยังไม่ได้เพิ่มคำถามจริง', 'tumtook-page-faq'); ?>
-				</p>
-			<?php endif; ?>
-			</div>
 		</section>
 		<?php
 
