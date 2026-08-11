@@ -1,7 +1,6 @@
 .ttfaq-section,
 .ttfaq-section * {
   box-sizing: border-box;
-  fill:#fff
 }
 
 .ttfaq-section {
@@ -151,11 +150,9 @@
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  gap: 20px 18px;
-  margin-top: 26px;
-  padding: 22px 25px;
   border-radius: 18px;
-  background: #FEF2F3;
+  max-width: 750px;
+  margin: 45px auto 0;
 }
 
 .ttfaq-support-icon {
