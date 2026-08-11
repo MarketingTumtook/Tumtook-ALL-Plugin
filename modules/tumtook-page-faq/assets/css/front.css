@@ -279,7 +279,7 @@
 
 @media (max-width: 767px) {
   .ttfaq-section {
-    margin: 28px 0;
+    margin: 28px 0 0;
     padding: 0 14px;
   }
 
@@ -306,7 +306,6 @@
     grid-template-columns: 1fr;
     gap: 12px;
     margin-top: 24px;
-    padding: 18px 14px;
     border-radius: 18px;
   }
 
