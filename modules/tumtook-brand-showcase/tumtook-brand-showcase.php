@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Tumtook brand showCase
  * Description: Add up to 6 page-level brand showcase images and display them in a looping slider.
- * Version: 1.0.22
+ * Version: 1.0.23
  * Author: Tumtook
  * Text Domain: tumtook-brand-showcase
  */
@@ -15,7 +15,7 @@ final class Tumtook_Brand_Showcase_Plugin
 {
 	const META_KEY = '_tumtook_brand_showcase_data';
 	const SHORTCODE = 'tumtook_brand_showcase';
-	const VERSION = '1.0.22';
+	const VERSION = '1.0.23';
 	const FONT_HANDLE = 'tumtook-kanit-font';
 	const SLIDE_COUNT = 6;
 
@@ -549,14 +549,14 @@ final class Tumtook_Brand_Showcase_Plugin
 										<a class="ttbs-showcase__card-link" href="<?php echo esc_url($slide['link_url']); ?>" draggable="false"
 											aria-label="<?php esc_attr_e('Open brand link', 'tumtook-brand-showcase'); ?>">
 											<img class="ttbs-showcase__image" src="<?php echo esc_url($slide['image_url']); ?>"
-												alt="<?php echo esc_attr($slide['alt']); ?>" loading="lazy" draggable="false" />
+												alt="<?php echo esc_attr($slide['alt']); ?>" loading="lazy" decoding="async" draggable="false" />
 										</a>
 									<button class="ttbs-showcase__card-link-icon" type="button"
 										data-card-link="<?php echo esc_url($slide['link_url']); ?>"
 										aria-label="<?php esc_attr_e('Open brand link', 'tumtook-brand-showcase'); ?>"></button>
 									<?php else: ?>
 										<img class="ttbs-showcase__image" src="<?php echo esc_url($slide['image_url']); ?>"
-											alt="<?php echo esc_attr($slide['alt']); ?>" loading="lazy" draggable="false" />
+											alt="<?php echo esc_attr($slide['alt']); ?>" loading="lazy" decoding="async" draggable="false" />
 								<?php endif; ?>
 							</div>
 						</article>

@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Tumtook Page Article Recommendations
  * Description: Adds a random article slider section for Tumtook pages and posts with a layout tailored to article recommendations.
- * Version: 1.0.17
+ * Version: 1.0.18
  * Author: Tumtook
  * Text Domain: tumtook-page-article-recommendations
  */
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
 
 final class Tumtook_Page_Article_Recommendations
 {
-	const VERSION = '1.0.17';
+	const VERSION = '1.0.18';
 	const META_KEY = '_tt_page_article_recommendations';
 	const SHORTCODE = 'tumtook_recommended_articles';
 	const FONT_HANDLE = 'tumtook-kanit-font';
@@ -450,7 +450,7 @@ final class Tumtook_Page_Article_Recommendations
 										<?php endif; ?>
 										<?php if (!empty($item['image'])): ?>
 											<img class="ttar-image" src="<?php echo esc_url($item['image']); ?>"
-												alt="<?php echo esc_attr($item['title']); ?>" loading="lazy"
+												alt="<?php echo esc_attr($item['title']); ?>" loading="lazy" decoding="async"
 												onerror="this.style.display='none';this.parentNode.classList.add('ttar-image-link--missing');" />
 										<?php endif; ?>
 										<div class="ttar-image ttar-image--placeholder" aria-hidden="true">
@@ -528,15 +528,20 @@ final class Tumtook_Page_Article_Recommendations
 				$exclude_ids[] = $post_id;
 			}
 
+			$candidate_limit = min(60, max($limit * 4, 24));
 			$query = new WP_Query(
 				array(
 					'post_type' => 'post',
 					'post_status' => 'publish',
-					'posts_per_page' => $limit,
-					'orderby' => 'rand',
+					'posts_per_page' => $candidate_limit,
+					'fields' => 'ids',
+					'orderby' => 'date',
+					'order' => 'DESC',
 					'post__not_in' => $exclude_ids,
 					'ignore_sticky_posts' => true,
 					'no_found_rows' => true,
+					'update_post_meta_cache' => false,
+					'update_post_term_cache' => false,
 				)
 			);
 
@@ -544,15 +549,28 @@ final class Tumtook_Page_Article_Recommendations
 				return array();
 			}
 
+			$article_ids = array_map('absint', $query->posts);
+			if (count($article_ids) > 1) {
+				shuffle($article_ids);
+			}
+			$article_ids = array_slice($article_ids, 0, $limit);
+
+			if (function_exists('_prime_post_caches')) {
+				_prime_post_caches($article_ids, true, true);
+			} else {
+				update_meta_cache('post', $article_ids);
+				update_object_term_cache($article_ids, 'post');
+			}
+
 			$items = array();
 
-			foreach ($query->posts as $article) {
-				$category = $this->get_primary_category_name($article->ID);
-				$image = get_the_post_thumbnail_url($article->ID, 'large');
+			foreach ($article_ids as $article_id) {
+				$category = $this->get_primary_category_name($article_id);
+				$image = get_the_post_thumbnail_url($article_id, 'large');
 
 				$items[] = array(
-					'title' => get_the_title($article->ID),
-					'url' => get_permalink($article->ID),
+					'title' => get_the_title($article_id),
+					'url' => get_permalink($article_id),
 					'image' => $image ? $image : '',
 					'badge' => $category,
 				);

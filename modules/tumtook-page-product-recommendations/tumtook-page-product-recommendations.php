@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Tumtook Page Product Recommendations
  * Description: Adds a page-based Card Products ทั้งหมด slider with manual page selection, price fields, and a layout tailored for Tumtook landing pages.
- * Version: 1.1.23
+ * Version: 1.1.24
  * Author: Tumtook
  * Text Domain: tumtook-page-product-recommendations
  */
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
 
 final class Tumtook_Page_Product_Recommendations
 {
-	const VERSION = '1.1.23';
+	const VERSION = '1.1.24';
 	const META_KEY = '_tt_page_product_recommendations';
 	const PAGE_PRICE_META = '_ttpr_page_price';
 	const PAGE_BADGE_META = '_ttpr_page_badge';
@@ -644,7 +644,7 @@ final class Tumtook_Page_Product_Recommendations
 										<?php endif; ?>
 										<?php if (!empty($item['image'])): ?>
 											<img class="ttpr-image" src="<?php echo esc_url($item['image']); ?>"
-												alt="<?php echo esc_attr($item['title']); ?>" loading="lazy"
+												alt="<?php echo esc_attr($item['title']); ?>" loading="lazy" decoding="async"
 												onerror="this.style.display='none';this.parentNode.classList.add('ttpr-image-link--missing');" />
 										<?php endif; ?>
 										<div class="ttpr-image ttpr-image--placeholder" aria-hidden="true">
@@ -720,6 +720,8 @@ final class Tumtook_Page_Product_Recommendations
 		if (empty($page_ids)) {
 			return array();
 		}
+
+		$this->prime_page_caches($page_ids);
 
 		$items = array();
 
@@ -801,6 +803,21 @@ final class Tumtook_Page_Product_Recommendations
 		}
 
 		return '฿' . $raw_price;
+	}
+
+	private function prime_page_caches($page_ids)
+	{
+		$page_ids = array_values(array_filter(array_map('absint', (array) $page_ids)));
+		if (empty($page_ids)) {
+			return;
+		}
+
+		if (function_exists('_prime_post_caches')) {
+			_prime_post_caches($page_ids, false, true);
+			return;
+		}
+
+		update_meta_cache('post', $page_ids);
 	}
 
 	private function is_editor_preview_context()

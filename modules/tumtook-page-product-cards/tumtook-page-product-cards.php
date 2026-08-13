@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Tumtook Page Card Products  ทั้งหมด
  * Description: Adds a page-based product card slider with manual page selection and price support for Tumtook landing pages.
- * Version: 1.0.21
+ * Version: 1.0.22
  * Author: Tumtook
  * Text Domain: tumtook-page-product-cards
  */
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
 
 final class Tumtook_Page_Product_Cards
 {
-	const VERSION = '1.0.21';
+	const VERSION = '1.0.22';
 	const META_KEY = '_tt_page_product_cards';
 	const PAGE_IMAGE_META = '_ttpc_page_image_id';
 	const PAGE_TITLE_META = '_ttpc_page_card_title';
@@ -615,7 +615,7 @@ final class Tumtook_Page_Product_Cards
 								<div class="ttpc-image-link<?php echo empty($item['image']) ? ' ttpc-image-link--missing' : ''; ?>">
 									<?php if (!empty($item['image'])): ?>
 										<img class="ttpc-image" src="<?php echo esc_url($item['image']); ?>"
-											alt="<?php echo esc_attr($item['title']); ?>" loading="lazy"
+											alt="<?php echo esc_attr($item['title']); ?>" loading="lazy" decoding="async"
 											onerror="this.style.display='none';this.parentNode.classList.add('ttpc-image-link--missing');" />
 									<?php endif; ?>
 									<div class="ttpc-image ttpc-image--placeholder" aria-hidden="true">

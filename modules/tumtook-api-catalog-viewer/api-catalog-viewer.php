@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Tumtook Catalog Image Data
  * Description: Fetch and display image catalog data from API inside WordPress pages.
- * Version: 1.1.15
+ * Version: 1.1.16
  * Author: Tumtook
  * Text Domain: api-catalog-images-viewer
  */
@@ -17,7 +17,7 @@ final class API_Catalog_Images_Plugin
 	const META_KEY = '_tumtook_catalog_images_page_settings';
 	const ITEM_CONTENT_META_KEY = '_tumtook_catalog_images_item_content';
 	const SHORTCODE = 'catalog_images';
-		const VERSION = '1.1.15';
+	const VERSION = '1.1.16';
 	const NONCE_KEY = 'tumtook_catalog_images_nonce';
 	const FONT_HANDLE = 'tumtook-kanit-font';
 
@@ -400,29 +400,38 @@ final class API_Catalog_Images_Plugin
 			$settings['api_url'],
 			array(
 				'headers' => $headers,
-					'timeout' => 8,
+				'timeout' => 5,
+				'redirection' => 2,
 			)
 		);
 
 		if (is_wp_error($response)) {
-			return new WP_Error('aiv_request_failed', __('Could not connect to the configured API.', 'api-catalog-images-viewer'));
+			$error = new WP_Error('aiv_request_failed', __('Could not connect to the configured API.', 'api-catalog-images-viewer'));
+			set_transient($cache_key, $error, 2 * MINUTE_IN_SECONDS);
+			return $error;
 		}
 
 		$status_code = wp_remote_retrieve_response_code($response);
 		if ($status_code < 200 || $status_code >= 300) {
-			return new WP_Error('aiv_bad_status', sprintf(__('The API returned HTTP %d.', 'api-catalog-images-viewer'), absint($status_code)));
+			$error = new WP_Error('aiv_bad_status', sprintf(__('The API returned HTTP %d.', 'api-catalog-images-viewer'), absint($status_code)));
+			set_transient($cache_key, $error, 2 * MINUTE_IN_SECONDS);
+			return $error;
 		}
 
 		$body = wp_remote_retrieve_body($response);
 		$data = json_decode($body, true);
 
 		if (JSON_ERROR_NONE !== json_last_error()) {
-			return new WP_Error('aiv_invalid_json', __('The API response is not valid JSON.', 'api-catalog-images-viewer'));
+			$error = new WP_Error('aiv_invalid_json', __('The API response is not valid JSON.', 'api-catalog-images-viewer'));
+			set_transient($cache_key, $error, 2 * MINUTE_IN_SECONDS);
+			return $error;
 		}
 
 		$items = $this->extract_items($data, $settings['items_path']);
 		if (empty($items) || !is_array($items)) {
-			return new WP_Error('aiv_no_items', __('No list of images was found at the configured items path.', 'api-catalog-images-viewer'));
+			$error = new WP_Error('aiv_no_items', __('No list of images was found at the configured items path.', 'api-catalog-images-viewer'));
+			set_transient($cache_key, $error, 2 * MINUTE_IN_SECONDS);
+			return $error;
 		}
 
 		$images = array();
@@ -975,7 +984,7 @@ final class API_Catalog_Images_Plugin
 				<span class="aiv-noimage-text"><?php esc_html_e('No image', 'api-catalog-images-viewer'); ?></span>
 			</div>
 			<?php if (!empty($image)): ?>
-				<img src="<?php echo esc_url($image); ?>" alt="<?php echo esc_attr($alt); ?>" loading="lazy"
+				<img src="<?php echo esc_url($image); ?>" alt="<?php echo esc_attr($alt); ?>" loading="lazy" decoding="async"
 					onerror="this.hidden=true; var p=this.parentNode.querySelector('.aiv-noimage'); if(p){p.hidden=false;}" />
 			<?php endif; ?>
 		</div>

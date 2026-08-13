@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Tumtook Gallery
  * Description: Fetch images from an API and display them in a masonry gallery via shortcode.
- * Version: 1.0.27
+ * Version: 1.0.28
  * Author: Tumtook
  * Text Domain: tumtook-gallery
  */
@@ -16,7 +16,7 @@ final class Tumtook_Gallery_Plugin
 	const OPTION_KEY = 'tumtook_gallery_settings';
 	const SHORTCODE = 'tumtook_gallery';
 	const META_KEY = '_tumtook_gallery_settings';
-	const VERSION = '1.0.27';
+	const VERSION = '1.0.28';
 	const DEFAULT_LIMIT = 50;
 	const MATCH_CODE_IMAGE_LIMIT = 25;
 	const FONT_HANDLE = 'tumtook-kanit-font';
@@ -619,28 +619,37 @@ final class Tumtook_Gallery_Plugin
 				'headers' => array(
 					'Accept' => 'application/json',
 				),
-				'timeout' => 8,
+				'timeout' => 5,
+				'redirection' => 2,
 			)
 		);
 
 		if (is_wp_error($response)) {
-			return new WP_Error('ttg_request_failed', __('Could not connect to the image API.', 'tumtook-gallery'));
+			$error = new WP_Error('ttg_request_failed', __('Could not connect to the image API.', 'tumtook-gallery'));
+			set_transient($cache_key, $error, 2 * MINUTE_IN_SECONDS);
+			return $error;
 		}
 
 		$status = wp_remote_retrieve_response_code($response);
 		if ($status < 200 || $status >= 300) {
-			return new WP_Error('ttg_bad_status', sprintf(__('Image API returned HTTP %d.', 'tumtook-gallery'), absint($status)));
+			$error = new WP_Error('ttg_bad_status', sprintf(__('Image API returned HTTP %d.', 'tumtook-gallery'), absint($status)));
+			set_transient($cache_key, $error, 2 * MINUTE_IN_SECONDS);
+			return $error;
 		}
 
 		$body = wp_remote_retrieve_body($response);
 		$data = json_decode($body, true);
 		if (JSON_ERROR_NONE !== json_last_error()) {
-			return new WP_Error('ttg_invalid_json', __('The API response is not valid JSON.', 'tumtook-gallery'));
+			$error = new WP_Error('ttg_invalid_json', __('The API response is not valid JSON.', 'tumtook-gallery'));
+			set_transient($cache_key, $error, 2 * MINUTE_IN_SECONDS);
+			return $error;
 		}
 
 		$items = $this->get_collection_by_path($data, $settings['items_path']);
 		if (!is_array($items)) {
-			return new WP_Error('ttg_invalid_items', __('The configured items path does not point to an array.', 'tumtook-gallery'));
+			$error = new WP_Error('ttg_invalid_items', __('The configured items path does not point to an array.', 'tumtook-gallery'));
+			set_transient($cache_key, $error, 2 * MINUTE_IN_SECONDS);
+			return $error;
 		}
 
 		$primary_items = array();

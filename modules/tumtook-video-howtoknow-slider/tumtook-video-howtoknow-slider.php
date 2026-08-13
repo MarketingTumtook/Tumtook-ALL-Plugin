@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Tumtook Video How To Slider
  * Description: Add page-level promo media fields and display a rounded promo slider with one video plus six image slides.
- * Version: 1.3.14
+ * Version: 1.3.15
  * Author: Tumtook
  * Text Domain: tumtook-video-rollup-slider
  */
@@ -16,7 +16,7 @@ final class Video_Howtoknow_Slider_Plugin
 	const META_KEY = '_tumtook_video_howtoknow_data';
 	const PRODUCT_PRICE_META_KEY = '_tumtook_recommended_price';
 	const PRODUCT_RECOMMENDED_META_KEY = '_tumtook_recommended_enabled';
-	const VERSION = '1.3.14';
+	const VERSION = '1.3.15';
 	const FONT_HANDLE = 'tumtook-kanit-font';
 
 	private $rendered_page_ids = array();
@@ -280,6 +280,9 @@ final class Video_Howtoknow_Slider_Plugin
 					'value' => '1',
 				),
 			),
+			'ignore_sticky_posts' => true,
+			'no_found_rows' => true,
+			'update_post_term_cache' => false,
 		);
 
 		if ($current_page_id && !$include_current) {
@@ -910,16 +913,16 @@ final class Video_Howtoknow_Slider_Plugin
 									</svg>
 								</button>
 							</div>
-						<?php elseif ('youtube' === $type): ?>
-							<div class="video-rollup-youtube-card">
-								<iframe class="video-rollup-youtube-card__frame" src="<?php echo esc_url($slide['embed_url']); ?>"
-									title="<?php esc_attr_e('YouTube video player', 'tumtook-video-rollup-slider'); ?>"
-									allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-									allowfullscreen loading="lazy"></iframe>
-							</div>
-						<?php else: ?>
-							<img class="video-rollup-video-card__video video-rollup-video-card__image"
-								src="<?php echo esc_url($slide['image_url']); ?>" alt="" />
+							<?php elseif ('youtube' === $type): ?>
+								<div class="video-rollup-youtube-card">
+									<iframe class="video-rollup-youtube-card__frame" src="<?php echo esc_url($slide['embed_url']); ?>"
+										title="<?php esc_attr_e('YouTube video player', 'tumtook-video-rollup-slider'); ?>"
+										allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+										allowfullscreen loading="lazy"></iframe>
+								</div>
+							<?php else: ?>
+								<img class="video-rollup-video-card__video video-rollup-video-card__image"
+									src="<?php echo esc_url($slide['image_url']); ?>" alt="" loading="lazy" decoding="async" />
 							<div class="video-rollup-video-card__overlay"></div>
 							<?php if ('' !== $heading): ?>
 								<div class="video-rollup-video-card__heading"><?php echo nl2br(esc_html($heading)); ?></div>
