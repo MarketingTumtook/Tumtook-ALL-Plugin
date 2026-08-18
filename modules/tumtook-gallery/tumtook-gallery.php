@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Tumtook Gallery
  * Description: Fetch images from an API and display them in a masonry gallery via shortcode.
- * Version: 1.0.40
+ * Version: 1.0.41
  * Author: Tumtook
  * Text Domain: tumtook-gallery
  */
@@ -16,7 +16,7 @@ final class Tumtook_Gallery_Plugin
 	const OPTION_KEY = 'tumtook_gallery_settings';
 	const SHORTCODE = 'tumtook_gallery';
 	const META_KEY = '_tumtook_gallery_settings';
-	const VERSION = '1.0.40';
+	const VERSION = '1.0.41';
 	const DEFAULT_LIMIT = 50;
 	const MATCH_CODE_IMAGE_LIMIT = 25;
 	const FONT_HANDLE = 'tumtook-kanit-font';
@@ -732,10 +732,7 @@ final class Tumtook_Gallery_Plugin
 			return;
 		}
 
-		$candidates = $this->collect_gallery_item_candidates($items, $endpoint, $settings, $group);
-		if ($randomize_images && count($candidates) > 1) {
-			shuffle($candidates);
-		}
+		$candidates = $this->collect_gallery_item_candidates($items, $endpoint, $settings, $group, $max_items, $randomize_images);
 
 		foreach ($candidates as $gallery_item) {
 			$item_key = isset($gallery_item['key']) ? (string) $gallery_item['key'] : '';
@@ -754,9 +751,12 @@ final class Tumtook_Gallery_Plugin
 		}
 	}
 
-	private function collect_gallery_item_candidates($items, $endpoint, $settings, $group)
+	private function collect_gallery_item_candidates($items, $endpoint, $settings, $group, $max_items, $randomize_images)
 	{
 		$candidates = array();
+		$candidate_keys = array();
+		$total_seen = 0;
+		$max_items = absint($max_items);
 
 		foreach ($items as $item) {
 			if (!is_array($item)) {
@@ -781,11 +781,15 @@ final class Tumtook_Gallery_Plugin
 				}
 
 				$item_key = $this->get_gallery_item_key($image);
+				if (isset($candidate_keys[$item_key])) {
+					continue;
+				}
+
 				$item_alt = isset($alts[$index]) && is_scalar($alts[$index]) ? $alts[$index] : $alt;
 				$item_title = $this->extract_filename_title($raw_image);
 				$item_dimensions = $this->get_item_image_dimensions($item, $index);
 
-				$candidates[] = array(
+				$candidate = array(
 					'key' => $item_key,
 					'image' => $image,
 					'title' => is_scalar($item_title) ? wp_strip_all_tags((string) $item_title) : '',
@@ -795,7 +799,31 @@ final class Tumtook_Gallery_Plugin
 					'height' => $item_dimensions['height'],
 					'group' => $group,
 				);
+				$candidate_keys[$item_key] = true;
+
+				if (!$randomize_images) {
+					$candidates[] = $candidate;
+					if ($max_items > 0 && count($candidates) >= $max_items) {
+						return $candidates;
+					}
+					continue;
+				}
+
+				$total_seen++;
+				if (count($candidates) < $max_items) {
+					$candidates[] = $candidate;
+					continue;
+				}
+
+				$replace_index = wp_rand(0, $total_seen - 1);
+				if ($replace_index < $max_items) {
+					$candidates[$replace_index] = $candidate;
+				}
 			}
+		}
+
+		if ($randomize_images && count($candidates) > 1) {
+			shuffle($candidates);
 		}
 
 		return $candidates;
