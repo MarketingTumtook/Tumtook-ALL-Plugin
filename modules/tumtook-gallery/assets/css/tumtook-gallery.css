@@ -76,6 +76,7 @@
 	display: block;
 	position: relative;
 	background: #f3f4f6;
+	min-height: clamp(150px, 18vw, 240px);
 	overflow: hidden;
 }
 

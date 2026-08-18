@@ -161,6 +161,8 @@ document.addEventListener('DOMContentLoaded', function () {
 		var noImageText = document.createElement('span');
 		var image = document.createElement('img');
 		var itemKey = getItemKey(item);
+		var imageWidth = getPositiveNumber(item.width);
+		var imageHeight = getPositiveNumber(item.height);
 
 		article.className = 'ttg-card';
 		article.setAttribute('data-ttg-key', itemKey);
@@ -179,6 +181,10 @@ document.addEventListener('DOMContentLoaded', function () {
 		image.loading = 'lazy';
 		image.decoding = 'async';
 		image.tabIndex = 0;
+		if (imageWidth && imageHeight) {
+			image.width = Math.round(imageWidth);
+			image.height = Math.round(imageHeight);
+		}
 		image.addEventListener('click', function () {
 			var parentGallery = article.closest('.ttg-gallery');
 			var galleryImages = Array.prototype.slice.call(parentGallery.querySelectorAll('.ttg-media img:not([hidden])'));
@@ -201,9 +207,7 @@ document.addEventListener('DOMContentLoaded', function () {
 			var parentGallery = article.closest('.ttg-gallery');
 			media.classList.add('ttg-media--loaded');
 			if (parentGallery) {
-				window.requestAnimationFrame(function () {
-					resizeMasonryItems(parentGallery, [article]);
-				});
+				scheduleMasonryResize(parentGallery, [article]);
 			}
 		});
 		image.addEventListener('error', function () {
@@ -212,9 +216,7 @@ document.addEventListener('DOMContentLoaded', function () {
 			media.classList.add('ttg-media--loaded');
 			noImage.hidden = false;
 			if (parentGallery) {
-				window.requestAnimationFrame(function () {
-					resizeMasonryItems(parentGallery, [article]);
-				});
+				scheduleMasonryResize(parentGallery, [article]);
 			}
 		});
 		image.src = item.image;
@@ -246,6 +248,12 @@ document.addEventListener('DOMContentLoaded', function () {
 		return item && item.image ? String(item.image).trim() : '';
 	}
 
+	function getPositiveNumber(value) {
+		value = parseFloat(value);
+
+		return value > 0 ? value : 0;
+	}
+
 	function resizeMasonryItems(gallery, cards) {
 		var galleryStyles = window.getComputedStyle(gallery);
 		var rowGap = parseFloat(galleryStyles.getPropertyValue('row-gap')) || parseFloat(galleryStyles.getPropertyValue('gap')) || 0;
@@ -258,60 +266,26 @@ document.addEventListener('DOMContentLoaded', function () {
 		});
 	}
 
-	function showEndPanel(shell) {
-		shell.classList.add('is-complete');
-	}
-
-	function waitForImages(cards, callback) {
-		var images = [];
-		var done = false;
-		var timeoutId;
-
-		cards.forEach(function (card) {
-			images = images.concat(Array.prototype.slice.call(card.querySelectorAll('img')));
-		});
-
-		if (!images.length) {
-			callback();
+	function scheduleMasonryResize(gallery, cards) {
+		if (!gallery) {
 			return;
 		}
 
-		var pending = images.length;
-
-		function finishAll() {
-			if (done) {
-				return;
-			}
-
-			done = true;
-			if (timeoutId) {
-				window.clearTimeout(timeoutId);
-			}
-			callback();
+		gallery.__ttgResizeCards = (gallery.__ttgResizeCards || []).concat(cards || []);
+		if (gallery.__ttgResizeFrame) {
+			return;
 		}
 
-		function finishOne() {
-			if (done) {
-				return;
-			}
-
-			pending -= 1;
-			if (pending <= 0) {
-				finishAll();
-			}
-		}
-
-		timeoutId = window.setTimeout(finishAll, 3200);
-
-		images.forEach(function (image) {
-			if (image.complete) {
-				finishOne();
-				return;
-			}
-
-			image.addEventListener('load', finishOne, { once: true });
-			image.addEventListener('error', finishOne, { once: true });
+		gallery.__ttgResizeFrame = window.requestAnimationFrame(function () {
+			var queuedCards = gallery.__ttgResizeCards || [];
+			gallery.__ttgResizeCards = [];
+			gallery.__ttgResizeFrame = null;
+			resizeMasonryItems(gallery, queuedCards);
 		});
+	}
+
+	function showEndPanel(shell) {
+		shell.classList.add('is-complete');
 	}
 
 	function animateCards(gallery, cards) {
@@ -503,19 +477,17 @@ document.addEventListener('DOMContentLoaded', function () {
 						fragment.appendChild(card);
 					});
 
-					gallery.appendChild(fragment);
+						gallery.appendChild(fragment);
 
-					complete = !data.has_more;
-					page += 1;
-					setLoaderState('', true);
+						complete = !data.has_more;
+						page += 1;
+						setLoaderState('', true);
 
-						waitForImages(newCards, function () {
-							window.requestAnimationFrame(function () {
-								animateCards(gallery, newCards);
-								if (complete) {
-									showEndPanel(shell);
-								}
-							});
+						window.requestAnimationFrame(function () {
+							animateCards(gallery, newCards);
+							if (complete) {
+								showEndPanel(shell);
+							}
 						});
 
 					if (complete && observer) {
