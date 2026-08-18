@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Tumtook Gallery
  * Description: Fetch images from an API and display them in a masonry gallery via shortcode.
- * Version: 1.0.41
+ * Version: 1.0.43
  * Author: Tumtook
  * Text Domain: tumtook-gallery
  */
@@ -16,7 +16,7 @@ final class Tumtook_Gallery_Plugin
 	const OPTION_KEY = 'tumtook_gallery_settings';
 	const SHORTCODE = 'tumtook_gallery';
 	const META_KEY = '_tumtook_gallery_settings';
-	const VERSION = '1.0.41';
+	const VERSION = '1.0.43';
 	const DEFAULT_LIMIT = 50;
 	const MATCH_CODE_IMAGE_LIMIT = 25;
 	const FONT_HANDLE = 'tumtook-kanit-font';
@@ -571,7 +571,7 @@ final class Tumtook_Gallery_Plugin
 		$endpoint = esc_url_raw($request->get_param('endpoint'));
 		$limit = $this->normalize_gallery_limit($request->get_param('limit'));
 		$page = max(1, absint($request->get_param('page')));
-		$per_page = min(48, max(1, absint($request->get_param('per_page'))));
+		$per_page = min(24, max(1, absint($request->get_param('per_page'))));
 
 		if (empty($endpoint)) {
 			return new WP_Error('ttg_missing_endpoint', __('Missing gallery endpoint.', 'tumtook-gallery'), array('status' => 400));
@@ -652,61 +652,37 @@ final class Tumtook_Gallery_Plugin
 			return $error;
 		}
 
-		$primary_items = array();
-		$fallback_items = $items;
-
-		$primary_items = array_values(
-			array_filter(
-				$items,
-				function ($item) use ($match_code) {
-					if (!is_array($item) || empty($item['code']) || !is_string($item['code'])) {
-						return false;
-					}
-
-					return $this->codes_match($item['code'], $match_code);
-				}
-			)
-		);
-		$fallback_items = array_values(
-			array_filter(
-				$items,
-				function ($item) use ($match_code) {
-					if (!is_array($item) || empty($item['code']) || !is_string($item['code'])) {
-						return true;
-					}
-
-					return !$this->codes_match($item['code'], $match_code);
-				}
-			)
-		);
-
-		if (empty($primary_items)) {
-			return new WP_Error('ttg_no_matching_code', __('ไม่พบข้อมูลสำหรับ Item Code Filter ที่ระบุ', 'tumtook-gallery'));
-		}
-
 		$gallery_items = array();
 		$seen_images = array();
 
 		$this->append_gallery_items_from_items(
-			$primary_items,
+			$items,
 			$endpoint,
 			$settings,
 			$gallery_items,
 			$seen_images,
 			min(self::MATCH_CODE_IMAGE_LIMIT, $limit),
 			'primary',
+			true,
+			$match_code,
 			true
 		);
 
+		if (empty($gallery_items)) {
+			return new WP_Error('ttg_no_matching_code', __('ไม่พบข้อมูลสำหรับ Item Code Filter ที่ระบุ', 'tumtook-gallery'));
+		}
+
 		$this->append_gallery_items_from_items(
-			$fallback_items,
+			$items,
 			$endpoint,
 			$settings,
 			$gallery_items,
 			$seen_images,
 			min(self::MATCH_CODE_IMAGE_LIMIT, max(0, $limit - count($gallery_items))),
 			'fallback',
-			true
+			true,
+			$match_code,
+			false
 		);
 
 		set_transient($cache_key, $gallery_items, max(1, absint($settings['cache_minutes'])) * MINUTE_IN_SECONDS);
@@ -725,14 +701,14 @@ final class Tumtook_Gallery_Plugin
 		return min($limit, self::DEFAULT_LIMIT);
 	}
 
-	private function append_gallery_items_from_items($items, $endpoint, $settings, &$gallery_items, &$seen_images, $max_items, $group = 'primary', $randomize_images = false)
+	private function append_gallery_items_from_items($items, $endpoint, $settings, &$gallery_items, &$seen_images, $max_items, $group = 'primary', $randomize_images = false, $match_code = '', $match_required = null)
 	{
 		$max_items = absint($max_items);
 		if ($max_items <= 0) {
 			return;
 		}
 
-		$candidates = $this->collect_gallery_item_candidates($items, $endpoint, $settings, $group, $max_items, $randomize_images);
+		$candidates = $this->collect_gallery_item_candidates($items, $endpoint, $settings, $group, $max_items, $randomize_images, $match_code, $match_required);
 
 		foreach ($candidates as $gallery_item) {
 			$item_key = isset($gallery_item['key']) ? (string) $gallery_item['key'] : '';
@@ -751,7 +727,7 @@ final class Tumtook_Gallery_Plugin
 		}
 	}
 
-	private function collect_gallery_item_candidates($items, $endpoint, $settings, $group, $max_items, $randomize_images)
+	private function collect_gallery_item_candidates($items, $endpoint, $settings, $group, $max_items, $randomize_images, $match_code = '', $match_required = null)
 	{
 		$candidates = array();
 		$candidate_keys = array();
@@ -760,6 +736,9 @@ final class Tumtook_Gallery_Plugin
 
 		foreach ($items as $item) {
 			if (!is_array($item)) {
+				continue;
+			}
+			if (null !== $match_required && !$this->item_matches_code_filter($item, $match_code, $match_required)) {
 				continue;
 			}
 
@@ -827,6 +806,18 @@ final class Tumtook_Gallery_Plugin
 		}
 
 		return $candidates;
+	}
+
+	private function item_matches_code_filter($item, $match_code, $match_required)
+	{
+		$item_code = isset($item['code']) && is_string($item['code']) ? $item['code'] : '';
+		$matches = $this->codes_match($item_code, $match_code);
+
+		if ($match_required) {
+			return $matches;
+		}
+
+		return '' === $item_code || !$matches;
 	}
 
 	private function get_gallery_item_key($image)

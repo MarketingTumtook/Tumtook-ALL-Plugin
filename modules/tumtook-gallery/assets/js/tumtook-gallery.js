@@ -153,7 +153,7 @@ document.addEventListener('DOMContentLoaded', function () {
 		document.body.classList.remove('ttg-lightbox-open');
 	}
 
-	function createCard(item) {
+	function createCard(item, options) {
 		var article = document.createElement('article');
 		var media = document.createElement('div');
 		var noImage = document.createElement('div');
@@ -163,6 +163,7 @@ document.addEventListener('DOMContentLoaded', function () {
 		var itemKey = getItemKey(item);
 		var imageWidth = getPositiveNumber(item.width);
 		var imageHeight = getPositiveNumber(item.height);
+		var priority = !!(options && options.priority);
 
 		article.className = 'ttg-card';
 		article.setAttribute('data-ttg-key', itemKey);
@@ -178,9 +179,13 @@ document.addEventListener('DOMContentLoaded', function () {
 		noImage.appendChild(noImageText);
 
 		image.alt = item.alt || item.title || '';
-		image.loading = 'lazy';
+		image.loading = priority ? 'eager' : 'lazy';
 		image.decoding = 'async';
 		image.tabIndex = 0;
+		if (priority) {
+			image.fetchPriority = 'high';
+			image.setAttribute('fetchpriority', 'high');
+		}
 		if (imageWidth && imageHeight) {
 			image.width = Math.round(imageWidth);
 			image.height = Math.round(imageHeight);
@@ -342,15 +347,12 @@ document.addEventListener('DOMContentLoaded', function () {
 
 	function getInitialPerPage(shell) {
 		var columns = Math.max(1, getColumns(shell));
-		var estimatedCardHeight = 280;
-		var rows = Math.ceil(window.innerHeight / estimatedCardHeight) + 1;
-
-		return Math.max(columns * rows, columns * 3);
+		return Math.min(Math.max(columns * 2, 6), 12);
 	}
 
 	function getBatchPerPage(shell) {
 		var columns = Math.max(1, getColumns(shell));
-		return Math.max(columns * 2, 12);
+		return Math.min(Math.max(columns * 2, 6), 12);
 	}
 
 	shells.forEach(function (shell) {
@@ -470,18 +472,23 @@ document.addEventListener('DOMContentLoaded', function () {
 						return;
 					}
 
-					var newCards = randomizeBatch(uniqueItems).map(createCard);
+					var priorityCount = page === 1 ? Math.min(uniqueItems.length, getColumns(shell) * 2) : 0;
+					var newCards = randomizeBatch(uniqueItems).map(function (item, index) {
+						return createCard(item, {
+							priority: index < priorityCount
+						});
+					});
 					var fragment = document.createDocumentFragment();
 
 					newCards.forEach(function (card) {
 						fragment.appendChild(card);
 					});
 
-						gallery.appendChild(fragment);
+					gallery.appendChild(fragment);
 
-						complete = !data.has_more;
-						page += 1;
-						setLoaderState('', true);
+					complete = !data.has_more;
+					page += 1;
+					setLoaderState('', true);
 
 						window.requestAnimationFrame(function () {
 							animateCards(gallery, newCards);
