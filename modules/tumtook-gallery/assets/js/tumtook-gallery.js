@@ -318,9 +318,9 @@ document.addEventListener('DOMContentLoaded', function () {
 		var shell = gallery.closest('.ttg-gallery-shell');
 		var columns = Math.max(1, getColumns(shell || gallery));
 		var now = Date.now();
-		var itemDelay = 70;
-		var revealDuration = 900;
-		var rowPause = 60;
+		var itemDelay = 42;
+		var revealDuration = 560;
+		var rowPause = 20;
 		var rowStartDelay = shell ? Math.max(0, parseFloat(shell.dataset.ttgRevealReadyAt || '0') - now) : 0;
 		var rows = [];
 

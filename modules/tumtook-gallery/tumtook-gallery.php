@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Tumtook Gallery
  * Description: Fetch images from an API and display them in a masonry gallery via shortcode.
- * Version: 1.0.37
+ * Version: 1.0.38
  * Author: Tumtook
  * Text Domain: tumtook-gallery
  */
@@ -16,7 +16,7 @@ final class Tumtook_Gallery_Plugin
 	const OPTION_KEY = 'tumtook_gallery_settings';
 	const SHORTCODE = 'tumtook_gallery';
 	const META_KEY = '_tumtook_gallery_settings';
-	const VERSION = '1.0.37';
+	const VERSION = '1.0.38';
 	const DEFAULT_LIMIT = 50;
 	const MATCH_CODE_IMAGE_LIMIT = 25;
 	const FONT_HANDLE = 'tumtook-kanit-font';
