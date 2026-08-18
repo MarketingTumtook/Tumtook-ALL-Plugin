@@ -226,6 +226,18 @@ document.addEventListener('DOMContentLoaded', function () {
 		return article;
 	}
 
+	function hashString(value) {
+		var hash = 0;
+		var string = String(value || '');
+
+		for (var index = 0; index < string.length; index += 1) {
+			hash = ((hash << 5) - hash) + string.charCodeAt(index);
+			hash |= 0;
+		}
+
+		return Math.abs(hash);
+	}
+
 	function getItemKey(item) {
 		if (item && item.key) {
 			return String(item.key);
@@ -237,7 +249,7 @@ document.addEventListener('DOMContentLoaded', function () {
 	function resizeMasonryItems(gallery, cards) {
 		var galleryStyles = window.getComputedStyle(gallery);
 		var rowGap = parseFloat(galleryStyles.getPropertyValue('row-gap')) || parseFloat(galleryStyles.getPropertyValue('gap')) || 0;
-		var rowSize = parseFloat(galleryStyles.getPropertyValue('grid-auto-rows')) || 8;
+		var rowSize = parseFloat(galleryStyles.getPropertyValue('grid-auto-rows')) || 4;
 
 		cards.forEach(function (card) {
 			card.style.gridRowEnd = '';
@@ -303,28 +315,40 @@ document.addEventListener('DOMContentLoaded', function () {
 	}
 
 	function animateCards(gallery, cards) {
-		var orderedCards = cards.slice();
+		var shell = gallery.closest('.ttg-gallery-shell');
+		var columns = Math.max(1, getColumns(shell || gallery));
+		var now = Date.now();
+		var itemDelay = 70;
+		var revealDuration = 900;
+		var rowPause = 60;
+		var rowStartDelay = shell ? Math.max(0, parseFloat(shell.dataset.ttgRevealReadyAt || '0') - now) : 0;
+		var rows = [];
 
-		resizeMasonryItems(gallery, orderedCards);
+		resizeMasonryItems(gallery, cards);
 
-		orderedCards.sort(function (a, b) {
-			var aRect = a.getBoundingClientRect();
-			var bRect = b.getBoundingClientRect();
-			var topDiff = aRect.top - bRect.top;
-
-			if (Math.abs(topDiff) > 24) {
-				return topDiff;
+		cards.forEach(function (card, index) {
+			var rowIndex = Math.floor(index / columns);
+			if (!rows[rowIndex]) {
+				rows[rowIndex] = [];
 			}
 
-			return aRect.left - bRect.left;
+			rows[rowIndex].push(card);
 		});
 
-		orderedCards.forEach(function (card, index) {
-			card.style.setProperty('--ttg-delay', index * 90 + 'ms');
-			window.requestAnimationFrame(function () {
-				card.classList.add('ttg-card-visible');
+		rows.forEach(function (row) {
+			row.forEach(function (card, index) {
+				card.style.setProperty('--ttg-delay', (rowStartDelay + index * itemDelay) + 'ms');
+				window.requestAnimationFrame(function () {
+					card.classList.add('ttg-card-visible');
+				});
 			});
+
+			rowStartDelay += Math.max(0, row.length - 1) * itemDelay + revealDuration + rowPause;
 		});
+
+		if (shell) {
+			shell.dataset.ttgRevealReadyAt = String(now + rowStartDelay);
+		}
 	}
 
 	function getColumns(shell) {
@@ -399,6 +423,30 @@ document.addEventListener('DOMContentLoaded', function () {
 			return rect.top <= preloadDistance;
 		}
 
+		function randomizeBatch(items) {
+			var salt = String(Date.now()) + ':' + String(Math.random()) + ':' + String(page);
+			var primary = [];
+			var fallback = [];
+
+			items.forEach(function (item) {
+				if (item && item.group === 'fallback') {
+					fallback.push(item);
+				} else {
+					primary.push(item);
+				}
+			});
+
+			function sortGroup(groupItems, groupSalt) {
+				return groupItems.slice().sort(function (a, b) {
+					var aScore = hashString(getItemKey(a) + salt + ':' + groupSalt);
+					var bScore = hashString(getItemKey(b) + salt + ':' + groupSalt);
+					return aScore - bScore;
+				});
+			}
+
+			return sortGroup(primary, 'primary').concat(sortGroup(fallback, 'fallback'));
+		}
+
 		function requestLoad(perPage) {
 			if (loading || complete) {
 				if (loading && !complete) {
@@ -448,7 +496,7 @@ document.addEventListener('DOMContentLoaded', function () {
 						return;
 					}
 
-					var newCards = uniqueItems.map(createCard);
+					var newCards = randomizeBatch(uniqueItems).map(createCard);
 					var fragment = document.createDocumentFragment();
 
 					newCards.forEach(function (card) {
@@ -461,12 +509,14 @@ document.addEventListener('DOMContentLoaded', function () {
 					page += 1;
 					setLoaderState('', true);
 
-					window.requestAnimationFrame(function () {
-						animateCards(gallery, newCards);
-						if (complete) {
-							showEndPanel(shell);
-						}
-					});
+						waitForImages(newCards, function () {
+							window.requestAnimationFrame(function () {
+								animateCards(gallery, newCards);
+								if (complete) {
+									showEndPanel(shell);
+								}
+							});
+						});
 
 					if (complete && observer) {
 						observer.disconnect();

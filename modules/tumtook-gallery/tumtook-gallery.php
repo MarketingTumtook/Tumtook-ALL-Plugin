@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Tumtook Gallery
  * Description: Fetch images from an API and display them in a masonry gallery via shortcode.
- * Version: 1.0.28
+ * Version: 1.0.37
  * Author: Tumtook
  * Text Domain: tumtook-gallery
  */
@@ -16,7 +16,7 @@ final class Tumtook_Gallery_Plugin
 	const OPTION_KEY = 'tumtook_gallery_settings';
 	const SHORTCODE = 'tumtook_gallery';
 	const META_KEY = '_tumtook_gallery_settings';
-	const VERSION = '1.0.28';
+	const VERSION = '1.0.37';
 	const DEFAULT_LIMIT = 50;
 	const MATCH_CODE_IMAGE_LIMIT = 25;
 	const FONT_HANDLE = 'tumtook-kanit-font';
@@ -693,12 +693,10 @@ final class Tumtook_Gallery_Plugin
 			$settings,
 			$gallery_items,
 			$seen_images,
-			min(self::MATCH_CODE_IMAGE_LIMIT, $limit)
+			min(self::MATCH_CODE_IMAGE_LIMIT, $limit),
+			'primary',
+			true
 		);
-
-		if (count($gallery_items) < $limit && count($fallback_items) > 1) {
-			shuffle($fallback_items);
-		}
 
 		$this->append_gallery_items_from_items(
 			$fallback_items,
@@ -706,7 +704,9 @@ final class Tumtook_Gallery_Plugin
 			$settings,
 			$gallery_items,
 			$seen_images,
-			$limit - count($gallery_items)
+			min(self::MATCH_CODE_IMAGE_LIMIT, max(0, $limit - count($gallery_items))),
+			'fallback',
+			true
 		);
 
 		set_transient($cache_key, $gallery_items, max(1, absint($settings['cache_minutes'])) * MINUTE_IN_SECONDS);
@@ -725,12 +725,38 @@ final class Tumtook_Gallery_Plugin
 		return min($limit, self::DEFAULT_LIMIT);
 	}
 
-	private function append_gallery_items_from_items($items, $endpoint, $settings, &$gallery_items, &$seen_images, $max_items)
+	private function append_gallery_items_from_items($items, $endpoint, $settings, &$gallery_items, &$seen_images, $max_items, $group = 'primary', $randomize_images = false)
 	{
 		$max_items = absint($max_items);
 		if ($max_items <= 0) {
 			return;
 		}
+
+		$candidates = $this->collect_gallery_item_candidates($items, $endpoint, $settings, $group);
+		if ($randomize_images && count($candidates) > 1) {
+			shuffle($candidates);
+		}
+
+		foreach ($candidates as $gallery_item) {
+			$item_key = isset($gallery_item['key']) ? (string) $gallery_item['key'] : '';
+			if ('' === $item_key || isset($seen_images[$item_key])) {
+				continue;
+			}
+
+			$seen_images[$item_key] = true;
+			$gallery_items[] = $gallery_item;
+
+			if ($max_items <= 1) {
+				return;
+			}
+
+			$max_items--;
+		}
+	}
+
+	private function collect_gallery_item_candidates($items, $endpoint, $settings, $group)
+	{
+		$candidates = array();
 
 		foreach ($items as $item) {
 			if (!is_array($item)) {
@@ -755,34 +781,112 @@ final class Tumtook_Gallery_Plugin
 				}
 
 				$item_key = $this->get_gallery_item_key($image);
-				if (isset($seen_images[$item_key])) {
-					continue;
-				}
-				$seen_images[$item_key] = true;
-
 				$item_alt = isset($alts[$index]) && is_scalar($alts[$index]) ? $alts[$index] : $alt;
 				$item_title = $this->extract_filename_title($raw_image);
+				$item_dimensions = $this->get_item_image_dimensions($item, $index);
 
-				$gallery_items[] = array(
+				$candidates[] = array(
 					'key' => $item_key,
 					'image' => $image,
 					'title' => is_scalar($item_title) ? wp_strip_all_tags((string) $item_title) : '',
 					'link' => is_string($link) ? $this->normalize_url($link, $endpoint) : '',
 					'alt' => is_scalar($item_alt) ? wp_strip_all_tags((string) $item_alt) : (is_scalar($item_title) ? wp_strip_all_tags((string) $item_title) : ''),
+					'width' => $item_dimensions['width'],
+					'height' => $item_dimensions['height'],
+					'group' => $group,
 				);
-
-				if ($max_items <= 1) {
-					return;
-				}
-
-				$max_items--;
 			}
 		}
+
+		return $candidates;
 	}
 
 	private function get_gallery_item_key($image)
 	{
 		return md5(trim((string) $image));
+	}
+
+	private function get_item_image_dimensions($item, $index)
+	{
+		$width = $this->get_indexed_dimension_value(
+			$item,
+			array(
+				'width',
+				'w',
+				'image_width',
+				'imageWidth',
+				'original_width',
+				'originalWidth',
+				'dimensions.width',
+				'image.width',
+				'image.meta.width',
+				'media_details.width',
+				'mediaDetails.width',
+				'metadata.width',
+				'meta.width',
+				'sizes.full.width',
+				'sizes.large.width',
+				'media_details.sizes.full.width',
+				'media_details.sizes.large.width',
+			),
+			$index
+		);
+		$height = $this->get_indexed_dimension_value(
+			$item,
+			array(
+				'height',
+				'h',
+				'image_height',
+				'imageHeight',
+				'original_height',
+				'originalHeight',
+				'dimensions.height',
+				'image.height',
+				'image.meta.height',
+				'media_details.height',
+				'mediaDetails.height',
+				'metadata.height',
+				'meta.height',
+				'sizes.full.height',
+				'sizes.large.height',
+				'media_details.sizes.full.height',
+				'media_details.sizes.large.height',
+			),
+			$index
+		);
+
+		return array(
+			'width' => $width,
+			'height' => $height,
+		);
+	}
+
+	private function get_indexed_dimension_value($item, $keys, $index)
+	{
+		foreach ($keys as $key) {
+			if (!is_array($item)) {
+				continue;
+			}
+
+			$values = false === strpos($key, '.')
+				? (array_key_exists($key, $item) ? array($item[$key]) : array())
+				: $this->get_values_by_path($item, $key);
+
+			if (empty($values)) {
+				continue;
+			}
+
+			$value = isset($values[$index]) ? $values[$index] : reset($values);
+			if (is_array($value)) {
+				$value = isset($value[$index]) ? $value[$index] : reset($value);
+			}
+
+			if (is_numeric($value) && (float) $value > 0) {
+				return (float) $value;
+			}
+		}
+
+		return 0;
 	}
 
 	private function get_page_settings($page_id)

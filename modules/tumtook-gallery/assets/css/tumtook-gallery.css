@@ -11,8 +11,8 @@
 	display: grid;
 	grid-template-columns: repeat(var(--ttg-active-columns), minmax(0, 1fr));
 	gap: var(--ttg-effective-gap);
-	grid-auto-flow: dense;
-	grid-auto-rows: 3px;
+	grid-auto-flow: row;
+	grid-auto-rows: 4px;
 	align-items: start;
 	min-height: 40vh;
 	position: relative;
@@ -26,7 +26,7 @@
 	display: block;
 	overflow: hidden;
 	opacity: 0;
-	transform: translateY(28px);
+	transform: translate3d(0, 28px, 0);
 	width: 100%;
 	filter: saturate(0.92);
 	will-change: transform, opacity, filter;
@@ -52,7 +52,7 @@
 
 .ttg-gallery-shell .ttg-card.ttg-card-visible {
 	opacity: 1;
-	transform: translateY(0);
+	transform: translate3d(0, 0, 0);
 	filter: saturate(1);
 }
 
@@ -75,9 +75,7 @@
 .ttg-gallery-shell .ttg-media {
 	display: block;
 	position: relative;
-	aspect-ratio: 1 / 1;
 	background: #f3f4f6;
-	min-height: clamp(170px, 24vw, 280px);
 	overflow: hidden;
 }
 
@@ -88,21 +86,10 @@
 .ttg-gallery-shell .ttg-media img {
 	display: block;
 	width: 100%;
-	height: 100%;
-	object-fit: cover;
+	height: auto;
+	object-fit: contain;
 	object-position: center;
 	transition: transform 0.25s ease, filter 0.2s ease;
-}
-
-.ttg-gallery-shell .ttg-card:nth-child(10n + 2) .ttg-media,
-.ttg-gallery-shell .ttg-card:nth-child(10n + 6) .ttg-media,
-.ttg-gallery-shell .ttg-card:nth-child(10n + 9) .ttg-media {
-	aspect-ratio: 4 / 5;
-}
-
-.ttg-gallery-shell .ttg-card:nth-child(10n + 4) .ttg-media,
-.ttg-gallery-shell .ttg-card:nth-child(10n + 8) .ttg-media {
-	aspect-ratio: 9 / 16;
 }
 
 .ttg-gallery-shell .ttg-media img[hidden] {
@@ -157,6 +144,10 @@
 
 
 @media (max-width: 767px) {
+	.ttg-gallery-shell .ttg-gallery {
+		--ttg-active-columns: min(var(--ttg-columns, 2), 2);
+	}
+
 	.ttg-gallery-shell.is-complete .ttg-gallery::after {
 		background: linear-gradient(180deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.68) 42%, #fff 100%);
 		bottom: 0;
@@ -173,6 +164,12 @@
 		display: none !important;
 	}
 
+}
+
+@media (max-width: 479px) {
+	.ttg-gallery-shell .ttg-gallery {
+		--ttg-active-columns: 2;
+	}
 }
 
 .ttg-noimage-icon {
@@ -447,10 +444,6 @@
 		padding-inline: var(--ttg-effective-gap);
 	}
 
-	.ttg-gallery-shell .ttg-media {
-		min-height: clamp(168px, 55vw, 260px);
-	}
-
 	.ttg-lightbox {
 		padding: 14px;
 	}
@@ -504,10 +497,6 @@
 		--ttg-active-columns: 2;
 		padding: var(--ttg-effective-gap);
 		padding-inline: var(--ttg-effective-gap);
-	}
-
-	.ttg-gallery-shell .ttg-media {
-		min-height: clamp(154px, 58vw, 238px);
 	}
 
 }
