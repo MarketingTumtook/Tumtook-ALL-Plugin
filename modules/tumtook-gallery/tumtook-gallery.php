@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Tumtook Gallery
  * Description: Fetch images from an API and display them in a masonry gallery via shortcode.
- * Version: 1.0.43
+ * Version: 1.0.48
  * Author: Tumtook
  * Text Domain: tumtook-gallery
  */
@@ -16,9 +16,8 @@ final class Tumtook_Gallery_Plugin
 	const OPTION_KEY = 'tumtook_gallery_settings';
 	const SHORTCODE = 'tumtook_gallery';
 	const META_KEY = '_tumtook_gallery_settings';
-	const VERSION = '1.0.43';
+	const VERSION = '1.0.48';
 	const DEFAULT_LIMIT = 50;
-	const MATCH_CODE_IMAGE_LIMIT = 25;
 	const FONT_HANDLE = 'tumtook-kanit-font';
 
 	public function __construct()
@@ -178,7 +177,7 @@ final class Tumtook_Gallery_Plugin
 
 		$output['preset'] = isset($input['preset']) ? sanitize_text_field(trim($input['preset'])) : $defaults['preset'];
 		$output['api_url'] = isset($input['api_url']) ? esc_url_raw(trim($input['api_url'])) : $defaults['api_url'];
-		$output['match_code'] = isset($input['match_code']) ? sanitize_text_field(trim($input['match_code'])) : $defaults['match_code'];
+		$output['match_code'] = isset($input['match_code']) ? sanitize_textarea_field(trim($input['match_code'])) : $defaults['match_code'];
 		$output['bearer_token'] = isset($input['bearer_token']) ? sanitize_text_field($input['bearer_token']) : $defaults['bearer_token'];
 		$output['header_name'] = isset($input['header_name']) ? sanitize_text_field(trim($input['header_name'])) : $defaults['header_name'];
 		$output['header_value'] = isset($input['header_value']) ? sanitize_text_field(trim($input['header_value'])) : $defaults['header_value'];
@@ -201,13 +200,13 @@ final class Tumtook_Gallery_Plugin
 		$value = isset($settings[$key]) ? $settings[$key] : '';
 
 		$descriptions = array(
-			'api_url' => __('Example: https://line.tumtook.com/api/config/galleries?activeOnly=true&x-api-key=YOUR_API_KEY', 'tumtook-gallery'),
-			'match_code' => __('Optional item code used to filter the API result first. Leave blank to load every code.', 'tumtook-gallery'),
-			'cache_minutes' => __('How long API responses should be cached.', 'tumtook-gallery'),
-			'items_path' => __('Dot notation for where the list lives in the JSON, for example data.items or items.', 'tumtook-gallery'),
-			'image_key' => __('Field path for image URL in each item. Supports nested arrays like images.fileUrl', 'tumtook-gallery'),
-			'alt_key' => __('Field path for image alt text.', 'tumtook-gallery'),
-			'end_panel_background' => __('Background color for the end panel after the gallery finishes loading.', 'tumtook-gallery'),
+			'api_url' => __('ใส่ URL API แบบเต็ม เช่น https://line.tumtook.com/api/config/galleries?activeOnly=true&x-api-key=YOUR_API_KEY', 'tumtook-gallery'),
+			'match_code' => __('ใส่ Item Code ได้สูงสุด 3 โค้ด โดยคั่นด้วย comma, space หรือขึ้นบรรทัดใหม่: 1 โค้ดแสดง 50 รูป, 2 โค้ดแสดง 25/25 รูป, 3 โค้ดแสดง 25/15/10 รูป', 'tumtook-gallery'),
+			'cache_minutes' => __('กำหนดเวลาจำข้อมูลจาก API ไว้ในแคช หน่วยเป็นนาที แนะนำ 30 นาทีเพื่อให้หน้าเว็บโหลดเร็วขึ้น', 'tumtook-gallery'),
+			'items_path' => __('ตำแหน่งรายการรูปใน JSON เช่น items หรือ data.items', 'tumtook-gallery'),
+			'image_key' => __('ตำแหน่ง URL รูปภาพในแต่ละ item เช่น images.fileUrl รองรับข้อมูลแบบ nested array', 'tumtook-gallery'),
+			'alt_key' => __('ตำแหน่งข้อความ alt ของรูปภาพ เช่น images.altText', 'tumtook-gallery'),
+			'end_panel_background' => __('สีพื้นหลังของส่วนท้าย Gallery หลังจากโหลดรูปครบแล้ว', 'tumtook-gallery'),
 		);
 
 		$type = 'text';
@@ -217,14 +216,23 @@ final class Tumtook_Gallery_Plugin
 			$type = 'color';
 		}
 
-		printf(
-			'<input type="%1$s" class="regular-text" name="%2$s[%3$s]" value="%4$s" %5$s />',
-			esc_attr($type),
-			esc_attr(self::META_KEY),
-			esc_attr($key),
-			esc_attr($value),
-			'cache_minutes' === $key ? 'min="1" step="1"' : ''
-		);
+		if ('match_code' === $key) {
+			printf(
+				'<textarea class="large-text" rows="3" name="%1$s[%2$s]">%3$s</textarea>',
+				esc_attr(self::META_KEY),
+				esc_attr($key),
+				esc_textarea($value)
+			);
+		} else {
+			printf(
+				'<input type="%1$s" class="regular-text" name="%2$s[%3$s]" value="%4$s" %5$s />',
+				esc_attr($type),
+				esc_attr(self::META_KEY),
+				esc_attr($key),
+				esc_attr($value),
+				'cache_minutes' === $key ? 'min="1" step="1"' : ''
+			);
+		}
 
 		if (isset($descriptions[$key])) {
 			echo '<p class="description">' . esc_html($descriptions[$key]) . '</p>';
@@ -234,7 +242,7 @@ final class Tumtook_Gallery_Plugin
 	public function render_settings_page()
 	{
 		if (isset($_GET['ttg_cache_cleared']) && '1' === $_GET['ttg_cache_cleared']) {
-			echo '<div class="notice notice-success is-dismissible"><p>' . esc_html__('Tumtook Gallery cache cleared.', 'tumtook-gallery') . '</p></div>';
+				echo '<div class="notice notice-success is-dismissible"><p>' . esc_html__('ล้างแคช Tumtook Gallery เรียบร้อยแล้ว', 'tumtook-gallery') . '</p></div>';
 		}
 
 		$clear_cache_url = wp_nonce_url(
@@ -250,13 +258,13 @@ final class Tumtook_Gallery_Plugin
 
 		?>
 		<div class="wrap">
-			<h1><?php esc_html_e('Tumtook Gallery', 'tumtook-gallery'); ?></h1>
-			<p><?php esc_html_e('Use shortcode [tumtook_gallery] to display the gallery.', 'tumtook-gallery'); ?></p>
-			<p><?php esc_html_e('Optional shortcode attributes: limit, columns, gap, endpoint.', 'tumtook-gallery'); ?></p>
-			<p><?php esc_html_e('For Tumtook Catalog API, choose the preset then fill only API URL and Header Value.', 'tumtook-gallery'); ?>
-			</p>
-			<p><a href="<?php echo esc_url($clear_cache_url); ?>"
-					class="button button-secondary"><?php esc_html_e('Clear Gallery Cache', 'tumtook-gallery'); ?></a></p>
+				<h1><?php esc_html_e('Tumtook Gallery', 'tumtook-gallery'); ?></h1>
+				<p><?php esc_html_e('ใช้ shortcode [tumtook_gallery] เพื่อแสดง Gallery บนหน้าเว็บ', 'tumtook-gallery'); ?></p>
+				<p><?php esc_html_e('สามารถกำหนดค่า shortcode เพิ่มเติมได้ เช่น limit, columns, gap, endpoint', 'tumtook-gallery'); ?></p>
+				<p><?php esc_html_e('สำหรับ API ของ Tumtook ให้ใส่ API URL แบบเต็มที่มี x-api-key อยู่ใน URL ได้เลย', 'tumtook-gallery'); ?>
+				</p>
+				<p><a href="<?php echo esc_url($clear_cache_url); ?>"
+						class="button button-secondary"><?php esc_html_e('ล้างแคช Gallery', 'tumtook-gallery'); ?></a></p>
 			<form method="post" action="options.php">
 				<?php
 				settings_fields('tumtook_gallery_group');
@@ -280,14 +288,23 @@ final class Tumtook_Gallery_Plugin
 			'alt_key',
 			'end_panel_background',
 		);
+		$labels = array(
+			'api_url' => __('API URL', 'tumtook-gallery'),
+			'cache_minutes' => __('เวลาแคช', 'tumtook-gallery'),
+			'items_path' => __('ตำแหน่งรายการรูป', 'tumtook-gallery'),
+			'match_code' => __('Item Code Filter', 'tumtook-gallery'),
+			'image_key' => __('ตำแหน่ง URL รูป', 'tumtook-gallery'),
+			'alt_key' => __('ตำแหน่ง Alt รูป', 'tumtook-gallery'),
+			'end_panel_background' => __('สีพื้นหลังท้าย Gallery', 'tumtook-gallery'),
+		);
 
 		wp_nonce_field('tumtook_gallery_save_page_settings', 'tumtook_gallery_nonce');
-		echo '<p>' . esc_html__('This page uses its own Tumtook Gallery data source. Add [tumtook_gallery] in this page content to render this page settings.', 'tumtook-gallery') . '</p>';
-		echo '<p>' . esc_html__('Use a full API URL including x-api-key in the query string. Bearer token and custom headers are no longer needed here.', 'tumtook-gallery') . '</p>';
+		echo '<p>' . esc_html__('หน้านี้ใช้แหล่งข้อมูล Tumtook Gallery แยกของตัวเอง ให้ใส่ shortcode [tumtook_gallery] ในเนื้อหาหน้านี้เพื่อแสดงผลตามค่าที่ตั้งไว้ด้านล่าง', 'tumtook-gallery') . '</p>';
+		echo '<p>' . esc_html__('แนะนำให้ใส่ API URL แบบเต็มที่มี x-api-key อยู่ใน query string แล้ว ไม่ต้องใส่ Bearer token หรือ custom header เพิ่ม', 'tumtook-gallery') . '</p>';
 		echo '<table class="form-table" role="presentation"><tbody>';
 
 		foreach ($fields as $field) {
-			$label = 'match_code' === $field ? __('Item Code Filter', 'tumtook-gallery') : ucwords(str_replace('_', ' ', $field));
+			$label = isset($labels[$field]) ? $labels[$field] : ucwords(str_replace('_', ' ', $field));
 			echo '<tr>';
 			echo '<th scope="row"><label>' . esc_html($label) . '</label></th>';
 			echo '<td>';
@@ -297,15 +314,15 @@ final class Tumtook_Gallery_Plugin
 		}
 
 		echo '</tbody></table>';
-		?>
-		<div class="ttg-admin-preview">
-			<h4><?php esc_html_e('Preview', 'tumtook-gallery'); ?></h4>
-			<p class="description">
-				<?php esc_html_e('When the API settings are correct, preview images will appear here automatically.', 'tumtook-gallery'); ?>
-			</p>
-			<div class="ttg-admin-preview-status" data-ttg-preview-status>
-				<?php esc_html_e('Fill in the fields above to preview images.', 'tumtook-gallery'); ?>
-			</div>
+			?>
+			<div class="ttg-admin-preview">
+				<h4><?php esc_html_e('ตัวอย่างรูป', 'tumtook-gallery'); ?></h4>
+				<p class="description">
+					<?php esc_html_e('ถ้าตั้งค่า API ถูกต้อง ระบบจะแสดงตัวอย่างรูปให้อัตโนมัติ', 'tumtook-gallery'); ?>
+				</p>
+				<div class="ttg-admin-preview-status" data-ttg-preview-status>
+					<?php esc_html_e('กรอกข้อมูลด้านบนเพื่อดูตัวอย่างรูป', 'tumtook-gallery'); ?>
+				</div>
 			<div class="ttg-admin-preview-grid" data-ttg-preview-grid></div>
 		</div>
 		<style>
@@ -400,12 +417,12 @@ final class Tumtook_Gallery_Plugin
 					var cacheMinutes = fieldValue('cache_minutes') || '1';
 
 					if (!apiUrl || !itemsPath || !imageKey) {
-						statusNode.textContent = 'Fill in API URL, Items Path, and Image Key to preview images.';
-						gridNode.innerHTML = '';
-						return;
-					}
+							statusNode.textContent = 'กรุณากรอก API URL, ตำแหน่งรายการรูป และตำแหน่ง URL รูป เพื่อดูตัวอย่าง';
+							gridNode.innerHTML = '';
+							return;
+						}
 
-					statusNode.textContent = 'Loading preview...';
+						statusNode.textContent = 'กำลังโหลดตัวอย่างรูป...';
 
 					var body = new URLSearchParams();
 					body.set('action', 'ttg_preview_items');
@@ -427,29 +444,29 @@ final class Tumtook_Gallery_Plugin
 						credentials: 'same-origin'
 					})
 						.then(function (response) {
-							if (!response.ok) {
-								throw new Error('Preview request failed');
-							}
+								if (!response.ok) {
+									throw new Error('โหลดตัวอย่างรูปไม่สำเร็จ');
+								}
 							return response.json();
 						})
 						.then(function (payload) {
-							if (!payload.success) {
-								throw new Error(payload.data && payload.data.message ? payload.data.message : 'Could not preview images.');
-							}
+								if (!payload.success) {
+									throw new Error(payload.data && payload.data.message ? payload.data.message : 'ไม่สามารถแสดงตัวอย่างรูปได้');
+								}
 
-							if (!payload.data.items.length) {
-								statusNode.textContent = 'No preview images found.';
+								if (!payload.data.items.length) {
+									statusNode.textContent = 'ไม่พบรูปสำหรับแสดงตัวอย่าง';
+									gridNode.innerHTML = '';
+									return;
+								}
+
+								statusNode.textContent = 'โหลดตัวอย่างรูปเรียบร้อยแล้ว';
+								renderItems(payload.data.items);
+							})
+							.catch(function (error) {
+								statusNode.textContent = error.message || 'ไม่สามารถแสดงตัวอย่างรูปได้';
 								gridNode.innerHTML = '';
-								return;
-							}
-
-							statusNode.textContent = 'Preview loaded.';
-							renderItems(payload.data.items);
-						})
-						.catch(function (error) {
-							statusNode.textContent = error.message || 'Could not preview images.';
-							gridNode.innerHTML = '';
-						});
+							});
 				}
 
 				function queuePreview(immediate) {
@@ -461,10 +478,10 @@ final class Tumtook_Gallery_Plugin
 					timer = window.setTimeout(requestPreview, 180);
 				}
 
-				wrap.querySelectorAll('input').forEach(function (input) {
-					input.addEventListener('input', queuePreview);
-					input.addEventListener('change', queuePreview);
-				});
+					wrap.querySelectorAll('input, textarea').forEach(function (field) {
+						field.addEventListener('input', queuePreview);
+						field.addEventListener('change', queuePreview);
+					});
 
 				queuePreview(true);
 			})();
@@ -508,13 +525,13 @@ final class Tumtook_Gallery_Plugin
 
 		$page_id = isset($_POST['page_id']) ? absint($_POST['page_id']) : 0;
 		$settings = $this->sanitize_settings($input);
-		$items = $this->get_gallery_items($settings['api_url'], $settings, 8, $page_id);
+		$items = $this->get_gallery_items($settings['api_url'], $settings, self::DEFAULT_LIMIT, $page_id);
 
 		if (is_wp_error($items)) {
 			wp_send_json_error(array('message' => $items->get_error_message()), 400);
 		}
 
-		wp_send_json_success(array('items' => array_values($items)));
+		wp_send_json_success(array('items' => array_values(array_slice($items, 0, 8))));
 	}
 
 	public function render_shortcode($atts)
@@ -600,13 +617,13 @@ final class Tumtook_Gallery_Plugin
 	private function get_gallery_items($endpoint, $settings, $limit, $page_id = 0)
 	{
 		$limit = $this->normalize_gallery_limit($limit);
-		$match_code = !empty($settings['match_code']) ? $settings['match_code'] : '';
+		$match_codes = $this->get_match_codes(!empty($settings['match_code']) ? $settings['match_code'] : '');
 
-		if (empty($match_code)) {
+		if (empty($match_codes)) {
 			return array();
 		}
 
-		$cache_key = 'ttg_' . md5($endpoint . wp_json_encode($settings) . $limit . self::VERSION . '_required_code_priority_fill');
+		$cache_key = 'ttg_' . md5($endpoint . wp_json_encode($settings) . $limit . self::VERSION . '_multi_code_mixed_allocations');
 		$cached = get_transient($cache_key);
 
 		if (false !== $cached) {
@@ -654,36 +671,34 @@ final class Tumtook_Gallery_Plugin
 
 		$gallery_items = array();
 		$seen_images = array();
+		$allocations = $this->get_match_code_allocations(count($match_codes), $limit);
 
-		$this->append_gallery_items_from_items(
-			$items,
-			$endpoint,
-			$settings,
-			$gallery_items,
-			$seen_images,
-			min(self::MATCH_CODE_IMAGE_LIMIT, $limit),
-			'primary',
-			true,
-			$match_code,
-			true
-		);
+		foreach ($match_codes as $code_index => $match_code) {
+			$remaining = $limit - count($gallery_items);
+			if ($remaining <= 0) {
+				break;
+			}
+
+			$this->append_gallery_items_from_items(
+				$items,
+				$endpoint,
+				$settings,
+				$gallery_items,
+				$seen_images,
+				min($allocations[$code_index], $remaining),
+				'filter-' . ($code_index + 1),
+				true,
+				$match_code
+			);
+		}
 
 		if (empty($gallery_items)) {
 			return new WP_Error('ttg_no_matching_code', __('ไม่พบข้อมูลสำหรับ Item Code Filter ที่ระบุ', 'tumtook-gallery'));
 		}
 
-		$this->append_gallery_items_from_items(
-			$items,
-			$endpoint,
-			$settings,
-			$gallery_items,
-			$seen_images,
-			min(self::MATCH_CODE_IMAGE_LIMIT, max(0, $limit - count($gallery_items))),
-			'fallback',
-			true,
-			$match_code,
-			false
-		);
+		if (count($gallery_items) > 1) {
+			shuffle($gallery_items);
+		}
 
 		set_transient($cache_key, $gallery_items, max(1, absint($settings['cache_minutes'])) * MINUTE_IN_SECONDS);
 
@@ -701,14 +716,65 @@ final class Tumtook_Gallery_Plugin
 		return min($limit, self::DEFAULT_LIMIT);
 	}
 
-	private function append_gallery_items_from_items($items, $endpoint, $settings, &$gallery_items, &$seen_images, $max_items, $group = 'primary', $randomize_images = false, $match_code = '', $match_required = null)
+	private function get_match_codes($value)
+	{
+		$parts = preg_split('/[\s,;|]+/', (string) $value);
+		$codes = array();
+		$seen = array();
+
+		foreach ($parts as $part) {
+			$code = trim((string) $part);
+			if ('' === $code) {
+				continue;
+			}
+
+			$normalized = $this->normalize_compare_code($code);
+			if ('' === $normalized || isset($seen[$normalized])) {
+				continue;
+			}
+
+			$codes[] = $code;
+			$seen[$normalized] = true;
+
+			if (count($codes) >= 3) {
+				break;
+			}
+		}
+
+		return $codes;
+	}
+
+	private function get_match_code_allocations($code_count, $limit)
+	{
+		$code_count = max(1, min(3, absint($code_count)));
+		$limit = $this->normalize_gallery_limit($limit);
+
+		if (1 === $code_count) {
+			$allocations = array(self::DEFAULT_LIMIT);
+		} elseif (2 === $code_count) {
+			$allocations = array(25, 25);
+		} else {
+			$allocations = array(25, 15, 10);
+		}
+
+		$total = 0;
+		foreach ($allocations as $index => $allocation) {
+			$remaining = max(0, $limit - $total);
+			$allocations[$index] = min($allocation, $remaining);
+			$total += $allocations[$index];
+		}
+
+		return $allocations;
+	}
+
+	private function append_gallery_items_from_items($items, $endpoint, $settings, &$gallery_items, &$seen_images, $max_items, $group = 'primary', $randomize_images = false, $match_code = '')
 	{
 		$max_items = absint($max_items);
 		if ($max_items <= 0) {
 			return;
 		}
 
-		$candidates = $this->collect_gallery_item_candidates($items, $endpoint, $settings, $group, $max_items, $randomize_images, $match_code, $match_required);
+		$candidates = $this->collect_gallery_item_candidates($items, $endpoint, $settings, $group, $max_items, $randomize_images, $match_code);
 
 		foreach ($candidates as $gallery_item) {
 			$item_key = isset($gallery_item['key']) ? (string) $gallery_item['key'] : '';
@@ -727,7 +793,7 @@ final class Tumtook_Gallery_Plugin
 		}
 	}
 
-	private function collect_gallery_item_candidates($items, $endpoint, $settings, $group, $max_items, $randomize_images, $match_code = '', $match_required = null)
+	private function collect_gallery_item_candidates($items, $endpoint, $settings, $group, $max_items, $randomize_images, $match_code = '')
 	{
 		$candidates = array();
 		$candidate_keys = array();
@@ -738,7 +804,7 @@ final class Tumtook_Gallery_Plugin
 			if (!is_array($item)) {
 				continue;
 			}
-			if (null !== $match_required && !$this->item_matches_code_filter($item, $match_code, $match_required)) {
+			if (!$this->item_matches_code($item, $match_code)) {
 				continue;
 			}
 
@@ -808,16 +874,10 @@ final class Tumtook_Gallery_Plugin
 		return $candidates;
 	}
 
-	private function item_matches_code_filter($item, $match_code, $match_required)
+	private function item_matches_code($item, $match_code)
 	{
 		$item_code = isset($item['code']) && is_string($item['code']) ? $item['code'] : '';
-		$matches = $this->codes_match($item_code, $match_code);
-
-		if ($match_required) {
-			return $matches;
-		}
-
-		return '' === $item_code || !$matches;
+		return $this->codes_match($item_code, $match_code);
 	}
 
 	private function get_gallery_item_key($image)

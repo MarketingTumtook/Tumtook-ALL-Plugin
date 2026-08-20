@@ -233,18 +233,6 @@ document.addEventListener('DOMContentLoaded', function () {
 		return article;
 	}
 
-	function hashString(value) {
-		var hash = 0;
-		var string = String(value || '');
-
-		for (var index = 0; index < string.length; index += 1) {
-			hash = ((hash << 5) - hash) + string.charCodeAt(index);
-			hash |= 0;
-		}
-
-		return Math.abs(hash);
-	}
-
 	function getItemKey(item) {
 		if (item && item.key) {
 			return String(item.key);
@@ -297,9 +285,9 @@ document.addEventListener('DOMContentLoaded', function () {
 		var shell = gallery.closest('.ttg-gallery-shell');
 		var columns = Math.max(1, getColumns(shell || gallery));
 		var now = Date.now();
-		var itemDelay = 42;
-		var revealDuration = 560;
-		var rowPause = 20;
+			var itemDelay = 42;
+			var revealDuration = 560;
+			var rowPause = 20;
 		var rowStartDelay = shell ? Math.max(0, parseFloat(shell.dataset.ttgRevealReadyAt || '0') - now) : 0;
 		var rows = [];
 
@@ -322,7 +310,7 @@ document.addEventListener('DOMContentLoaded', function () {
 				});
 			});
 
-			rowStartDelay += Math.max(0, row.length - 1) * itemDelay + revealDuration + rowPause;
+				rowStartDelay += Math.max(0, row.length - 1) * itemDelay + revealDuration + rowPause;
 		});
 
 		if (shell) {
@@ -399,33 +387,9 @@ document.addEventListener('DOMContentLoaded', function () {
 			return rect.top <= preloadDistance;
 		}
 
-		function randomizeBatch(items) {
-			var salt = String(Date.now()) + ':' + String(Math.random()) + ':' + String(page);
-			var primary = [];
-			var fallback = [];
-
-			items.forEach(function (item) {
-				if (item && item.group === 'fallback') {
-					fallback.push(item);
-				} else {
-					primary.push(item);
-				}
-			});
-
-			function sortGroup(groupItems, groupSalt) {
-				return groupItems.slice().sort(function (a, b) {
-					var aScore = hashString(getItemKey(a) + salt + ':' + groupSalt);
-					var bScore = hashString(getItemKey(b) + salt + ':' + groupSalt);
-					return aScore - bScore;
-				});
-			}
-
-			return sortGroup(primary, 'primary').concat(sortGroup(fallback, 'fallback'));
-		}
-
-		function requestLoad(perPage) {
-			if (loading || complete) {
-				if (loading && !complete) {
+			function requestLoad(perPage) {
+				if (loading || complete) {
+					if (loading && !complete) {
 					pendingLoad = true;
 				}
 				return;
@@ -473,7 +437,7 @@ document.addEventListener('DOMContentLoaded', function () {
 					}
 
 					var priorityCount = page === 1 ? Math.min(uniqueItems.length, getColumns(shell) * 2) : 0;
-					var newCards = randomizeBatch(uniqueItems).map(function (item, index) {
+					var newCards = uniqueItems.map(function (item, index) {
 						return createCard(item, {
 							priority: index < priorityCount
 						});
