@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Tumtook Page Product Recommendations
  * Description: Adds a page-based Card Products ทั้งหมด slider with manual page selection, price fields, and a layout tailored for Tumtook landing pages.
- * Version: 1.1.27
+ * Version: 1.1.28
  * Author: Tumtook
  * Text Domain: tumtook-page-product-recommendations
  */
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
 
 final class Tumtook_Page_Product_Recommendations
 {
-	const VERSION = '1.1.27';
+	const VERSION = '1.1.28';
 	const META_KEY = '_tt_page_product_recommendations';
 	const PAGE_PRICE_META = '_ttpr_page_price';
 	const PAGE_BADGE_META = '_ttpr_page_badge';
@@ -687,10 +687,11 @@ final class Tumtook_Page_Product_Recommendations
 			}
 
 			$meta = $this->get_page_card_meta($page_id);
-			$image = $meta['image'] ? $meta['image'] : get_the_post_thumbnail_url($page_id, 'large');
-			$title = '' !== $meta['title'] ? $meta['title'] : get_the_title($page_id);
+			$image = $meta['image'];
+			$title = $meta['title'];
+			$price = trim((string) $meta['price']);
 
-			if (empty($image) || '' === trim(wp_strip_all_tags((string) $title))) {
+			if (empty($image) || '' === trim(wp_strip_all_tags((string) $title)) || '' === $price) {
 				continue;
 			}
 
@@ -703,8 +704,8 @@ final class Tumtook_Page_Product_Recommendations
 			$items[] = array(
 				'title' => $title,
 				'url' => get_permalink($page_id),
-				'image' => $image ? $image : '',
-				'price' => $this->format_price($meta['price']),
+				'image' => $image,
+				'price' => $this->format_price($price),
 				'badge' => isset($badge_map[$meta['badge']]) ? $badge_map[$meta['badge']] : '',
 				'badge_type' => $meta['badge'] ? $meta['badge'] : 'new',
 			);
