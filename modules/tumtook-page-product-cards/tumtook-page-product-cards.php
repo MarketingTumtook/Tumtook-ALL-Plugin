@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Tumtook Page Card Products  ทั้งหมด
  * Description: Adds a page-based product card slider with manual page selection and price support for Tumtook landing pages.
- * Version: 1.0.22
+ * Version: 1.0.23
  * Author: Tumtook
  * Text Domain: tumtook-page-product-cards
  */
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
 
 final class Tumtook_Page_Product_Cards
 {
-	const VERSION = '1.0.22';
+	const VERSION = '1.0.23';
 	const META_KEY = '_tt_page_product_cards';
 	const PAGE_IMAGE_META = '_ttpc_page_image_id';
 	const PAGE_TITLE_META = '_ttpc_page_card_title';
@@ -29,7 +29,6 @@ final class Tumtook_Page_Product_Cards
 		add_action('add_meta_boxes', array($this, 'register_meta_box'));
 		add_action('save_post_page', array($this, 'save_meta'));
 		add_action('admin_enqueue_scripts', array($this, 'enqueue_admin_assets'));
-		add_shortcode(self::SHORTCODE, array($this, 'render_shortcode'));
 	}
 
 	public function register_meta_box()

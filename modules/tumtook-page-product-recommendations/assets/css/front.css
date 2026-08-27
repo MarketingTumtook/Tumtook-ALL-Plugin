@@ -549,12 +549,6 @@ body.ttpr-slider-page {
   padding: 0;
 }
 
-.ttpr-section[data-ttpr-slider] .ttpr-dot:focus::before,
-.ttpr-section[data-ttpr-slider] .ttpr-dot:focus-visible::before,
-.ttpr-section[data-ttpr-slider] .ttpr-dot:active::before {
-  background-color: var(--ttpr-accent) !important;
-}
-
 .ttpr-dot:hover::before{
   background-color: var(--ttpr-accent) !important;
 }

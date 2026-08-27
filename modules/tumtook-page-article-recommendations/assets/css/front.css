@@ -475,12 +475,6 @@
   padding: 0;
 }
 
-.ttar-section[data-ttar-slider] .ttar-dot:focus::before,
-.ttar-section[data-ttar-slider] .ttar-dot:focus-visible::before,
-.ttar-section[data-ttar-slider] .ttar-dot:active::before {
-  background-color: var(--ttar-accentdot) !important;
-}
-
 .ttar-dot:hover::before{
   background-color: var(--ttar-accentdot) !important;
 }

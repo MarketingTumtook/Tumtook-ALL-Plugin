@@ -373,12 +373,6 @@
   user-select: none;
 }
 
-.ttbs-showcase .ttbs-showcase__dot:focus::before,
-.ttbs-showcase .ttbs-showcase__dot:focus-visible::before,
-.ttbs-showcase .ttbs-showcase__dot:active::before {
-  background-color: var(--ttbs-accent) !important;
-}
-
 .ttbs-showcase__buttons {
   display: flex;
   gap: 10px;

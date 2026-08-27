@@ -493,12 +493,6 @@ body.ttpc-slider-page {
   padding: 0;
 }
 
-.ttpc-section[data-ttpc-slider] .ttpc-dot:focus::before,
-.ttpc-section[data-ttpc-slider] .ttpc-dot:focus-visible::before,
-.ttpc-section[data-ttpc-slider] .ttpc-dot:active::before {
-  background-color: var(--ttpc-accent) !important;
-}
-
 .ttpc-dot:hover::before{
     background-color: var(--ttpc-accent) !important;
 }

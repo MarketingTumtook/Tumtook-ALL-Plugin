@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Tumtook Page Product Recommendations
  * Description: Adds a page-based Card Products ทั้งหมด slider with manual page selection, price fields, and a layout tailored for Tumtook landing pages.
- * Version: 1.1.24
+ * Version: 1.1.26
  * Author: Tumtook
  * Text Domain: tumtook-page-product-recommendations
  */
@@ -13,14 +13,20 @@ if (!defined('ABSPATH')) {
 
 final class Tumtook_Page_Product_Recommendations
 {
-	const VERSION = '1.1.24';
+	const VERSION = '1.1.26';
 	const META_KEY = '_tt_page_product_recommendations';
 	const PAGE_PRICE_META = '_ttpr_page_price';
 	const PAGE_BADGE_META = '_ttpr_page_badge';
 	const PAGE_IMAGE_META = '_ttpr_page_image_id';
 	const PAGE_TITLE_META = '_ttpr_page_card_title';
+	const LEGACY_META_KEY = '_tt_page_product_cards';
+	const LEGACY_PAGE_IMAGE_META = '_ttpc_page_image_id';
+	const LEGACY_PAGE_TITLE_META = '_ttpc_page_card_title';
+	const LEGACY_PAGE_PRICE_META = '_ttpc_page_price';
 	const CACHE_VERSION_OPTION = '_ttpr_cache_version';
+	const LEGACY_CACHE_VERSION_OPTION = '_ttpc_cache_version';
 	const SHORTCODE = 'tumtook_recommended_products';
+	const LEGACY_SHORTCODE = 'tumtook_product_cards';
 	const FONT_HANDLE = 'tumtook-kanit-font';
 
 	private $rendered_posts = array();
@@ -31,6 +37,7 @@ final class Tumtook_Page_Product_Recommendations
 		add_action('save_post_page', array($this, 'save_meta'));
 		add_action('admin_enqueue_scripts', array($this, 'enqueue_admin_assets'));
 		add_shortcode(self::SHORTCODE, array($this, 'render_shortcode'));
+		add_shortcode(self::LEGACY_SHORTCODE, array($this, 'render_shortcode'));
 	}
 
 	public function register_meta_box()
@@ -59,7 +66,7 @@ final class Tumtook_Page_Product_Recommendations
 		wp_enqueue_script(
 			'ttpr-admin',
 			plugin_dir_url(__FILE__) . 'assets/js/admin.js',
-			array('jquery', 'jquery-ui-sortable'),
+			array('jquery'),
 			$this->get_asset_version('assets/js/admin.js'),
 			true
 		);
@@ -94,7 +101,7 @@ final class Tumtook_Page_Product_Recommendations
 			'view_all_label' => __('สินค้าสร้างรายได้', 'tumtook-page-product-recommendations'),
 			'view_all_url' => '',
 			'button_label' => __('ดูรายละเอียด', 'tumtook-page-product-recommendations'),
-			'limit' => '0',
+			'limit' => '6',
 			'related_page_ids' => '',
 		);
 	}
@@ -132,6 +139,14 @@ final class Tumtook_Page_Product_Recommendations
 	private function get_settings($post_id)
 	{
 		$saved = get_post_meta($post_id, self::META_KEY, true);
+		$legacy_saved = get_post_meta($post_id, self::LEGACY_META_KEY, true);
+		$has_saved = is_array($saved) && !empty($saved);
+		$has_legacy_saved = is_array($legacy_saved) && !empty($legacy_saved);
+
+		if (!$has_saved && $has_legacy_saved) {
+			$saved = $legacy_saved;
+		}
+
 		$settings = wp_parse_args(is_array($saved) ? $saved : array(), $this->get_default_settings());
 
 		$settings['enabled'] = !empty($settings['enabled']) ? '1' : '0';
@@ -141,7 +156,7 @@ final class Tumtook_Page_Product_Recommendations
 		$settings['view_all_url'] = esc_url_raw($settings['view_all_url']);
 		$settings['button_label'] = sanitize_text_field($settings['button_label']);
 		$settings['limit'] = (string) max(0, min(99, absint($settings['limit'])));
-		$settings['related_page_ids'] = sanitize_text_field($settings['related_page_ids']);
+		$settings['related_page_ids'] = '';
 
 		return $settings;
 	}
@@ -149,34 +164,40 @@ final class Tumtook_Page_Product_Recommendations
 	private function has_saved_settings($post_id)
 	{
 		$saved = get_post_meta($post_id, self::META_KEY, true);
-		return is_array($saved) && !empty($saved);
+		$legacy_saved = get_post_meta($post_id, self::LEGACY_META_KEY, true);
+		return (is_array($saved) && !empty($saved)) || (is_array($legacy_saved) && !empty($legacy_saved));
 	}
 
 	private function get_page_card_meta($post_id)
 	{
 		$image_id = absint(get_post_meta($post_id, self::PAGE_IMAGE_META, true));
+		$legacy_image_id = absint(get_post_meta($post_id, self::LEGACY_PAGE_IMAGE_META, true));
 
 		return array(
-			'price' => sanitize_text_field((string) get_post_meta($post_id, self::PAGE_PRICE_META, true)),
+			'price' => $this->first_filled_meta_value($post_id, array(self::PAGE_PRICE_META, self::LEGACY_PAGE_PRICE_META)),
 			'badge' => sanitize_key((string) get_post_meta($post_id, self::PAGE_BADGE_META, true)),
-			'image_id' => $image_id,
-			'image' => $image_id ? wp_get_attachment_image_url($image_id, 'large') : '',
-			'title' => sanitize_text_field((string) get_post_meta($post_id, self::PAGE_TITLE_META, true)),
+			'image_id' => $image_id ? $image_id : $legacy_image_id,
+			'image' => $image_id ? wp_get_attachment_image_url($image_id, 'large') : ($legacy_image_id ? wp_get_attachment_image_url($legacy_image_id, 'large') : ''),
+			'title' => $this->first_filled_meta_value($post_id, array(self::PAGE_TITLE_META, self::LEGACY_PAGE_TITLE_META)),
 		);
+	}
+
+	private function first_filled_meta_value($post_id, $meta_keys)
+	{
+		foreach ($meta_keys as $meta_key) {
+			$value = sanitize_text_field((string) get_post_meta($post_id, $meta_key, true));
+			if ('' !== $value) {
+				return $value;
+			}
+		}
+
+		return '';
 	}
 
 	public function render_meta_box($post)
 	{
 		$settings = $this->get_settings($post->ID);
 		$page_meta = $this->get_page_card_meta($post->ID);
-		$selected_ids = $this->parse_id_list($settings['related_page_ids']);
-		$available_pages = get_pages(
-			array(
-				'sort_column' => 'menu_order,post_title',
-				'sort_order' => 'ASC',
-				'exclude' => array($post->ID),
-			)
-		);
 
 		wp_nonce_field('tt_page_product_recommendations_save', 'tt_page_product_recommendations_nonce');
 		?>
@@ -268,54 +289,6 @@ final class Tumtook_Page_Product_Recommendations
 				width: max-content
 			}
 
-			.ttpr-selected-pages {
-				display: flex;
-				flex-wrap: wrap;
-				gap: 8px;
-				margin-top: 10px;
-				min-height: 38px
-			}
-
-			.ttpr-page-chip {
-				display: inline-flex;
-				align-items: center;
-				gap: 8px;
-				padding: 8px 10px;
-				border: 1px solid #dcdcde;
-				border-radius: 999px;
-				background: #f6f7f7;
-				cursor: move;
-				user-select: none
-			}
-
-			.ttpr-page-chip.is-dragging {
-				opacity: .72;
-				box-shadow: 0 8px 18px rgba(0, 0, 0, .12)
-			}
-
-			.ttpr-page-chip-placeholder {
-				min-width: 92px;
-				min-height: 34px;
-				border: 1px dashed #8c8f94;
-				border-radius: 999px;
-				background: #fff
-			}
-
-			.ttpr-page-chip__label {
-				font-size: 13px;
-				line-height: 1.2
-			}
-
-			.ttpr-page-chip__remove {
-				border: 0;
-				background: transparent;
-				color: #6b7280;
-				font-size: 18px;
-				line-height: 1;
-				cursor: pointer;
-				padding: 0
-			}
-
 			@media (max-width:782px) {
 				.ttpr-admin-grid {
 					grid-template-columns: 1fr
@@ -330,7 +303,7 @@ final class Tumtook_Page_Product_Recommendations
 			<div class="ttpr-admin-panel">
 				<h3><?php esc_html_e('ข้อมูลการ์ดของ Page นี้', 'tumtook-page-product-recommendations'); ?></h3>
 				<p class="ttpr-admin-note">
-					<?php esc_html_e('ข้อมูลส่วนนี้จะถูกใช้เมื่อ page นี้ถูกเลือกไปแสดงใน section สินค้าแนะนำของหน้าอื่น', 'tumtook-page-product-recommendations'); ?>
+					<?php esc_html_e('ข้อมูลส่วนนี้จะถูกใช้เมื่อ page นี้ถูกสุ่มไปแสดงใน section สินค้าแนะนำของหน้าอื่น', 'tumtook-page-product-recommendations'); ?>
 				</p>
 				<div class="ttpr-admin-grid" style="margin-top:16px">
 					<div class="ttpr-admin-field ttpr-admin-field--full">
@@ -390,7 +363,7 @@ final class Tumtook_Page_Product_Recommendations
 			<div class="ttpr-admin-panel">
 				<h3><?php esc_html_e('Section สินค้าแนะนำของหน้านี้', 'tumtook-page-product-recommendations'); ?></h3>
 				<p class="ttpr-admin-note">
-					<?php esc_html_e('เลือกว่าจะให้หน้านี้แสดงสินค้าแนะนำจาก page ไหนบ้าง โดยใส่ ID ของ page ที่ต้องการแสดง', 'tumtook-page-product-recommendations'); ?>
+					<?php esc_html_e('Section นี้จะสุ่มสินค้าแนะนำจาก published pages โดยอัตโนมัติ ไม่ต้องเลือก page รายตัวจากหลังบ้าน', 'tumtook-page-product-recommendations'); ?>
 				</p>
 
 				<div class="ttpr-admin-checklist" style="margin-top:16px">
@@ -410,7 +383,7 @@ final class Tumtook_Page_Product_Recommendations
 						<input id="ttpr-limit" type="number" min="0" max="99" name="ttpr_settings[limit]"
 							value="<?php echo esc_attr($settings['limit']); ?>" />
 						<p class="ttpr-admin-hint">
-							<?php esc_html_e('ใส่ 0 เพื่อดึงทุกการ์ดที่เลือกไว้ทั้งหมด หากไม่ต้องการให้แสดง section นี้ ให้เอาติ๊ก "เปิดใช้งาน section นี้" ออกแทน', 'tumtook-page-product-recommendations'); ?>
+							<?php esc_html_e('จำนวน page ที่จะสุ่มมาแสดง ใส่ 0 เพื่อใช้ค่าเริ่มต้น 6 การ์ด', 'tumtook-page-product-recommendations'); ?>
 						</p>
 					</div>
 					<div class="ttpr-admin-field">
@@ -439,38 +412,6 @@ final class Tumtook_Page_Product_Recommendations
 							readonly />
 						<p class="ttpr-admin-hint">
 							<?php esc_html_e('หากไม่ต้องการให้แสดง section นี้ ให้เอาติ๊ก "เปิดใช้งาน section นี้" ออกได้เลย', 'tumtook-page-product-recommendations'); ?>
-						</p>
-					</div>
-					<div class="ttpr-admin-field ttpr-admin-field--full">
-						<label
-							for="ttpr-related-page-picker"><?php esc_html_e('Page ที่ต้องการแสดง', 'tumtook-page-product-recommendations'); ?></label>
-						<input type="hidden" id="ttpr-related-page-ids" name="ttpr_settings[related_page_ids]"
-							value="<?php echo esc_attr($settings['related_page_ids']); ?>" />
-						<select id="ttpr-related-page-picker">
-							<option value="">
-								<?php esc_html_e('เลือก page ที่ต้องการเพิ่ม', 'tumtook-page-product-recommendations'); ?>
-							</option>
-							<?php foreach ($available_pages as $available_page): ?>
-								<option value="<?php echo esc_attr($available_page->ID); ?>">
-									<?php echo esc_html(get_the_title($available_page->ID)); ?>
-								</option>
-							<?php endforeach; ?>
-						</select>
-						<div class="ttpr-selected-pages" id="ttpr-selected-pages">
-							<?php foreach ($selected_ids as $selected_id): ?>
-								<?php $selected_title = get_the_title($selected_id); ?>
-								<?php if (!$selected_title): ?>
-									<?php continue; ?>
-								<?php endif; ?>
-								<span class="ttpr-page-chip" data-page-id="<?php echo esc_attr($selected_id); ?>">
-									<span class="ttpr-page-chip__label"><?php echo esc_html($selected_title); ?></span>
-									<button type="button" class="ttpr-page-chip__remove"
-										aria-label="<?php esc_attr_e('Remove page', 'tumtook-page-product-recommendations'); ?>">×</button>
-								</span>
-							<?php endforeach; ?>
-						</div>
-						<p class="ttpr-admin-hint">
-							<?php esc_html_e('เลือกชื่อ page จาก dropdown ได้เลย ลากเพื่อสลับตำแหน่ง และกด x เพื่อลบออกจากรายการ', 'tumtook-page-product-recommendations'); ?>
 						</p>
 					</div>
 				</div>
@@ -511,7 +452,7 @@ final class Tumtook_Page_Product_Recommendations
 		$settings['view_all_url'] = isset($raw['view_all_url']) ? esc_url_raw($raw['view_all_url']) : '';
 		$settings['button_label'] = isset($raw['button_label']) ? sanitize_text_field($raw['button_label']) : $settings['button_label'];
 		$settings['limit'] = (string) max(0, min(99, absint(isset($raw['limit']) ? $raw['limit'] : 0)));
-		$settings['related_page_ids'] = isset($raw['related_page_ids']) ? sanitize_text_field($raw['related_page_ids']) : '';
+		$settings['related_page_ids'] = '';
 		update_post_meta($post_id, self::META_KEY, $settings);
 
 		$page_meta = isset($_POST['ttpr_page_meta']) ? wp_unslash($_POST['ttpr_page_meta']) : array();
@@ -576,11 +517,15 @@ final class Tumtook_Page_Product_Recommendations
 			return $is_editor_preview ? $this->render_section(0, $this->get_default_settings(), true) : '';
 		}
 
+		if (!$is_editor_preview && in_array($post_id, $this->rendered_posts, true)) {
+			return '';
+		}
+
 		$settings = $this->get_settings($post_id);
 		$has_saved_settings = $this->has_saved_settings($post_id);
 
 		if (!$has_saved_settings) {
-			return $is_editor_preview ? $this->render_section($post_id, $settings, true) : '';
+			return $this->render_section($post_id, $settings, $is_editor_preview);
 		}
 
 		if ('1' !== $settings['enabled']) {
@@ -594,7 +539,7 @@ final class Tumtook_Page_Product_Recommendations
 	{
 		$this->register_front_assets();
 
-		$items = $this->get_recommended_pages($settings);
+		$items = $this->get_recommended_pages($post_id, $settings);
 		$using_placeholders = false;
 
 		if (empty($items)) {
@@ -702,20 +647,24 @@ final class Tumtook_Page_Product_Recommendations
 		return ob_get_clean();
 	}
 
-	private function get_recommended_pages($settings)
+	private function get_recommended_pages($post_id, $settings)
 	{
-		$page_ids = $this->parse_id_list($settings['related_page_ids']);
 		$limit = isset($settings['limit']) ? absint($settings['limit']) : 0;
-		$cache_key = 'ttpr_pages_' . md5(wp_json_encode($settings) . '|' . $limit . '|' . self::VERSION . '|' . $this->get_cache_version());
-		$cached = get_transient($cache_key);
+		$limit = $limit > 0 ? $limit : 6;
+		$exclude_ids = $post_id ? array(absint($post_id)) : array();
 
-		if (false !== $cached) {
-			return $cached;
-		}
-
-		if ($limit > 0) {
-			$page_ids = array_slice($page_ids, 0, $limit);
-		}
+		$page_ids = get_posts(
+			array(
+				'post_type' => 'page',
+				'post_status' => 'publish',
+				'posts_per_page' => $limit,
+				'post__not_in' => $exclude_ids,
+				'orderby' => 'rand',
+				'fields' => 'ids',
+				'no_found_rows' => true,
+				'ignore_sticky_posts' => true,
+			)
+		);
 
 		if (empty($page_ids)) {
 			return array();
@@ -751,8 +700,6 @@ final class Tumtook_Page_Product_Recommendations
 			);
 		}
 
-		set_transient($cache_key, $items, 10 * MINUTE_IN_SECONDS);
-
 		return $items;
 	}
 
@@ -773,13 +720,6 @@ final class Tumtook_Page_Product_Recommendations
 		}
 
 		return $items;
-	}
-
-	private function parse_id_list($raw_ids)
-	{
-		$ids = preg_split('/[\s,]+/', (string) $raw_ids);
-		$ids = array_filter(array_map('absint', $ids));
-		return array_values(array_unique($ids));
 	}
 
 	private function format_price($raw_price)
@@ -838,7 +778,11 @@ final class Tumtook_Page_Product_Recommendations
 
 	private function get_cache_version()
 	{
-		return (string) max(1, absint(get_option(self::CACHE_VERSION_OPTION, 1)));
+		return (string) max(
+			1,
+			absint(get_option(self::CACHE_VERSION_OPTION, 1)),
+			absint(get_option(self::LEGACY_CACHE_VERSION_OPTION, 1))
+		);
 	}
 
 	private function bump_cache_version()
