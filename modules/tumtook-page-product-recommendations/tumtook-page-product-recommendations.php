@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Tumtook Page Product Recommendations
  * Description: Adds a page-based Card Products ทั้งหมด slider with manual page selection, price fields, and a layout tailored for Tumtook landing pages.
- * Version: 1.1.26
+ * Version: 1.1.27
  * Author: Tumtook
  * Text Domain: tumtook-page-product-recommendations
  */
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
 
 final class Tumtook_Page_Product_Recommendations
 {
-	const VERSION = '1.1.26';
+	const VERSION = '1.1.27';
 	const META_KEY = '_tt_page_product_recommendations';
 	const PAGE_PRICE_META = '_ttpr_page_price';
 	const PAGE_BADGE_META = '_ttpr_page_badge';
@@ -542,9 +542,13 @@ final class Tumtook_Page_Product_Recommendations
 		$items = $this->get_recommended_pages($post_id, $settings);
 		$using_placeholders = false;
 
-		if (empty($items)) {
+		if (empty($items) && $force_placeholder) {
 			$items = $this->get_placeholder_items($settings);
 			$using_placeholders = true;
+		}
+
+		if (empty($items)) {
+			return '';
 		}
 
 		$this->rendered_posts[] = $post_id;
@@ -652,12 +656,13 @@ final class Tumtook_Page_Product_Recommendations
 		$limit = isset($settings['limit']) ? absint($settings['limit']) : 0;
 		$limit = $limit > 0 ? $limit : 6;
 		$exclude_ids = $post_id ? array(absint($post_id)) : array();
+		$query_limit = min(100, max($limit * 4, $limit));
 
 		$page_ids = get_posts(
 			array(
 				'post_type' => 'page',
 				'post_status' => 'publish',
-				'posts_per_page' => $limit,
+				'posts_per_page' => $query_limit,
 				'post__not_in' => $exclude_ids,
 				'orderby' => 'rand',
 				'fields' => 'ids',
@@ -684,6 +689,11 @@ final class Tumtook_Page_Product_Recommendations
 			$meta = $this->get_page_card_meta($page_id);
 			$image = $meta['image'] ? $meta['image'] : get_the_post_thumbnail_url($page_id, 'large');
 			$title = '' !== $meta['title'] ? $meta['title'] : get_the_title($page_id);
+
+			if (empty($image) || '' === trim(wp_strip_all_tags((string) $title))) {
+				continue;
+			}
+
 			$badge_map = array(
 				'new' => __('ใหม่', 'tumtook-page-product-recommendations'),
 				'best' => __('ขายดี', 'tumtook-page-product-recommendations'),
@@ -698,6 +708,10 @@ final class Tumtook_Page_Product_Recommendations
 				'badge' => isset($badge_map[$meta['badge']]) ? $badge_map[$meta['badge']] : '',
 				'badge_type' => $meta['badge'] ? $meta['badge'] : 'new',
 			);
+
+			if (count($items) >= $limit) {
+				break;
+			}
 		}
 
 		return $items;
