@@ -908,8 +908,6 @@ section:has(.video-rollup-slider),
 }
 
 .video-rollup-slider__button:hover,
-.video-rollup-slider__button:focus,
-.video-rollup-slider__button:focus-visible,
 .video-rollup-slider__button:active {
   background: var(--video-rollup-accent-hover) !important;
   background-color: var(--video-rollup-accent-hover) !important;
@@ -947,12 +945,8 @@ section:has(.video-rollup-slider),
 }
 
 .video-rollup-slider .video-rollup-slider__button:hover,
-.video-rollup-slider .video-rollup-slider__button:focus,
-.video-rollup-slider .video-rollup-slider__button:focus-visible,
 .video-rollup-slider .video-rollup-slider__button:active,
 .elementor .video-rollup-slider .video-rollup-slider__button:hover,
-.elementor .video-rollup-slider .video-rollup-slider__button:focus,
-.elementor .video-rollup-slider .video-rollup-slider__button:focus-visible,
 .elementor .video-rollup-slider .video-rollup-slider__button:active {
   background: var(--video-rollup-accent-hover) !important;
   background-color: var(--video-rollup-accent-hover) !important;
@@ -961,12 +955,8 @@ section:has(.video-rollup-slider),
 }
 
 .video-rollup-slider.video-rollup-slider .video-rollup-slider__button:hover,
-.video-rollup-slider.video-rollup-slider .video-rollup-slider__button:focus,
-.video-rollup-slider.video-rollup-slider .video-rollup-slider__button:focus-visible,
 .video-rollup-slider.video-rollup-slider .video-rollup-slider__button:active,
 .elementor .elementor-widget-container .video-rollup-slider .video-rollup-slider__button:hover,
-.elementor .elementor-widget-container .video-rollup-slider .video-rollup-slider__button:focus,
-.elementor .elementor-widget-container .video-rollup-slider .video-rollup-slider__button:focus-visible,
 .elementor .elementor-widget-container .video-rollup-slider .video-rollup-slider__button:active {
   background: var(--video-rollup-accent-hover) !important;
   background-color: var(--video-rollup-accent-hover) !important;
@@ -978,13 +968,61 @@ section:has(.video-rollup-slider),
 }
 
 .video-rollup-slider.video-rollup-slider .video-rollup-slider__button:hover svg,
-.video-rollup-slider.video-rollup-slider .video-rollup-slider__button:focus svg,
-.video-rollup-slider.video-rollup-slider .video-rollup-slider__button:focus-visible svg,
 .video-rollup-slider.video-rollup-slider .video-rollup-slider__button:active svg,
 .elementor .elementor-widget-container .video-rollup-slider .video-rollup-slider__button:hover svg,
-.elementor .elementor-widget-container .video-rollup-slider .video-rollup-slider__button:focus svg,
-.elementor .elementor-widget-container .video-rollup-slider .video-rollup-slider__button:focus-visible svg,
 .elementor .elementor-widget-container .video-rollup-slider .video-rollup-slider__button:active svg {
+  stroke: #fff !important;
+}
+
+.video-rollup-slider .video-rollup-slider__button:focus,
+.video-rollup-slider .video-rollup-slider__button:focus-visible,
+.elementor .video-rollup-slider .video-rollup-slider__button:focus,
+.elementor .video-rollup-slider .video-rollup-slider__button:focus-visible,
+.video-rollup-slider.video-rollup-slider .video-rollup-slider__button:focus,
+.video-rollup-slider.video-rollup-slider .video-rollup-slider__button:focus-visible,
+.elementor .elementor-widget-container .video-rollup-slider .video-rollup-slider__button:focus,
+.elementor .elementor-widget-container .video-rollup-slider .video-rollup-slider__button:focus-visible {
+  background: transparent !important;
+  background-color: transparent !important;
+  border-color: rgba(63, 53, 45, 0.14) !important;
+  color: #39322d !important;
+  outline: 0 !important;
+  text-decoration: none !important;
+}
+
+.video-rollup-slider.video-rollup-slider .video-rollup-slider__button:focus svg,
+.video-rollup-slider.video-rollup-slider .video-rollup-slider__button:focus-visible svg,
+.elementor .elementor-widget-container .video-rollup-slider .video-rollup-slider__button:focus svg,
+.elementor .elementor-widget-container .video-rollup-slider .video-rollup-slider__button:focus-visible svg {
+  stroke: currentColor !important;
+}
+
+.video-rollup-slider .video-rollup-slider__button:focus:hover,
+.video-rollup-slider .video-rollup-slider__button:focus-visible:hover,
+.video-rollup-slider .video-rollup-slider__button:focus:active,
+.video-rollup-slider .video-rollup-slider__button:focus-visible:active,
+.elementor .video-rollup-slider .video-rollup-slider__button:focus:hover,
+.elementor .video-rollup-slider .video-rollup-slider__button:focus-visible:hover,
+.elementor .video-rollup-slider .video-rollup-slider__button:focus:active,
+.elementor .video-rollup-slider .video-rollup-slider__button:focus-visible:active,
+.elementor .elementor-widget-container .video-rollup-slider .video-rollup-slider__button:focus:hover,
+.elementor .elementor-widget-container .video-rollup-slider .video-rollup-slider__button:focus-visible:hover,
+.elementor .elementor-widget-container .video-rollup-slider .video-rollup-slider__button:focus:active,
+.elementor .elementor-widget-container .video-rollup-slider .video-rollup-slider__button:focus-visible:active {
+  background: var(--video-rollup-accent-hover) !important;
+  background-color: var(--video-rollup-accent-hover) !important;
+  border-color: transparent !important;
+  color: #fff !important;
+}
+
+.video-rollup-slider.video-rollup-slider .video-rollup-slider__button:focus:hover svg,
+.video-rollup-slider.video-rollup-slider .video-rollup-slider__button:focus-visible:hover svg,
+.video-rollup-slider.video-rollup-slider .video-rollup-slider__button:focus:active svg,
+.video-rollup-slider.video-rollup-slider .video-rollup-slider__button:focus-visible:active svg,
+.elementor .elementor-widget-container .video-rollup-slider .video-rollup-slider__button:focus:hover svg,
+.elementor .elementor-widget-container .video-rollup-slider .video-rollup-slider__button:focus-visible:hover svg,
+.elementor .elementor-widget-container .video-rollup-slider .video-rollup-slider__button:focus:active svg,
+.elementor .elementor-widget-container .video-rollup-slider .video-rollup-slider__button:focus-visible:active svg {
   stroke: #fff !important;
 }
 

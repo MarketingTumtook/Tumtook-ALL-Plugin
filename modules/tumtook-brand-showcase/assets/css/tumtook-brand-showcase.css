@@ -382,7 +382,7 @@
   -webkit-appearance: none;
   align-items: center;
   appearance: none;
-  background: transparent;
+  background: #fff !important;
   background-color: #fff !important;
   border: 1px solid rgba(63, 53, 45, 0.14);
   border-radius: 999px;
@@ -404,20 +404,44 @@
 }
 
 .ttbs-showcase__button:hover,
-.ttbs-showcase__button:focus-visible {
+.ttbs-showcase__button:active {
   background: var(--ttbs-accent) !important;
   background-color: var(--ttbs-accent) !important;
-  color: var(--ttbs-dot) !important;
+  color: #fff !important;
   outline: none;
 }
 
 .ttbs-showcase__button:focus,
-.ttbs-showcase__button:focus-visible,
-.ttbs-showcase__button:hover,
-.ttbs-showcase__button:active {
-  background: transparent;
-  background-color: transparent;
+.ttbs-showcase__button:focus-visible {
+  background: #fff !important;
+  background-color: #fff !important;
+  color: #39322d !important;
+  outline: 0 !important;
   text-decoration: none !important;
+}
+
+.ttbs-showcase__button:focus:hover,
+.ttbs-showcase__button:focus-visible:hover,
+.ttbs-showcase__button:focus:active,
+.ttbs-showcase__button:focus-visible:active {
+  background: var(--ttbs-accent) !important;
+  background-color: var(--ttbs-accent) !important;
+  color: #fff !important;
+}
+
+.ttbs-showcase__button:disabled,
+.ttbs-showcase__button:disabled:hover,
+.ttbs-showcase__button:disabled:focus,
+.ttbs-showcase__button:disabled:focus-visible,
+.ttbs-showcase__button:disabled:active {
+  background: #fff !important;
+  background-color: #fff !important;
+  border-color: rgba(63, 53, 45, 0.14) !important;
+  box-shadow: none !important;
+  color: rgba(57, 50, 45, 0.34) !important;
+  cursor: default;
+  opacity: 1;
+  outline: 0 !important;
 }
 
 .ttbs-showcase__button svg {

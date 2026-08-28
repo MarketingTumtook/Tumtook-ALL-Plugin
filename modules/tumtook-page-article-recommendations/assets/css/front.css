@@ -516,10 +516,27 @@
 }
 
 .ttar-arrow:hover,
-.ttar-arrow:focus {
-  background: var(--ttar-accent);
-  border-color: var(--ttar-accent);
-  color: #fff;
+.ttar-arrow:active {
+  background: var(--ttar-accent) !important;
+  border-color: var(--ttar-accent) !important;
+  color: #fff !important;
+}
+
+.ttar-arrow:focus,
+.ttar-arrow:focus-visible {
+  background: #fff !important;
+  border-color: rgba(63, 53, 45, 0.14) !important;
+  color: #39322d !important;
+  outline: 0 !important;
+}
+
+.ttar-arrow:focus:hover,
+.ttar-arrow:focus-visible:hover,
+.ttar-arrow:focus:active,
+.ttar-arrow:focus-visible:active {
+  background: var(--ttar-accent) !important;
+  border-color: var(--ttar-accent) !important;
+  color: #fff !important;
 }
 
 .ttar-arrow svg {
