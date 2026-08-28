@@ -618,11 +618,32 @@ body.ttpr-slider-page {
 }
 
 .ttpr-arrow--prev:hover,
+.ttpr-arrow--prev:active,
+.ttpr-arrow--next:hover,
+.ttpr-arrow--next:active {
+  background: var(--ttpr-accent-hover) !important;
+  border-color: transparent !important;
+  color: #fff !important;
+}
+
 .ttpr-arrow--prev:focus,
 .ttpr-arrow--prev:focus-visible,
-.ttpr-arrow--next:hover,
 .ttpr-arrow--next:focus,
 .ttpr-arrow--next:focus-visible {
+  background: #fff !important;
+  border-color: rgba(63, 53, 45, 0.14) !important;
+  color: #39322d !important;
+  outline: 0 !important;
+}
+
+.ttpr-arrow--prev:focus:hover,
+.ttpr-arrow--prev:focus-visible:hover,
+.ttpr-arrow--prev:focus:active,
+.ttpr-arrow--prev:focus-visible:active,
+.ttpr-arrow--next:focus:hover,
+.ttpr-arrow--next:focus-visible:hover,
+.ttpr-arrow--next:focus:active,
+.ttpr-arrow--next:focus-visible:active {
   background: var(--ttpr-accent-hover) !important;
   border-color: transparent !important;
   color: #fff !important;
@@ -698,8 +719,6 @@ body.ttpr-slider-page {
 }
 
 .ttpr-section .ttpr-arrow:hover,
-.ttpr-section .ttpr-arrow:focus,
-.ttpr-section .ttpr-arrow:focus-visible,
 .ttpr-section .ttpr-arrow:active {
   background: var(--ttpr-accent-hover) !important;
   background-color: var(--ttpr-accent-hover) !important;
@@ -709,9 +728,39 @@ body.ttpr-slider-page {
 }
 
 .ttpr-section .ttpr-arrow:hover path,
-.ttpr-section .ttpr-arrow:focus path,
-.ttpr-section .ttpr-arrow:focus-visible path,
 .ttpr-section .ttpr-arrow:active path {
+  stroke: #fff !important;
+}
+
+.ttpr-section .ttpr-arrow:focus,
+.ttpr-section .ttpr-arrow:focus-visible {
+  background: #fff !important;
+  background-color: #fff !important;
+  border-color: rgba(63, 53, 45, 0.14) !important;
+  box-shadow: none !important;
+  color: #39322d !important;
+  outline: 0 !important;
+}
+
+.ttpr-section .ttpr-arrow:focus path,
+.ttpr-section .ttpr-arrow:focus-visible path {
+  stroke: currentColor !important;
+}
+
+.ttpr-section .ttpr-arrow:focus:hover,
+.ttpr-section .ttpr-arrow:focus-visible:hover,
+.ttpr-section .ttpr-arrow:focus:active,
+.ttpr-section .ttpr-arrow:focus-visible:active {
+  background: var(--ttpr-accent-hover) !important;
+  background-color: var(--ttpr-accent-hover) !important;
+  border-color: transparent !important;
+  color: #fff !important;
+}
+
+.ttpr-section .ttpr-arrow:focus:hover path,
+.ttpr-section .ttpr-arrow:focus-visible:hover path,
+.ttpr-section .ttpr-arrow:focus:active path,
+.ttpr-section .ttpr-arrow:focus-visible:active path {
   stroke: #fff !important;
 }
 
