@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Tumtook Page Article Recommendations
  * Description: Adds a random article slider section for Tumtook pages and posts with a layout tailored to article recommendations.
- * Version: 1.0.20
+ * Version: 1.0.21
  * Author: Tumtook
  * Text Domain: tumtook-page-article-recommendations
  */
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
 
 final class Tumtook_Page_Article_Recommendations
 {
-	const VERSION = '1.0.20';
+	const VERSION = '1.0.21';
 	const META_KEY = '_tt_page_article_recommendations';
 	const SHORTCODE = 'tumtook_recommended_articles';
 	const FONT_HANDLE = 'tumtook-kanit-font';
@@ -26,6 +26,8 @@ final class Tumtook_Page_Article_Recommendations
 		add_action('add_meta_boxes', array($this, 'register_meta_box'));
 		add_action('save_post', array($this, 'save_meta'));
 		add_action('admin_enqueue_scripts', array($this, 'enqueue_admin_assets'));
+		add_action('wp_ajax_ttar_refresh_items', array($this, 'ajax_get_items'));
+		add_action('wp_ajax_nopriv_ttar_refresh_items', array($this, 'ajax_get_items'));
 		add_shortcode(self::SHORTCODE, array($this, 'render_shortcode'));
 	}
 
@@ -409,12 +411,18 @@ final class Tumtook_Page_Article_Recommendations
 			wp_enqueue_style('tt-page-article-recommendations');
 			wp_enqueue_script('tt-page-article-recommendations');
 
-			$instance_id = 'ttar-' . ($post_id ? $post_id : 'preview') . '-' . wp_rand(100, 999);
-			$view_all_url = $this->get_view_all_url($settings);
+				$instance_id = 'ttar-' . ($post_id ? $post_id : 'preview') . '-' . wp_rand(100, 999);
+				$view_all_url = $this->get_view_all_url($settings);
+				$enable_dynamic_refresh = !$force_placeholder && !$this->is_editor_preview_context();
 
-			ob_start();
-			?>
-			<section class="ttar-section" data-ttar-slider id="<?php echo esc_attr($instance_id); ?>">
+				ob_start();
+				?>
+				<section class="ttar-section" data-ttar-slider data-ttar-dynamic="<?php echo $enable_dynamic_refresh ? '1' : '0'; ?>"
+					data-ttar-ajax-url="<?php echo esc_url(admin_url('admin-ajax.php')); ?>"
+					data-ttar-action="ttar_refresh_items"
+					data-ttar-post-id="<?php echo esc_attr($post_id); ?>"
+					data-ttar-limit="<?php echo esc_attr(max(0, absint($settings['limit']))); ?>"
+					id="<?php echo esc_attr($instance_id); ?>">
 				<div class="ttar-shell">
 					<div class="ttar-header">
 						<h2 class="ttar-title">
@@ -434,56 +442,11 @@ final class Tumtook_Page_Article_Recommendations
 						</div>
 					<?php endif; ?>
 
-					<div class="ttar-track-wrap">
-						<div class="ttar-track" data-ttar-track>
-								<?php foreach ($items as $item): ?>
-									<article class="ttar-card" data-card-url="<?php echo esc_url($item['url']); ?>">
-										<a class="ttar-card-link" href="<?php echo esc_url($item['url']); ?>"
-											aria-label="<?php echo esc_attr($item['title']); ?>" draggable="false"></a>
-										<a class="ttar-image-link<?php echo empty($item['image']) ? ' ttar-image-link--missing' : ''; ?>"
-											href="<?php echo esc_url($item['url']); ?>" draggable="false">
-										<?php if (!empty($item['badge'])): ?>
-											<span class="ttar-badge"
-												style="<?php echo esc_attr($this->get_badge_style($item['badge'])); ?>">
-												<?php echo esc_html($item['badge']); ?>
-											</span>
-										<?php endif; ?>
-										<?php if (!empty($item['image'])): ?>
-											<img class="ttar-image" src="<?php echo esc_url($item['image']); ?>"
-												alt="<?php echo esc_attr($item['title']); ?>" loading="lazy" decoding="async"
-												onerror="this.style.display='none';this.parentNode.classList.add('ttar-image-link--missing');" />
-										<?php endif; ?>
-										<div class="ttar-image ttar-image--placeholder" aria-hidden="true">
-											<div class="ttar-image-fallback">
-												<span class="ttar-image-fallback-badge">NO IMAGE</span>
-												<div class="ttar-image-fallback-box"></div>
-												<div class="ttar-image-fallback-lines">
-													<span></span>
-													<span></span>
-													<span></span>
-												</div>
-											</div>
-										</div>
-									</a>
-									<div class="ttar-content">
-										<h3 class="ttar-article-title">
-											<?php echo esc_html($item['title']); ?>
-										</h3>
-										<a class="ttar-button" href="<?php echo esc_url($item['url']); ?>">
-											<span class="ttar-button-arrow" aria-hidden="true">
-												<svg viewBox="0 0 20 20" focusable="false" aria-hidden="true">
-													<path d="M5 15L15 5M7 5h8v8" />
-												</svg>
-											</span>
-											<span class="ttar-button-label">
-												<?php echo esc_html($settings['button_label']); ?>
-											</span>
-										</a>
-									</div>
-								</article>
-							<?php endforeach; ?>
+						<div class="ttar-track-wrap">
+							<div class="ttar-track" data-ttar-track>
+								<?php echo $this->render_article_items($items, $settings); ?>
+							</div>
 						</div>
-					</div>
 
 					<div class="ttar-controls">
 						<div class="ttar-pagination" data-ttar-pagination></div>
@@ -509,19 +472,121 @@ final class Tumtook_Page_Article_Recommendations
 		} catch (Throwable $e) {
 			error_log('[Tumtook Page Article Recommendations] render_section failed: ' . $e->getMessage());
 			return '';
+			}
 		}
-	}
 
-	private function get_recommended_articles($post_id, $settings)
-	{
+		private function render_article_items($items, $settings)
+		{
+			ob_start();
+
+			foreach ($items as $item):
+				?>
+				<article class="ttar-card" data-card-url="<?php echo esc_url($item['url']); ?>">
+					<a class="ttar-card-link" href="<?php echo esc_url($item['url']); ?>"
+						aria-label="<?php echo esc_attr($item['title']); ?>" draggable="false"></a>
+					<a class="ttar-image-link<?php echo empty($item['image']) ? ' ttar-image-link--missing' : ''; ?>"
+						href="<?php echo esc_url($item['url']); ?>" draggable="false">
+						<?php if (!empty($item['badge'])): ?>
+							<span class="ttar-badge" style="<?php echo esc_attr($this->get_badge_style($item['badge'])); ?>">
+								<?php echo esc_html($item['badge']); ?>
+							</span>
+						<?php endif; ?>
+						<?php if (!empty($item['image'])): ?>
+							<img class="ttar-image" src="<?php echo esc_url($item['image']); ?>"
+								alt="<?php echo esc_attr($item['title']); ?>" loading="lazy" decoding="async"
+								onerror="this.style.display='none';this.parentNode.classList.add('ttar-image-link--missing');" />
+						<?php endif; ?>
+						<div class="ttar-image ttar-image--placeholder" aria-hidden="true">
+							<div class="ttar-image-fallback">
+								<span class="ttar-image-fallback-badge">NO IMAGE</span>
+								<div class="ttar-image-fallback-box"></div>
+								<div class="ttar-image-fallback-lines">
+									<span></span>
+									<span></span>
+									<span></span>
+								</div>
+							</div>
+						</div>
+					</a>
+					<div class="ttar-content">
+						<h3 class="ttar-article-title">
+							<?php echo esc_html($item['title']); ?>
+						</h3>
+						<a class="ttar-button" href="<?php echo esc_url($item['url']); ?>">
+							<span class="ttar-button-arrow" aria-hidden="true">
+								<svg viewBox="0 0 20 20" focusable="false" aria-hidden="true">
+									<path d="M5 15L15 5M7 5h8v8" />
+								</svg>
+							</span>
+							<span class="ttar-button-label">
+								<?php echo esc_html($settings['button_label']); ?>
+							</span>
+						</a>
+					</div>
+				</article>
+				<?php
+			endforeach;
+
+			return ob_get_clean();
+		}
+
+		public function ajax_get_items()
+		{
+			$post_id = isset($_REQUEST['post_id']) ? absint(wp_unslash($_REQUEST['post_id'])) : 0;
+			$request_limit = isset($_REQUEST['limit']) ? absint(wp_unslash($_REQUEST['limit'])) : 0;
+
+			$this->send_no_cache_headers();
+			wp_send_json_success($this->get_dynamic_items_payload($post_id, $request_limit));
+		}
+
+		private function get_dynamic_items_payload($post_id, $request_limit = 0)
+		{
+			$settings = $this->get_settings($post_id);
+
+			if ($request_limit > 0) {
+				$settings['limit'] = (string) max(1, min(10, absint($request_limit)));
+			}
+
+			if ('1' !== $settings['enabled']) {
+				return array(
+					'enabled' => false,
+					'html' => '',
+					'count' => 0,
+				);
+			}
+
+			$items = $this->get_recommended_articles($post_id, $settings, false);
+
+			return array(
+				'enabled' => true,
+				'html' => $this->render_article_items($items, $settings),
+				'count' => count($items),
+			);
+		}
+
+		private function send_no_cache_headers()
+		{
+			if (!defined('DONOTCACHEPAGE')) {
+				define('DONOTCACHEPAGE', true);
+			}
+
+			nocache_headers();
+			header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+			header('Pragma: no-cache');
+			header('Expires: Wed, 11 Jan 1984 05:00:00 GMT');
+			header('X-Tumtook-Dynamic: ttar');
+		}
+
+		private function get_recommended_articles($post_id, $settings, $use_cache = true)
+		{
 		try {
-			$limit = max(1, min(10, absint($settings['limit'])));
-			$exclude_ids = array();
-			$cache_key = 'ttar_articles_' . md5($post_id . '|' . $limit . '|' . wp_json_encode($settings) . '|' . self::VERSION . '|' . $this->get_cache_version());
-			$cached = get_transient($cache_key);
+				$limit = max(1, min(10, absint($settings['limit'])));
+				$exclude_ids = array();
+				$cache_key = 'ttar_articles_' . md5($post_id . '|' . $limit . '|' . wp_json_encode($settings) . '|' . self::VERSION . '|' . $this->get_cache_version());
+				$cached = $use_cache ? get_transient($cache_key) : false;
 
-			if (false !== $cached) {
-				return $cached;
+				if (false !== $cached) {
+					return $cached;
 			}
 
 			if ('post' === get_post_type($post_id)) {
@@ -578,9 +643,11 @@ final class Tumtook_Page_Article_Recommendations
 
 			wp_reset_postdata();
 
-			set_transient($cache_key, $items, 10 * MINUTE_IN_SECONDS);
+				if ($use_cache) {
+					set_transient($cache_key, $items, 10 * MINUTE_IN_SECONDS);
+				}
 
-			return $items;
+				return $items;
 		} catch (Throwable $e) {
 			error_log('[Tumtook Page Article Recommendations] get_recommended_articles failed: ' . $e->getMessage());
 			return array();
