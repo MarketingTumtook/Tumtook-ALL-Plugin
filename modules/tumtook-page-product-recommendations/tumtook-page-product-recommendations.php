@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Tumtook Page Product Recommendations
  * Description: Adds a page-based Card Products ทั้งหมด slider with manual page selection, price fields, and a layout tailored for Tumtook landing pages.
- * Version: 1.1.29
+ * Version: 1.1.31
  * Author: Tumtook
  * Text Domain: tumtook-page-product-recommendations
  */
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
 
 final class Tumtook_Page_Product_Recommendations
 {
-	const VERSION = '1.1.29';
+	const VERSION = '1.1.31';
 	const META_KEY = '_tt_page_product_recommendations';
 	const PAGE_PRICE_META = '_ttpr_page_price';
 	const PAGE_BADGE_META = '_ttpr_page_badge';
@@ -36,8 +36,34 @@ final class Tumtook_Page_Product_Recommendations
 		add_action('add_meta_boxes', array($this, 'register_meta_box'));
 		add_action('save_post_page', array($this, 'save_meta'));
 		add_action('admin_enqueue_scripts', array($this, 'enqueue_admin_assets'));
+		add_action('rest_api_init', array($this, 'register_rest_routes'));
+		add_action('wp_ajax_ttpr_refresh_items', array($this, 'ajax_get_items'));
+		add_action('wp_ajax_nopriv_ttpr_refresh_items', array($this, 'ajax_get_items'));
 		add_shortcode(self::SHORTCODE, array($this, 'render_shortcode'));
 		add_shortcode(self::LEGACY_SHORTCODE, array($this, 'render_shortcode'));
+	}
+
+	public function register_rest_routes()
+	{
+		register_rest_route(
+			'tumtook-product-recommendations/v1',
+			'/items',
+			array(
+				'methods' => WP_REST_Server::READABLE,
+				'callback' => array($this, 'rest_get_items'),
+				'permission_callback' => '__return_true',
+				'args' => array(
+					'post_id' => array(
+						'default' => 0,
+						'sanitize_callback' => 'absint',
+					),
+					'limit' => array(
+						'default' => 0,
+						'sanitize_callback' => 'absint',
+					),
+				),
+			)
+		);
 	}
 
 	public function register_meta_box()
@@ -557,10 +583,17 @@ final class Tumtook_Page_Product_Recommendations
 		wp_enqueue_script('tt-page-product-recommendations');
 
 		$instance_id = 'ttpr-' . ($post_id ? $post_id : 'preview') . '-' . wp_rand(100, 999);
+		$enable_dynamic_refresh = !$force_placeholder && !$this->is_editor_preview_context();
 
 		ob_start();
 		?>
-		<section class="ttpr-section" data-ttpr-slider id="<?php echo esc_attr($instance_id); ?>">
+			<section class="ttpr-section" data-ttpr-slider data-ttpr-dynamic="<?php echo $enable_dynamic_refresh ? '1' : '0'; ?>"
+				data-ttpr-rest-url="<?php echo esc_url(rest_url('tumtook-product-recommendations/v1/items')); ?>"
+				data-ttpr-ajax-url="<?php echo esc_url(admin_url('admin-ajax.php')); ?>"
+				data-ttpr-action="ttpr_refresh_items"
+				data-ttpr-post-id="<?php echo esc_attr($post_id); ?>"
+				data-ttpr-limit="<?php echo esc_attr(max(0, absint($settings['limit']))); ?>"
+				id="<?php echo esc_attr($instance_id); ?>">
 			<div class="ttpr-shell">
 				<div class="ttpr-header">
 					<h2 class="ttpr-title"><?php echo esc_html($settings['title']); ?></h2>
@@ -578,54 +611,11 @@ final class Tumtook_Page_Product_Recommendations
 					</div>
 				<?php endif; ?>
 
-				<div class="ttpr-track-wrap">
-					<div class="ttpr-track" data-ttpr-track>
-						<?php foreach ($items as $item): ?>
-							<article class="ttpr-card" data-card-url="<?php echo esc_url($item['url']); ?>">
-								<a class="ttpr-card-link" href="<?php echo esc_url($item['url']); ?>"
-									aria-label="<?php echo esc_attr($item['title']); ?>" draggable="false"></a>
-								<div class="ttpr-card-media">
-									<div
-										class="ttpr-image-link<?php echo empty($item['image']) ? ' ttpr-image-link--missing' : ''; ?>">
-										<?php if (!empty($item['badge'])): ?>
-											<span
-												class="ttpr-badge ttpr-badge--<?php echo esc_attr($item['badge_type']); ?>"><?php echo esc_html($item['badge']); ?></span>
-										<?php endif; ?>
-										<?php if (!empty($item['image'])): ?>
-											<img class="ttpr-image" src="<?php echo esc_url($item['image']); ?>"
-												alt="<?php echo esc_attr($item['title']); ?>" loading="lazy" decoding="async"
-												onerror="this.style.display='none';this.parentNode.classList.add('ttpr-image-link--missing');" />
-										<?php endif; ?>
-										<div class="ttpr-image ttpr-image--placeholder" aria-hidden="true">
-											<div class="ttpr-image-fallback">
-												<span class="ttpr-image-fallback-badge">NO IMAGE</span>
-												<div class="ttpr-image-fallback-box"></div>
-												<div class="ttpr-image-fallback-lines">
-													<span></span>
-													<span></span>
-													<span></span>
-												</div>
-											</div>
-										</div>
-									</div>
-								</div>
-								<div class="ttpr-card-body">
-									<div class="ttpr-content">
-										<h3 class="ttpr-product-title"><?php echo esc_html($item['title']); ?></h3>
-										<div class="ttpr-footer">
-											<div class="ttpr-price"><?php echo esc_html($item['price']); ?></div>
-											<a class="ttpr-button" href="<?php echo esc_url($item['url']); ?>">
-												<span class="ttpr-button-arrow" aria-hidden="true"></span>
-												<span
-													class="ttpr-button-label"><?php echo esc_html($settings['button_label']); ?></span>
-											</a>
-										</div>
-									</div>
-								</div>
-							</article>
-						<?php endforeach; ?>
+					<div class="ttpr-track-wrap">
+						<div class="ttpr-track" data-ttpr-track>
+							<?php echo $this->render_card_items($items, $settings); ?>
+						</div>
 					</div>
-				</div>
 
 				<div class="ttpr-controls">
 					<div class="ttpr-pagination" data-ttpr-pagination></div>
@@ -648,7 +638,124 @@ final class Tumtook_Page_Product_Recommendations
 		</section>
 		<?php
 
-		return ob_get_clean();
+			return ob_get_clean();
+		}
+
+		private function render_card_items($items, $settings)
+		{
+			ob_start();
+
+			foreach ($items as $item):
+				?>
+				<article class="ttpr-card" data-card-url="<?php echo esc_url($item['url']); ?>">
+					<a class="ttpr-card-link" href="<?php echo esc_url($item['url']); ?>"
+						aria-label="<?php echo esc_attr($item['title']); ?>" draggable="false"></a>
+					<div class="ttpr-card-media">
+						<div class="ttpr-image-link<?php echo empty($item['image']) ? ' ttpr-image-link--missing' : ''; ?>">
+							<?php if (!empty($item['badge'])): ?>
+								<span
+									class="ttpr-badge ttpr-badge--<?php echo esc_attr($item['badge_type']); ?>"><?php echo esc_html($item['badge']); ?></span>
+							<?php endif; ?>
+							<?php if (!empty($item['image'])): ?>
+								<img class="ttpr-image" src="<?php echo esc_url($item['image']); ?>"
+									alt="<?php echo esc_attr($item['title']); ?>" loading="lazy" decoding="async"
+									onerror="this.style.display='none';this.parentNode.classList.add('ttpr-image-link--missing');" />
+							<?php endif; ?>
+							<div class="ttpr-image ttpr-image--placeholder" aria-hidden="true">
+								<div class="ttpr-image-fallback">
+									<span class="ttpr-image-fallback-badge">NO IMAGE</span>
+									<div class="ttpr-image-fallback-box"></div>
+									<div class="ttpr-image-fallback-lines">
+										<span></span>
+										<span></span>
+										<span></span>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+					<div class="ttpr-card-body">
+						<div class="ttpr-content">
+							<h3 class="ttpr-product-title"><?php echo esc_html($item['title']); ?></h3>
+							<div class="ttpr-footer">
+								<div class="ttpr-price"><?php echo esc_html($item['price']); ?></div>
+								<a class="ttpr-button" href="<?php echo esc_url($item['url']); ?>">
+									<span class="ttpr-button-arrow" aria-hidden="true"></span>
+									<span class="ttpr-button-label"><?php echo esc_html($settings['button_label']); ?></span>
+								</a>
+							</div>
+						</div>
+					</div>
+				</article>
+				<?php
+			endforeach;
+
+			return ob_get_clean();
+		}
+
+	public function rest_get_items(WP_REST_Request $request)
+	{
+		$post_id = absint($request->get_param('post_id'));
+		$request_limit = absint($request->get_param('limit'));
+		$response = rest_ensure_response($this->get_dynamic_items_payload($post_id, $request_limit));
+		$this->add_no_cache_headers($response);
+
+		return $response;
+	}
+
+	public function ajax_get_items()
+	{
+		$post_id = isset($_REQUEST['post_id']) ? absint(wp_unslash($_REQUEST['post_id'])) : 0;
+		$request_limit = isset($_REQUEST['limit']) ? absint(wp_unslash($_REQUEST['limit'])) : 0;
+
+		$this->send_no_cache_headers();
+		wp_send_json_success($this->get_dynamic_items_payload($post_id, $request_limit));
+	}
+
+	private function get_dynamic_items_payload($post_id, $request_limit = 0)
+	{
+		$settings = $this->get_settings($post_id);
+
+		if ($request_limit > 0) {
+			$settings['limit'] = (string) max(1, min(99, absint($request_limit)));
+		}
+
+		if ('1' !== $settings['enabled']) {
+			return array(
+				'enabled' => false,
+				'html' => '',
+				'count' => 0,
+			);
+		}
+
+		$items = $this->get_recommended_pages($post_id, $settings);
+
+		return array(
+			'enabled' => true,
+			'html' => $this->render_card_items($items, $settings),
+			'count' => count($items),
+		);
+	}
+
+	private function add_no_cache_headers(WP_REST_Response $response)
+	{
+		$response->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
+		$response->header('Pragma', 'no-cache');
+		$response->header('Expires', 'Wed, 11 Jan 1984 05:00:00 GMT');
+		$response->header('X-Tumtook-Dynamic', 'ttpr');
+	}
+
+	private function send_no_cache_headers()
+	{
+		if (!defined('DONOTCACHEPAGE')) {
+			define('DONOTCACHEPAGE', true);
+		}
+
+		nocache_headers();
+		header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+		header('Pragma: no-cache');
+		header('Expires: Wed, 11 Jan 1984 05:00:00 GMT');
+		header('X-Tumtook-Dynamic: ttpr');
 	}
 
 	private function get_recommended_pages($post_id, $settings)

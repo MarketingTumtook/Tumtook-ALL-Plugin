@@ -588,6 +588,91 @@
     setCurrentIndex(0);
   }
 
+  function getDynamicRefreshUrl(root) {
+    var ajaxUrl = root.getAttribute("data-ttpr-ajax-url") || "";
+    var action = root.getAttribute("data-ttpr-action") || "ttpr_refresh_items";
+    var restUrl = root.getAttribute("data-ttpr-rest-url") || "";
+    var postId = root.getAttribute("data-ttpr-post-id") || "0";
+    var limit = root.getAttribute("data-ttpr-limit") || "0";
+    var baseUrl = ajaxUrl || restUrl;
+    var url;
+
+    if (!baseUrl || root.getAttribute("data-ttpr-dynamic") !== "1") {
+      return "";
+    }
+
+    try {
+      url = new URL(baseUrl, window.location.origin);
+    } catch (error) {
+      return "";
+    }
+
+    if (ajaxUrl) {
+      url.searchParams.set("action", action);
+    }
+    url.searchParams.set("post_id", postId);
+    url.searchParams.set("limit", limit);
+    url.searchParams.set("_ttpr_nocache", Date.now().toString(36) + Math.random().toString(36).slice(2));
+
+    return url.toString();
+  }
+
+  function refreshDynamicItems(root) {
+    var track = root.querySelector(config.track);
+    var refreshUrl = getDynamicRefreshUrl(root);
+
+    if (!track || !refreshUrl || root.__ttprRefreshStarted) {
+      return Promise.resolve();
+    }
+
+    root.__ttprRefreshStarted = true;
+    root.classList.add("is-refreshing");
+
+    return fetch(refreshUrl, {
+      method: "GET",
+      credentials: "same-origin",
+      cache: "no-store",
+      headers: {
+        Accept: "application/json",
+        "Cache-Control": "no-cache"
+      }
+    })
+      .then(function (response) {
+        if (!response.ok) {
+          throw new Error("TT product recommendations refresh failed");
+        }
+
+        return response.json();
+      })
+      .then(function (payload) {
+        payload = payload && payload.success && payload.data ? payload.data : payload;
+
+        if (!payload || payload.enabled === false) {
+          root.hidden = true;
+          return;
+        }
+
+        if (typeof payload.html === "string" && payload.html.trim()) {
+          track.innerHTML = payload.html;
+        }
+      })
+      .catch(function () {
+        // Keep the server-rendered fallback when the dynamic refresh is unavailable.
+      })
+      .finally(function () {
+        root.classList.remove("is-refreshing");
+      });
+  }
+
+  function initSlider(root) {
+    if (root.__ttprInitialized) {
+      return;
+    }
+
+    root.__ttprInitialized = true;
+    setupSlider(root);
+  }
+
   document.addEventListener("DOMContentLoaded", function () {
     var sliders = document.querySelectorAll(config.root);
 
@@ -596,6 +681,10 @@
       document.body.classList.add("ttpr-slider-page");
     }
 
-    Array.prototype.forEach.call(sliders, setupSlider);
+    Array.prototype.forEach.call(sliders, function (slider) {
+      refreshDynamicItems(slider).then(function () {
+        initSlider(slider);
+      });
+    });
   });
 })();
