@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Tumtook Job Working Cards
  * Description: แสดง JetEngine Job Working posts เป็น card slider ด้วย shortcode [tumtook_job_working_cards] รองรับ post_type, taxonomy, category, category_id และ limit.
- * Version: 1.0.1
+ * Version: 1.0.2
  * Author: Tumtook
  * Text Domain: tumtook-job-working-cards
  */
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
 
 final class Tumtook_Job_Working_Cards
 {
-	const VERSION = '1.0.1';
+	const VERSION = '1.0.2';
 	const SHORTCODE = 'tumtook_job_working_cards';
 	const FONT_HANDLE = 'tumtook-kanit-font';
 	const STYLE_HANDLE = 'tumtook-job-working-cards';
