@@ -164,7 +164,7 @@ body.ttpr-slider-page {
     overflow-x: scroll !important;
     overscroll-behavior-x: auto !important;
     scroll-snap-type: none !important;
-    touch-action: pan-x !important;
+    touch-action: auto !important;
     -webkit-overflow-scrolling: touch;
   }
 
@@ -176,7 +176,7 @@ body.ttpr-slider-page {
   .ttpr-card-media,
   .ttpr-image-link,
   .ttpr-image {
-    touch-action: pan-x;
+    touch-action: auto;
   }
 }
 
