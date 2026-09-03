@@ -594,6 +594,16 @@
     var restUrl = root.getAttribute("data-ttpr-rest-url") || "";
     var postId = root.getAttribute("data-ttpr-post-id") || "0";
     var limit = root.getAttribute("data-ttpr-limit") || "0";
+    var optionalParams = {
+      post_type: root.getAttribute("data-ttpr-post-type") || "",
+      taxonomy: root.getAttribute("data-ttpr-taxonomy") || "",
+      info_meta: root.getAttribute("data-ttpr-info-meta") || "",
+      badge_meta: root.getAttribute("data-ttpr-badge-meta") || "",
+      image_meta: root.getAttribute("data-ttpr-image-meta") || "",
+      orderby: root.getAttribute("data-ttpr-orderby") || "",
+      include: root.getAttribute("data-ttpr-include") || "",
+      exclude: root.getAttribute("data-ttpr-exclude") || ""
+    };
     var baseUrl = ajaxUrl || restUrl;
     var url;
 
@@ -612,6 +622,11 @@
     }
     url.searchParams.set("post_id", postId);
     url.searchParams.set("limit", limit);
+    Object.keys(optionalParams).forEach(function (key) {
+      if (optionalParams[key]) {
+        url.searchParams.set(key, optionalParams[key]);
+      }
+    });
     url.searchParams.set("_ttpr_nocache", Date.now().toString(36) + Math.random().toString(36).slice(2));
 
     return url.toString();

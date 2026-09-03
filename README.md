@@ -11,7 +11,8 @@
 5. Tumtook Page Article Recommendations
 6. Tumtook Page Card Products ทั้งหมด
 7. Tumtook Page Product Recommendations
-8. Tumtook Video How To Slider
+8. Tumtook Job Working Cards
+9. Tumtook Video How To Slider
 
 ## Shortcodes Included
 
@@ -24,6 +25,7 @@
 - `[tumtook_recommended_articles]`
 - `[tumtook_product_cards]`
 - `[tumtook_recommended_products]`
+- `[tumtook_job_working_cards]`
 - `[video_how_to_slider]`
 - `[tumtook_video_how_to_slider]`
 - `[tumtook_video_how_to_youtube]`

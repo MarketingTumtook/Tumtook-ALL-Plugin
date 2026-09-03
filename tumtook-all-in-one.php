@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Tumtook All-in-One Modules
  * Description: Combined Tumtook page modules: API catalog viewer, brand showcase, comparison table, PDF catalog, gallery, article recommendations, Card Products  ทั้งหมด, product recommendations, and video how-to slider.
- * Version: 1.0.74
+ * Version: 1.0.75
  * Author: Tumtook
  * Text Domain: tumtook-all-in-one
  */
@@ -12,7 +12,7 @@ if (!defined('ABSPATH')) {
 }
 
 if (!defined('TUMTOOK_AIO_VERSION')) {
-	define('TUMTOOK_AIO_VERSION', '1.0.74');
+	define('TUMTOOK_AIO_VERSION', '1.0.75');
 }
 
 if (!defined('TUMTOOK_AIO_PLUGIN_FILE')) {
@@ -109,14 +109,19 @@ function tumtook_aio_get_modules()
 			'file' => 'tumtook-page-product-cards/tumtook-page-product-cards.php',
 			'guard' => array('type' => 'class', 'name' => 'Tumtook_Page_Product_Cards'),
 		),
-		array(
-			'name' => 'Tumtook Page Product Recommendations',
-			'file' => 'tumtook-page-product-recommendations/tumtook-page-product-recommendations.php',
-			'guard' => array('type' => 'class', 'name' => 'Tumtook_Page_Product_Recommendations'),
-		),
-		array(
-			'name' => 'Tumtook Video How To Slider',
-			'file' => 'tumtook-video-howtoknow-slider/tumtook-video-howtoknow-slider.php',
+			array(
+				'name' => 'Tumtook Page Product Recommendations',
+				'file' => 'tumtook-page-product-recommendations/tumtook-page-product-recommendations.php',
+				'guard' => array('type' => 'class', 'name' => 'Tumtook_Page_Product_Recommendations'),
+			),
+			array(
+				'name' => 'Tumtook Job Working Cards',
+				'file' => 'tumtook-job-working-cards/tumtook-job-working-cards.php',
+				'guard' => array('type' => 'class', 'name' => 'Tumtook_Job_Working_Cards'),
+			),
+			array(
+				'name' => 'Tumtook Video How To Slider',
+				'file' => 'tumtook-video-howtoknow-slider/tumtook-video-howtoknow-slider.php',
 			'guard' => array('type' => 'class', 'name' => 'Video_Howtoknow_Slider_Plugin'),
 		),
 	);
