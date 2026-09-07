@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Tumtook Gallery Auto
  * Description: Pinterest-style gallery with automatic columns and natural image proportions. Derived from Tumtook Gallery.
- * Version: 1.0.0
+ * Version: 1.0.1
  * Author: Tumtook
  * Text Domain: tumtook-gallery-auto
  */
@@ -16,7 +16,7 @@ final class Tumtook_Gallery_Auto_Plugin
 	const OPTION_KEY = 'tumtook_gallery_auto_settings';
 	const SHORTCODE = 'tumtook_gallery_auto';
 	const META_KEY = '_tumtook_gallery_auto_settings';
-	const VERSION = '1.0.0';
+	const VERSION = '1.0.1';
 	const DEFAULT_LIMIT = 50;
 	const FONT_HANDLE = 'tumtook-kanit-font';
 
@@ -65,6 +65,7 @@ final class Tumtook_Gallery_Auto_Plugin
 			'title_key' => 'title',
 			'link_key' => 'link',
 			'alt_key' => 'alt',
+			'end_panel_background' => '#f9f9f9',
 		);
 	}
 
@@ -193,6 +194,8 @@ final class Tumtook_Gallery_Auto_Plugin
 		$output['title_key'] = isset($input['title_key']) ? sanitize_text_field(trim($input['title_key'])) : $defaults['title_key'];
 		$output['link_key'] = isset($input['link_key']) ? sanitize_text_field(trim($input['link_key'])) : $defaults['link_key'];
 		$output['alt_key'] = isset($input['alt_key']) ? sanitize_text_field(trim($input['alt_key'])) : $defaults['alt_key'];
+		$output['end_panel_background'] = isset($input['end_panel_background']) ? sanitize_hex_color(trim($input['end_panel_background'])) : $defaults['end_panel_background'];
+		$output['end_panel_background'] = $output['end_panel_background'] ? $output['end_panel_background'] : $defaults['end_panel_background'];
 
 		return $output;
 	}
@@ -210,11 +213,14 @@ final class Tumtook_Gallery_Auto_Plugin
 			'items_path' => __('ตำแหน่งรายการรูปใน JSON เช่น items หรือ data.items', 'tumtook-gallery-auto'),
 			'image_key' => __('ตำแหน่ง URL รูปภาพในแต่ละ item เช่น images.fileUrl รองรับข้อมูลแบบ nested array', 'tumtook-gallery-auto'),
 			'alt_key' => __('ตำแหน่งข้อความ alt ของรูปภาพ เช่น images.altText', 'tumtook-gallery-auto'),
+			'end_panel_background' => __('สีพื้นหลังของส่วนท้าย Gallery หลังจากโหลดรูปครบแล้ว', 'tumtook-gallery-auto'),
 		);
 
 		$type = 'text';
 		if ('cache_minutes' === $key) {
 			$type = 'number';
+		} elseif ('end_panel_background' === $key) {
+			$type = 'color';
 		}
 
 		if ('match_code' === $key) {
@@ -251,6 +257,7 @@ final class Tumtook_Gallery_Auto_Plugin
 			'match_code',
 			'image_key',
 			'alt_key',
+			'end_panel_background',
 		);
 		$labels = array(
 			'api_url' => __('API URL', 'tumtook-gallery-auto'),
@@ -259,6 +266,7 @@ final class Tumtook_Gallery_Auto_Plugin
 			'match_code' => __('Item Code Filter', 'tumtook-gallery-auto'),
 			'image_key' => __('ตำแหน่ง URL รูป', 'tumtook-gallery-auto'),
 			'alt_key' => __('ตำแหน่ง Alt รูป', 'tumtook-gallery-auto'),
+			'end_panel_background' => __('สีพื้นหลังท้าย Gallery', 'tumtook-gallery-auto'),
 		);
 
 		wp_nonce_field('tumtook_gallery_auto_save_page_settings', 'tumtook_gallery_auto_nonce');
@@ -533,6 +541,7 @@ final class Tumtook_Gallery_Auto_Plugin
 		$gap = min(64, absint($atts['gap']));
 		$radius = min(100, absint($atts['radius']));
 		$limit = $this->normalize_gallery_limit($atts['limit']);
+		$end_panel_background = sanitize_hex_color($settings['end_panel_background']) ?: '#f9f9f9';
 		// Only shortcode-authored overrides may replace the configured server-side URL.
 		$endpoint_signature = $endpoint ? wp_hash($page_id . '|' . $endpoint, 'auth') : '';
 
@@ -543,8 +552,9 @@ final class Tumtook_Gallery_Auto_Plugin
 			data-endpoint-signature="<?php echo esc_attr($endpoint_signature); ?>"
 			data-columns="<?php echo esc_attr($columns); ?>" data-gap="<?php echo esc_attr($gap); ?>"
 			data-min-width="<?php echo esc_attr($min_width); ?>"
-			style="--ttga-min-width: <?php echo esc_attr($min_width); ?>px; --ttga-gap: <?php echo esc_attr($gap); ?>px; --ttga-radius: <?php echo esc_attr($radius); ?>px;">
+			style="--ttga-min-width: <?php echo esc_attr($min_width); ?>px; --ttga-gap: <?php echo esc_attr($gap); ?>px; --ttga-radius: <?php echo esc_attr($radius); ?>px; --ttga-end-panel-background: <?php echo esc_attr($end_panel_background); ?>;">
 			<div class="ttga-gallery" role="list" aria-label="<?php esc_attr_e('แกลเลอรีรูปภาพ', 'tumtook-gallery-auto'); ?>"></div>
+			<div class="ttga-end-panel" aria-hidden="true"></div>
 			<div class="ttga-loader" aria-live="polite"><?php esc_html_e('Loading images...', 'tumtook-gallery-auto'); ?></div>
 			<button class="ttga-retry" type="button" hidden><?php esc_html_e('ลองอีกครั้ง', 'tumtook-gallery-auto'); ?></button>
 			<div class="ttga-sentinel" aria-hidden="true"></div>

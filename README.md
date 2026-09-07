@@ -65,6 +65,8 @@
 
 โมดูลใช้ class, CSS/JS, REST route, AJAX action และ shortcode แยกกัน สามารถวางร่วมกับ `[tumtook_gallery]` ได้
 
+เมื่อโหลดรูปครบแล้ว จะแสดง fade ปิดท้ายแบบ Gallery เดิมผ่าน `ttga-end-panel` และใช้ fade สีขาวบนมือถือ ตั้งสีพื้นหลังท้าย Gallery ได้ในกล่อง **Tumtook Gallery Auto** (ค่าเริ่มต้น `#f9f9f9`)
+
 ตรวจการทำงานฝั่ง PHP ด้วย `php modules/tumtook-gallery-auto/tests/smoke.php` จากโฟลเดอร์ปลั๊กอิน ชุดทดสอบใช้ข้อมูลจำลองและไม่เชื่อมต่อฐานข้อมูลหรือ API จริง
 
 ## Tumtook Job Working Cards

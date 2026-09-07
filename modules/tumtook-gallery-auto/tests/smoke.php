@@ -44,6 +44,7 @@ function wp_parse_args($value, $defaults) { return array_merge($defaults, $value
 function shortcode_atts($defaults, $atts, $name) { return array_merge($defaults, $atts); }
 function sanitize_text_field($value) { return strip_tags((string) $value); }
 function sanitize_textarea_field($value) { return strip_tags((string) $value); }
+function sanitize_hex_color($value) { return preg_match('/^#([a-fA-F0-9]{3}){1,2}$/', $value) ? $value : null; }
 function esc_url_raw($value) { return (string) $value; }
 function esc_url($value) { return htmlspecialchars((string) $value, ENT_QUOTES); }
 function esc_attr($value) { return htmlspecialchars((string) $value, ENT_QUOTES); }
