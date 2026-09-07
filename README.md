@@ -14,6 +14,7 @@
 8. Tumtook Job Working Cards
 9. Tumtook Video How To Slider
 10. Tumtook Gallery Auto
+11. Tumtook Home Product Recommendations
 
 ## Shortcodes Included
 
@@ -27,6 +28,7 @@
 - `[tumtook_recommended_articles]`
 - `[tumtook_product_cards]`
 - `[tumtook_recommended_products]`
+- `[tumtook_home_recommended_products]`
 - `[tumtook_job_working_cards]`
 - `[video_how_to_slider]`
 - `[tumtook_video_how_to_slider]`
@@ -39,6 +41,23 @@
 2. Upload `tumtook-all-in-one.zip` in WordPress Admin > Plugins > Add New > Upload Plugin.
 3. Activate **Tumtook All-in-One Modules**.
 4. Keep existing shortcodes and page meta as-is. The plugin preserves the original meta keys and shortcode names.
+
+## Tumtook Home Product Recommendations
+
+โมดูล `modules/tumtook-home-product-recommendations/` ใช้รูปแบบการ์ดและ slider จาก Product Recommendations โดยเลือกหน้าที่ต้องการแสดงบน Home ได้เอง
+
+1. เปิดหน้าแก้ไข Page ที่ใช้เป็น Home แล้วหากล่อง **Tumtook Home — เลือกหน้าที่แสดง**
+2. เลือกหน้าจาก Select แล้วกด **+ เพิ่มหน้า** เพื่อเพิ่มรายการ ใช้ปุ่ม **↑ / ↓** จัดลำดับ และ **ลบ** เพื่อนำรายการออก
+3. ตั้งหัวข้อ ข้อความปุ่ม ลิงก์ดูทั้งหมด และจำนวนการ์ดสูงสุด (`0` = ทุกหน้าที่เลือก)
+4. วาง `[tumtook_home_recommended_products]` ในเนื้อหาหรือ widget Shortcode ของ Elementor แล้วบันทึกหน้า
+
+เลือกได้เฉพาะ Page ที่เผยแพร่ ไม่มีรหัสผ่าน และไม่ใช่หน้าที่กำลังตั้งค่า การ์ดแสดงตามลำดับที่เลือก ไม่มีการสุ่มหรือเติมหน้าที่ไม่ได้เลือก หากไม่เลือกหน้า หรือปิดใช้งานส่วนนี้ จะไม่แสดงบนหน้าเว็บ
+
+ข้อมูลการ์ดอ่านจาก `Card Category ทั้งหมด` ของหน้าต้นทาง (`_ttpr_page_*`) และรองรับข้อมูลเก่า (`_ttpc_page_*` สำหรับชื่อ รูป และราคา) หากไม่มีชื่อหรือรูปที่กำหนดไว้จะใช้ชื่อหน้าและ Featured Image แทน ถ้าไม่มีรูปเลยจะแสดงกรอบภาพสำรอง และถ้าไม่มีราคาจะซ่อนราคา
+
+หากวาง shortcode ผ่าน template และต้องการระบุหน้าที่เก็บการตั้งค่า ใช้ `[tumtook_home_recommended_products page_id="123"]` โดยเปลี่ยน `123` เป็น ID ของหน้า Home โมดูลใช้ meta `_tt_home_product_recommendations` และ CSS/JS `tthpr-*` แยกจากโมดูลเดิม
+
+ตรวจการทำงานฝั่ง PHP ด้วย `php modules/tumtook-home-product-recommendations/tests/smoke.php` จากโฟลเดอร์ปลั๊กอิน ชุดทดสอบใช้ข้อมูลจำลองและไม่เชื่อมต่อฐานข้อมูล
 
 ## Tumtook Gallery Auto
 

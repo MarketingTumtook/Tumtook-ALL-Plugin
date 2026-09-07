@@ -1,0 +1,52 @@
+.tthpr-admin-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin: 20px 0;
+}
+
+.tthpr-admin-field,
+.tthpr-admin-page-label {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.tthpr-admin-field > span:first-child,
+.tthpr-admin-page-label > span {
+  font-weight: 600;
+}
+
+.tthpr-admin-field input,
+.tthpr-admin-page-label select {
+  width: 100%;
+  max-width: none;
+  box-sizing: border-box;
+}
+
+.tthpr-admin-pages {
+  border-top: 1px solid #dcdcde;
+  border-bottom: 1px solid #dcdcde;
+  padding: 8px 0 16px;
+}
+
+.tthpr-admin-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: end;
+  margin-top: 12px;
+}
+
+.tthpr-admin-row-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+@media (max-width: 782px) {
+  .tthpr-admin-grid,
+  .tthpr-admin-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

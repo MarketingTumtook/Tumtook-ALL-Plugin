@@ -1,8 +1,8 @@
 <?php
 /**
  * Plugin Name: Tumtook All-in-One Modules
- * Description: Combined Tumtook page modules: API catalog viewer, brand showcase, comparison table, PDF catalog, gallery, auto Pinterest gallery, article recommendations, Card Products  ทั้งหมด, product recommendations, and video how-to slider.
- * Version: 1.0.80
+ * Description: Combined Tumtook page modules: API catalog viewer, brand showcase, comparison table, PDF catalog, gallery, auto Pinterest gallery, article recommendations, Card Products  ทั้งหมด, product recommendations, Home product recommendations, and video how-to slider.
+ * Version: 1.0.81
  * Author: Tumtook
  * Text Domain: tumtook-all-in-one
  */
@@ -12,7 +12,7 @@ if (!defined('ABSPATH')) {
 }
 
 if (!defined('TUMTOOK_AIO_VERSION')) {
-	define('TUMTOOK_AIO_VERSION', '1.0.80');
+	define('TUMTOOK_AIO_VERSION', '1.0.81');
 }
 
 if (!defined('TUMTOOK_AIO_PLUGIN_FILE')) {
@@ -118,6 +118,11 @@ function tumtook_aio_get_modules()
 				'name' => 'Tumtook Page Product Recommendations',
 				'file' => 'tumtook-page-product-recommendations/tumtook-page-product-recommendations.php',
 				'guard' => array('type' => 'class', 'name' => 'Tumtook_Page_Product_Recommendations'),
+			),
+			array(
+				'name' => 'Tumtook Home Product Recommendations',
+				'file' => 'tumtook-home-product-recommendations/tumtook-home-product-recommendations.php',
+				'guard' => array('type' => 'class', 'name' => 'Tumtook_Home_Product_Recommendations'),
 			),
 			array(
 				'name' => 'Tumtook Job Working Cards',
