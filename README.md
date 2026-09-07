@@ -13,6 +13,7 @@
 7. Tumtook Page Product Recommendations
 8. Tumtook Job Working Cards
 9. Tumtook Video How To Slider
+10. Tumtook Gallery Auto
 
 ## Shortcodes Included
 
@@ -21,6 +22,7 @@
 - `[tumtook_catalog code="PDF"]`
 - `[gallery_pdf code="PDF" text="ดาวน์โหลด PDF"]`
 - `[tumtook_gallery]`
+- `[tumtook_gallery_auto]`
 - `[tumtook_comparison]`
 - `[tumtook_recommended_articles]`
 - `[tumtook_product_cards]`
@@ -37,6 +39,33 @@
 2. Upload `tumtook-all-in-one.zip` in WordPress Admin > Plugins > Add New > Upload Plugin.
 3. Activate **Tumtook All-in-One Modules**.
 4. Keep existing shortcodes and page meta as-is. The plugin preserves the original meta keys and shortcode names.
+
+## Tumtook Gallery Auto
+
+โมดูล `modules/tumtook-gallery-auto/` แยกจาก Tumtook Gallery สำหรับแสดงภาพแบบ Pinterest: คอลัมน์กว้างเท่ากัน ภาพสูงตามสัดส่วนจริง และเติมภาพถัดไปในคอลัมน์ที่สั้นที่สุด ระบบคำนวณใหม่เมื่อรูปโหลดเสร็จหรือพื้นที่แสดงผลเปลี่ยน รวมถึง container ใน page builder
+
+1. ในหน้าแก้ไข Page เปิดกล่อง **Tumtook Gallery Auto** แล้วตั้ง API URL, ตำแหน่งรายการรูป, Item Code Filter, ตำแหน่ง URL รูป และ Alt เช่นเดียวกับ Gallery เดิม
+2. หากยังไม่เคยบันทึกโมดูลใหม่ จะใช้ค่าจาก Tumtook Gallery เดิมของหน้านั้นเป็นค่าเริ่มต้น หลังบันทึกแล้วจะใช้ meta `_tumtook_gallery_auto_settings` แยกจากเดิม
+3. วาง `[tumtook_gallery_auto]` ในเนื้อหา หรือ widget Shortcode ของ page builder
+
+```text
+[tumtook_gallery_auto]
+[tumtook_gallery_auto min_width="220" gap="16" radius="16"]
+[tumtook_gallery_auto columns="6" gap="12" limit="30"]
+```
+
+- `columns`: ค่าเริ่มต้น `auto` คำนวณตามความกว้างของ container หรือระบุ 1–12 เป็นจำนวนคอลัมน์สูงสุดที่ต้องการ โดยลดลงเมื่อพื้นที่แคบ
+- `min_width`: ความกว้างขั้นต่ำต่อคอลัมน์ในโหมดอัตโนมัติ ค่าเริ่มต้น 220px รองรับ 140–640px พื้นที่กว้างไม่เกิน 600px ใช้ 2 คอลัมน์เมื่อมีพื้นที่พอ หรือ 1 คอลัมน์เมื่อแคบมาก
+- `gap`: ระยะห่างแนวนอนและแนวตั้ง ค่าเริ่มต้น 16px รองรับ 0–64px
+- `radius`: ความโค้งมุมภาพ ค่าเริ่มต้น 16px รองรับ 0–100px
+- `limit`: จำนวนรูปสูงสุด ค่าเริ่มต้นและเพดาน 50 รูป ใช้การแบ่ง Item Code สูงสุด 3 โค้ดแบบเดียวกับ Gallery เดิม
+- `endpoint`: ใช้แทน API URL ของหน้านี้เฉพาะ shortcode นั้น โดยปกติให้กำหนด API URL ในกล่องตั้งค่าเพื่อเก็บ URL ไว้ฝั่งเซิร์ฟเวอร์
+
+รองรับ lazy loading, โหลดภาพต่อเมื่อเลื่อน, ปุ่มลองใหม่เมื่อ API ผิดพลาด และเปิดรูปขยายพร้อมปุ่มก่อนหน้า/ถัดไปและคีย์บอร์ด รูปแนวตั้ง แนวนอน และสี่เหลี่ยมจัตุรัสจะแสดงเต็มภาพโดยไม่ครอป หากรูปไม่มีขนาดใน API จะใช้ขนาดจริงหลังโหลดภาพเสร็จ
+
+โมดูลใช้ class, CSS/JS, REST route, AJAX action และ shortcode แยกกัน สามารถวางร่วมกับ `[tumtook_gallery]` ได้
+
+ตรวจการทำงานฝั่ง PHP ด้วย `php modules/tumtook-gallery-auto/tests/smoke.php` จากโฟลเดอร์ปลั๊กอิน ชุดทดสอบใช้ข้อมูลจำลองและไม่เชื่อมต่อฐานข้อมูลหรือ API จริง
 
 ## Tumtook Job Working Cards
 
