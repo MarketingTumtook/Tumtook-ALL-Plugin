@@ -191,17 +191,35 @@ function initTumtookGalleryAuto() {
 		return Math.min(12, Math.max(1, Math.floor((width + gap) / (minWidth + gap))));
 	}
 
-	function createCard(item, priority, scheduleLayout) {
+	function imageIdentity(source) {
+		try {
+			var url = new URL(source, window.location.href);
+			var path = url.pathname.replace(/(?:-\d+x\d+|-scaled)(?=\.(?:jpe?g|png|webp|gif|avif)$)/i, '');
+			var query = [];
+			url.searchParams.forEach(function (value, name) {
+				// Keep source selectors; sizing, cache and signature changes are still one image.
+				if (!/^(?:w|h|width|height|q|quality|fit|crop|fm|format|auto|dpr|resize|v|ver|cb|cachebust|_|expires|signature|sig|utm_.*|x-amz-.*|x-goog-.*)$/i.test(name)) {
+					query.push(encodeURIComponent(name) + '=' + encodeURIComponent(value));
+				}
+			});
+			return url.host.toLowerCase() + path + (query.length ? '?' + query.sort().join('&') : '');
+		} catch (error) {
+			return String(source).trim();
+		}
+	}
+
+	function createCard(item, index, eager, priority) {
 		var article = document.createElement('article');
 		var media = document.createElement('button');
 		var image = document.createElement('img');
 		var fallback = document.createElement('span');
-		var width = positiveNumber(item.width, 0);
-		var height = positiveNumber(item.height, 0);
+		// Assign once per unique card, independently of source dimensions or viewport size.
+		var ratios = ['1 / 1', '16 / 9', '5 / 4', '16 / 9', '5 / 4', '1 / 1', '5 / 4', '1 / 1', '16 / 9'];
 		article.className = 'ttga-card';
 		article.setAttribute('role', 'listitem');
 		article.dataset.ttgaKey = String(item.key || item.image);
 		media.className = 'ttga-media';
+		media.style.setProperty('--ttga-ratio', ratios[index % ratios.length]);
 		media.type = 'button';
 		media.setAttribute('aria-label', item.alt || item.title || 'เปิดรูปภาพ');
 		media.setAttribute('aria-haspopup', 'dialog');
@@ -209,41 +227,29 @@ function initTumtookGalleryAuto() {
 		fallback.textContent = 'ไม่สามารถโหลดรูปภาพได้';
 		fallback.hidden = true;
 		image.alt = item.alt || item.title || '';
-		image.loading = priority ? 'eager' : 'lazy';
 		image.decoding = 'async';
+		image.dataset.src = item.image;
+		if (eager) image.dataset.ttgaEager = '1';
 		if (priority) image.setAttribute('fetchpriority', 'high');
-		if (width && height) {
-			image.width = Math.round(width);
-			image.height = Math.round(height);
-			media.style.setProperty('--ttga-ratio', width + ' / ' + height);
-		}
 		image.addEventListener('load', function () {
-			// Replace stale API dimensions with the real dimensions, including cached images.
-			if (image.naturalWidth && image.naturalHeight) {
-				image.width = image.naturalWidth;
-				image.height = image.naturalHeight;
-			}
 			media.classList.add('is-loaded');
-			scheduleLayout();
 		});
 		image.addEventListener('error', function () {
 			image.hidden = true;
 			fallback.hidden = false;
 			media.disabled = true;
 			media.classList.add('is-loaded');
-			scheduleLayout();
 		});
 		media.addEventListener('click', function () {
 			var gallery = article.closest('.ttga-gallery');
 			var images = Array.prototype.slice.call(gallery.querySelectorAll('.ttga-media img:not([hidden])'));
 			openLightbox(images.map(function (entry) {
-				return { src: entry.currentSrc || entry.src, alt: entry.alt };
+				return { src: entry.dataset.src || entry.currentSrc || entry.src, alt: entry.alt };
 			}), Math.max(0, images.indexOf(image)));
 		});
 		media.appendChild(image);
 		media.appendChild(fallback);
 		article.appendChild(media);
-		image.src = item.image;
 		return article;
 	}
 
@@ -257,15 +263,41 @@ function initTumtookGalleryAuto() {
 		var gap = Math.max(0, Number(shell.dataset.gap) || 0);
 		var page = 1;
 		// Keep the batch size fixed: changing it on resize would skip API offsets.
-		var perPage = 12;
+		var perPage = 24;
 		var loading = false;
 		var complete = false;
 		var failed = false;
 		var layoutFrame = null;
 		var observer;
+		var imageObserver;
+		var scrollFrame = null;
+		var preloadDistance = Math.max(1000, Math.round(window.innerHeight * 1.5));
 		var seen = new Set();
+		var seenUrls = new Set();
 		var config = window.TumtookGalleryAutoData;
 		if (!gallery || !loader || !retry || !sentinel || !config) return;
+
+		function startImage(image) {
+			if (!image.dataset.src) return;
+			// The observer already delays distant images; avoid a second native lazy-load delay.
+			image.loading = 'eager';
+			image.src = image.dataset.src;
+			delete image.dataset.src;
+			if (imageObserver) imageObserver.unobserve(image);
+		}
+
+		function loadNearbyImages() {
+			if (!shell.getClientRects().length || !gallery.clientWidth) return;
+			gallery.querySelectorAll('img[data-src]').forEach(function (image) {
+				var bounds = image.getBoundingClientRect();
+				if (image.dataset.ttgaEager || (bounds.top <= window.innerHeight + preloadDistance && bounds.bottom >= -preloadDistance)) {
+					startImage(image);
+				} else if (imageObserver && !image.dataset.ttgaObserved) {
+					image.dataset.ttgaObserved = '1';
+					imageObserver.observe(image);
+				}
+			});
+		}
 
 		function scheduleLayout() {
 			if (layoutFrame !== null) return;
@@ -296,6 +328,7 @@ function initTumtookGalleryAuto() {
 				heights[column] += cardHeights[index] + gap;
 			});
 			gallery.style.height = Math.max(0, Math.max.apply(Math, heights) - gap) + 'px';
+			loadNearbyImages();
 			maybeLoad();
 		}
 
@@ -307,7 +340,7 @@ function initTumtookGalleryAuto() {
 		function nearViewport() {
 			if (!shell.getClientRects().length) return false;
 			var bounds = sentinel.getBoundingClientRect();
-			return bounds.top <= window.innerHeight + 420 && bounds.bottom >= -420;
+			return bounds.top <= window.innerHeight + preloadDistance && bounds.bottom >= -preloadDistance;
 		}
 
 		function maybeLoad() {
@@ -340,17 +373,24 @@ function initTumtookGalleryAuto() {
 				.then(function (data) {
 					if (!Array.isArray(data.items)) throw new Error('Invalid gallery response');
 					var fragment = document.createDocumentFragment();
-					data.items.forEach(function (item, index) {
+					var columns = getColumns(shell, gallery.clientWidth, gap);
+					var shellBounds = shell.getBoundingClientRect();
+					var eager = page === 1 && shellBounds.top < window.innerHeight && shellBounds.bottom >= 0;
+					var added = 0;
+					data.items.forEach(function (item) {
 						if (!item || !item.image) return;
-						var key = String(item.key || item.image);
-						if (seen.has(key)) return;
-						seen.add(key);
-						fragment.appendChild(createCard(item, page === 1 && index < 8, scheduleLayout));
+						var key = item.key ? String(item.key) : '';
+						var source = imageIdentity(item.image);
+						if ((key && seen.has(key)) || seenUrls.has(source)) return;
+						if (key) seen.add(key);
+						seenUrls.add(source);
+						fragment.appendChild(createCard(item, seenUrls.size - 1, eager && added < columns * 2, eager && added < columns));
+						added += 1;
 					});
 					gallery.appendChild(fragment);
 					complete = !data.has_more || !data.items.length;
 					page += 1;
-					setStatus(seen.size ? '' : config.strings.empty);
+					setStatus(seenUrls.size ? '' : config.strings.empty);
 					if (complete) {
 						shell.classList.add('is-complete');
 						if (observer) observer.disconnect();
@@ -385,12 +425,24 @@ function initTumtookGalleryAuto() {
 		}
 		window.addEventListener('resize', scheduleLayout);
 		if ('IntersectionObserver' in window) {
+			imageObserver = new IntersectionObserver(function (entries) {
+				entries.forEach(function (entry) {
+					if (entry.isIntersecting) startImage(entry.target);
+				});
+			}, { rootMargin: preloadDistance + 'px 0px' });
 			observer = new IntersectionObserver(function (entries) {
 				if (entries.some(function (entry) { return entry.isIntersecting; })) maybeLoad();
-			}, { rootMargin: '420px 0px' });
+			}, { rootMargin: preloadDistance + 'px 0px' });
 			observer.observe(sentinel);
 		}
-		window.addEventListener('scroll', maybeLoad, { passive: true });
+		window.addEventListener('scroll', function () {
+			if (scrollFrame !== null) return;
+			scrollFrame = window.requestAnimationFrame(function () {
+				scrollFrame = null;
+				loadNearbyImages();
+				maybeLoad();
+			});
+		}, { passive: true });
 		loadPage();
 	});
 }

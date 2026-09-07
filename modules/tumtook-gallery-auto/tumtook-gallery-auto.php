@@ -1,8 +1,8 @@
 <?php
 /**
  * Plugin Name: Tumtook Gallery Auto
- * Description: Pinterest-style gallery with automatic columns and natural image proportions. Derived from Tumtook Gallery.
- * Version: 1.0.1
+ * Description: Pinterest-style gallery with mixed aspect ratios, unique images and early lazy loading. Derived from Tumtook Gallery.
+ * Version: 1.0.2
  * Author: Tumtook
  * Text Domain: tumtook-gallery-auto
  */
@@ -16,7 +16,7 @@ final class Tumtook_Gallery_Auto_Plugin
 	const OPTION_KEY = 'tumtook_gallery_auto_settings';
 	const SHORTCODE = 'tumtook_gallery_auto';
 	const META_KEY = '_tumtook_gallery_auto_settings';
-	const VERSION = '1.0.1';
+	const VERSION = '1.0.2';
 	const DEFAULT_LIMIT = 50;
 	const FONT_HANDLE = 'tumtook-kanit-font';
 
@@ -361,7 +361,7 @@ final class Tumtook_Gallery_Auto_Plugin
 
 				function renderItems(items) {
 					gridNode.innerHTML = '';
-					items.forEach(function (item) {
+					items.forEach(function (item, index) {
 						var card = document.createElement('div');
 						var image = document.createElement('img');
 						var title = document.createElement('div');
@@ -370,6 +370,8 @@ final class Tumtook_Gallery_Auto_Plugin
 						image.src = item.image;
 						image.alt = item.alt || item.title || '';
 						image.loading = 'lazy';
+						image.style.aspectRatio = ['1 / 1', '16 / 9', '5 / 4', '16 / 9', '5 / 4', '1 / 1', '5 / 4', '1 / 1', '16 / 9'][index % 9];
+						image.style.objectFit = 'cover';
 						title.className = 'ttga-admin-preview-title';
 						title.textContent = item.title || '';
 
@@ -778,7 +780,7 @@ final class Tumtook_Gallery_Auto_Plugin
 			return;
 		}
 
-		$candidates = $this->collect_gallery_item_candidates($items, $endpoint, $settings, $group, $max_items, $randomize_images, $match_code);
+		$candidates = $this->collect_gallery_item_candidates($items, $endpoint, $settings, $group, $max_items, $randomize_images, $match_code, $seen_images);
 
 		foreach ($candidates as $gallery_item) {
 			$item_key = isset($gallery_item['key']) ? (string) $gallery_item['key'] : '';
@@ -797,7 +799,7 @@ final class Tumtook_Gallery_Auto_Plugin
 		}
 	}
 
-	private function collect_gallery_item_candidates($items, $endpoint, $settings, $group, $max_items, $randomize_images, $match_code = '')
+	private function collect_gallery_item_candidates($items, $endpoint, $settings, $group, $max_items, $randomize_images, $match_code = '', $seen_images = array())
 	{
 		$candidates = array();
 		$candidate_keys = array();
@@ -830,7 +832,8 @@ final class Tumtook_Gallery_Auto_Plugin
 				}
 
 				$item_key = $this->get_gallery_item_key($image);
-				if (isset($candidate_keys[$item_key])) {
+				// Exclude prior groups before sampling so duplicates do not consume their quota.
+				if (isset($candidate_keys[$item_key]) || isset($seen_images[$item_key])) {
 					continue;
 				}
 
@@ -886,7 +889,34 @@ final class Tumtook_Gallery_Auto_Plugin
 
 	private function get_gallery_item_key($image)
 	{
-		return md5(trim((string) $image));
+		$parts = wp_parse_url(trim((string) $image));
+		if (empty($parts['host'])) {
+			return md5(trim((string) $image));
+		}
+
+		$host = strtolower($parts['host']);
+		if (!empty($parts['port']) && !in_array((int) $parts['port'], array(80, 443), true)) {
+			$host .= ':' . $parts['port'];
+		}
+		$path = isset($parts['path']) ? $parts['path'] : '/';
+		// WordPress thumbnails and scaled originals refer to the same source image.
+		$path = preg_replace('/(?:-\d+x\d+|-scaled)(?=\.(?:jpe?g|png|webp|gif|avif)$)/i', '', $path);
+		$query = array();
+		foreach (explode('&', isset($parts['query']) ? $parts['query'] : '') as $pair) {
+			if ('' === $pair) {
+				continue;
+			}
+			$parameter = explode('=', $pair, 2);
+			$name = urldecode($parameter[0]);
+			// Keep selectors such as id/file/path; only drop known rendering/signing noise.
+			if (preg_match('/^(?:w|h|width|height|q|quality|fit|crop|fm|format|auto|dpr|resize|v|ver|cb|cachebust|_|expires|signature|sig|utm_.*|x-amz-.*|x-goog-.*)$/i', $name)) {
+				continue;
+			}
+			$query[] = rawurlencode($name) . '=' . rawurlencode(urldecode(isset($parameter[1]) ? $parameter[1] : ''));
+		}
+		sort($query, SORT_STRING);
+
+		return md5($host . $path . ($query ? '?' . implode('&', $query) : ''));
 	}
 
 	private function get_item_image_dimensions($item, $index, $image_key = '')

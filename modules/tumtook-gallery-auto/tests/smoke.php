@@ -126,6 +126,51 @@ foreach ($all as $item) {
 	if ($item['width'] != 300 || $item['height'] != 200 + (int) $match[1]) throw new RuntimeException('Image dimensions do not match image');
 }
 check(true, 'Nested API dimensions match each image');
+$larger_batches = array();
+for ($page = 1; $page <= 3; $page++) {
+	$result = $plugin->rest_get_items(request(array('page' => $page, 'per_page' => 24)));
+	$larger_batches = array_merge($larger_batches, $result['items']);
+}
+check(array_column($larger_batches, 'key') === array_column($all, 'key'), '24-image batches preserve pagination order and every image');
+
+// The same photo can recur across Item Codes, signed URLs and generated thumbnails.
+$GLOBALS['cache'] = array();
+$GLOBALS['meta'][42]['_tumtook_gallery_settings']['match_code'] = 'A,B';
+$duplicates = array();
+for ($i = 0; $i < 40; $i++) {
+	$duplicates[] = array('fileUrl' => 'https://example.test/photo-' . $i . '.jpg?w=400&v=1');
+	$duplicates[] = array('fileUrl' => 'https://example.test/photo-' . $i . '-300x300.jpg?w=800&v=2#preview');
+	$duplicates[] = array('fileUrl' => 'https://example.test/photo-' . $i . '.jpg?X-Amz-Signature=signature&X-Amz-Expires=99');
+}
+$extra = array();
+for ($i = 40; $i < 80; $i++) $extra[] = array('fileUrl' => 'https://example.test/photo-' . $i . '.jpg');
+$GLOBALS['api_data'] = array('items' => array(
+	array('code' => 'A', 'images' => $duplicates),
+	array('code' => 'B', 'images' => array_merge($duplicates, $extra)),
+));
+$unique = array();
+for ($page = 1; $page <= 3; $page++) {
+	$result = $plugin->rest_get_items(request(array('page' => $page, 'per_page' => 24)));
+	$unique = array_merge($unique, $result['items']);
+}
+$photos = array_map(function ($item) {
+	preg_match('/photo-(\d+)/', $item['image'], $match);
+	return $match[1];
+}, $unique);
+check(count($photos) === 50 && count(array_unique($photos)) === 50, 'Duplicate signed, resized and thumbnail URLs are removed across codes and pages');
+check(array_count_values(array_column($unique, 'group')) == array('filter-1' => 25, 'filter-2' => 25), 'Duplicate candidates do not consume the next code allocation');
+$GLOBALS['cache'] = array();
+$GLOBALS['meta'][42]['_tumtook_gallery_settings']['match_code'] = 'A';
+$GLOBALS['api_data'] = array('items' => array(array('code' => 'A', 'images' => array(
+	array('fileUrl' => 'https://example.test/image?id=1&w=400'),
+	array('fileUrl' => 'https://example.test/image?w=800&id=1'),
+	array('fileUrl' => 'https://example.test/image?id=2&w=400'),
+	array('fileUrl' => 'https://example.test/other/photo-1.jpg'),
+	array('fileUrl' => 'https://example.test/photo-1.jpg'),
+))));
+$result = $plugin->rest_get_items(request());
+check($result['total'] === 4, 'Distinct source ids and directories remain distinct images');
+$GLOBALS['meta'][42]['_tumtook_gallery_settings'] = $legacy;
 $_POST = array('tumtook_gallery_auto_nonce' => 'invalid', '_tumtook_gallery_auto_settings' => array('api_url' => 'https://example.test/new'));
 $plugin->save_page_settings(42);
 check(!metadata_exists('post', 42, '_tumtook_gallery_auto_settings'), 'Invalid nonce cannot change page settings');
