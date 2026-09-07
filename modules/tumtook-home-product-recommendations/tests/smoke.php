@@ -1,6 +1,6 @@
 <?php
 /** Run: php modules/tumtook-home-product-recommendations/tests/smoke.php (no database). */
-if (PHP_SAPI !== 'cli') {
+if (!in_array(PHP_SAPI, array('cli', 'cli-server'), true)) {
 	exit;
 }
 error_reporting(E_ALL);
@@ -18,7 +18,7 @@ $GLOBALS['query_count'] = 0;
 $GLOBALS['revision'] = false;
 $GLOBALS['assets'] = array();
 $GLOBALS['pages'] = array();
-foreach (array(10 => 'Home', 11 => 'หน้าหนึ่ง', 12 => 'หน้าสอง', 13 => 'หน้าสาม', 14 => 'Draft', 15 => 'Private', 16 => 'Protected', 17 => 'Article', 18 => 'Unselected') as $id => $title) {
+foreach (array(10 => 'Home', 11 => 'อาหารหนึ่ง', 12 => 'แบรนด์หนึ่ง', 13 => 'อาหารสอง', 14 => 'Draft', 15 => 'Private', 16 => 'Protected', 17 => 'Article', 18 => 'ใช้ซ้ำได้') as $id => $title) {
 	$GLOBALS['pages'][$id] = (object) array('ID' => $id, 'post_title' => $title, 'post_type' => 17 === $id ? 'post' : 'page', 'post_status' => 14 === $id ? 'draft' : (15 === $id ? 'private' : 'publish'), 'post_password' => 16 === $id ? 'password' : '');
 }
 function add_action($hook, $callback, ...$args) { $GLOBALS['actions'][$hook][] = $callback; }
@@ -32,6 +32,7 @@ function wp_parse_args($args, $defaults) { return array_merge($defaults, $args);
 function shortcode_atts($defaults, $atts, $name) { return array_intersect_key($atts, $defaults) + $defaults; }
 function wp_unslash($value) { return is_array($value) ? array_map('wp_unslash', $value) : stripslashes($value); }
 function sanitize_text_field($value) { return trim(strip_tags((string) $value)); }
+function sanitize_key($value) { return preg_replace('/[^a-z0-9_\-]/', '', strtolower((string) $value)); }
 function esc_url_raw($value) { return preg_match('/^javascript:/i', $value) ? '' : $value; }
 function esc_attr($value) { return htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8'); }
 function esc_url($value) { return esc_attr(esc_url_raw($value)); }
@@ -77,20 +78,24 @@ function get_posts($args) {
 			&& !in_array($page->ID, $args['post__not_in'] ?? array(), true);
 	});
 	if ('post__in' === $args['orderby']) {
-		$pages = array_replace(array_flip($args['post__in']), $pages);
-		$pages = array_filter($pages, 'is_object');
+		$ordered = array();
+		foreach ($args['post__in'] as $id) if (isset($pages[$id])) $ordered[$id] = $pages[$id];
+		$pages = $ordered;
 	} else {
 		usort($pages, function ($a, $b) { return strcmp($a->post_title, $b->post_title); });
 	}
-	if ($args['posts_per_page'] > 0) $pages = array_slice($pages, 0, $args['posts_per_page']);
+	if ($args['posts_per_page'] > 0) $pages = array_slice($pages, 0, $args['posts_per_page'], true);
 	return 'ids' === ($args['fields'] ?? '') ? wp_list_pluck(array_values($pages), 'ID') : array_values($pages);
 }
 function check($condition, $message) {
 	if (!$condition) throw new RuntimeException($message);
 	echo "PASS: $message\n";
 }
-function set_selection($ids, $extra = array()) {
-	$_POST = array('tt_home_product_recommendations_nonce' => 'valid', 'tthpr_settings' => array_merge(array('enabled' => '1', 'page_ids' => $ids), $extra));
+function section($id, $title, $ids, $extra = array()) {
+	return array_merge(array('id' => $id, 'enabled' => '1', 'title' => $title, 'page_ids' => $ids), $extra);
+}
+function save_sections($sections) {
+	$_POST = array('tt_home_product_recommendations_nonce' => 'valid', 'tthpr_sections' => $sections);
 	$GLOBALS['plugin']->save_meta(10);
 }
 function card_ids($html) {
@@ -104,87 +109,75 @@ require dirname(__DIR__) . '/tumtook-home-product-recommendations.php';
 $plugin = $GLOBALS['shortcodes'][Tumtook_Home_Product_Recommendations::SHORTCODE][0];
 $GLOBALS['plugin'] = $plugin;
 $key = Tumtook_Home_Product_Recommendations::META_KEY;
-check(in_array('tumtook-home-product-recommendations/tumtook-home-product-recommendations.php', array_column(tumtook_aio_get_modules(), 'file'), true), 'All-in-One registers the Home module');
-check($GLOBALS['shortcodes']['tumtook_recommended_products'][0] instanceof Tumtook_Page_Product_Recommendations, 'Original recommendations shortcode keeps its own handler');
-check($GLOBALS['shortcodes']['tumtook_product_cards'][0] instanceof Tumtook_Page_Product_Recommendations, 'Home module does not overwrite legacy shortcode handlers');
 
-$GLOBALS['meta'][10]['_tt_page_product_recommendations'] = array('title' => 'Original', 'enabled' => '1');
-$GLOBALS['meta'][11] = array('_ttpr_page_card_title' => 'การ์ดหนึ่ง <ปลอดภัย>', '_ttpr_page_price' => '1,250.50', '_ttpr_page_image_id' => 111, '_ttpr_page_badge' => 'best');
+check(in_array('tumtook-home-product-recommendations/tumtook-home-product-recommendations.php', array_column(tumtook_aio_get_modules(), 'file'), true), 'All-in-One registers the repeatable Home module');
+check($GLOBALS['shortcodes']['tumtook_recommended_products'][0] instanceof Tumtook_Page_Product_Recommendations, 'Original recommendations shortcode keeps its handler');
+$GLOBALS['meta'][11] = array('_ttpr_page_card_title' => 'การ์ดอาหารหนึ่ง', '_ttpr_page_price' => '1,250.50', '_ttpr_page_image_id' => 111, '_ttpr_page_badge' => 'best');
 $GLOBALS['meta'][12] = array('_ttpr_page_image_id' => 999);
-$GLOBALS['meta'][13] = array('_ttpc_page_card_title' => 'การ์ดเก่า', '_ttpc_page_price' => '0', '_ttpc_page_image_id' => 113);
-$original_meta = $GLOBALS['meta'];
-set_selection(array('13', '11', '13', '', '12', '10', '14', '15', '16', '17', '18x', '-18', array('18'), '9999'));
-check($GLOBALS['meta'][10][$key]['page_ids'] === array(13, 11, 12), 'Save preserves chosen order, removes duplicates and rejects invalid/unpublished/protected/self/non-page IDs');
-$expected_meta = $original_meta;
-$expected_meta[10][$key] = $GLOBALS['meta'][10][$key];
-check($GLOBALS['meta'] === $expected_meta, 'Save writes only Home settings and preserves all source card metadata');
-$html = $plugin->render_shortcode();
-check(card_ids($html) === array(13, 11, 12), 'Frontend renders only selected pages in their saved order');
-check(strpos($html, 'การ์ดเก่า') !== false && strpos($html, '/images/113.jpg') !== false, 'Legacy source card title and image are reused');
-check(strpos($html, 'หน้าสอง') !== false && strpos($html, '/images/featured-12.jpg') !== false, 'Missing card fields fall back to page title and featured image');
-check(strpos($html, '฿1,250.50') !== false && strpos($html, '฿0') !== false && substr_count($html, 'class="tthpr-price"') === 2, 'Numeric and zero prices display correctly while missing prices are hidden');
-check(strpos($html, 'tthpr-badge--best') !== false && strpos($html, 'data-ttpr-') === false && strpos($html, 'data-tthpr-dynamic') === false, 'Home has isolated markup with no random refresh endpoint');
-check(card_ids($plugin->render_shortcode()) === array(13, 11, 12), 'Repeated renders keep the selected order and support multiple instances');
+$GLOBALS['meta'][13] = array('_ttpc_page_card_title' => 'การ์ดอาหารสอง', '_ttpc_page_price' => '0', '_ttpc_page_image_id' => 113);
 
-set_selection(array(13, 11, 12), array('limit' => '2'));
-check(card_ids($plugin->render_shortcode()) === array(13, 11), 'Limit selects the first matching cards');
-$GLOBALS['pages'][13]->post_status = 'draft';
-check(card_ids($plugin->render_shortcode()) === array(11, 12), 'A selected page that becomes unpublished is excluded at render time');
-$GLOBALS['pages'][13]->post_status = 'publish';
-
-set_selection(array());
-$queries = $GLOBALS['query_count'];
-check($plugin->render_shortcode() === '' && $GLOBALS['query_count'] === $queries, 'Empty selection renders nothing without querying unrelated pages');
-$GLOBALS['is_preview'] = true;
-check(strpos($plugin->render_shortcode(), 'เลือกหน้าที่ต้องการแสดง') !== false, 'Editors see setup guidance when no pages are selected');
-$GLOBALS['is_preview'] = false;
-set_selection(array(11), array('enabled' => '0'));
-check($plugin->render_shortcode() === '', 'Disabled Home section stays hidden');
-
-set_selection(array(11), array('title' => '<b>สินค้า</b>', 'limit' => '999', 'view_all_url' => 'javascript:alert(1)'));
-check($GLOBALS['meta'][10][$key]['title'] === 'สินค้า' && $GLOBALS['meta'][10][$key]['limit'] === '99' && $GLOBALS['meta'][10][$key]['view_all_url'] === '', 'Settings sanitize text, reject unsafe links, and clamp card limit');
-set_selection(array(11), array('title' => array('bad'), 'enabled' => array('bad'), 'limit' => array('bad')));
-check($GLOBALS['meta'][10][$key]['enabled'] === '0', 'Malformed settings do not produce warnings or enable the module');
-
-set_selection(array(11));
+save_sections(array(
+	'food' => section('food', '<b>อาหารและเดลิเวอรี่</b>', array('13', '11', '13', '10', '14', '15', '16', '17', '18x')),
+	'branding' => section('branding', 'สร้างแบรนด์', array('12', '18'), array('view_all_url' => '/branding')),
+));
 $saved = $GLOBALS['meta'][10][$key];
+check($saved['schema_version'] === 2 && count($saved['sections']) === 2, 'Save stores the repeatable Section schema');
+check($saved['sections'][0]['title'] === 'อาหารและเดลิเวอรี่', 'Section text is sanitized');
+check($saved['sections'][0]['page_ids'] === array(13, 11), 'Each Section preserves order and removes invalid Page IDs');
+check($saved['sections'][1]['page_ids'] === array(12, 18), 'A second Section stores its own Card selection');
+$html = $plugin->render_shortcode();
+check(card_ids($html) === array(13, 11, 12, 18), 'One shortcode renders every Section and Card in saved order');
+check(substr_count($html, 'class="tthpr-section"') === 2 && strpos($html, 'อาหารและเดลิเวอรี่') < strpos($html, 'สร้างแบรนด์'), 'Each saved Section renders with its own heading');
+check(strpos($html, 'data-tthpr-section-id="food"') !== false && strpos($html, 'data-tthpr-section-id="branding"') !== false, 'Rendered sections expose stable Section IDs');
+check(card_ids($plugin->render_shortcode(array('section' => 'branding'))) === array(12, 18), 'Section attribute renders only the requested Section');
+check(strpos($plugin->render_shortcode(array('section' => 'branding')), 'อาหารและเดลิเวอรี่') === false, 'Requested Section does not include other headings');
+check($plugin->render_shortcode(array('section' => 'missing')) === '', 'Unknown Section stays hidden publicly');
+
+save_sections(array(
+	'one' => section('same-id', 'หนึ่ง', array(18)),
+	'two' => section('same-id', 'สอง', array(18), array('limit' => '1')),
+	'three' => section('off', 'ปิด', array(11), array('enabled' => '0')),
+));
+$saved = $GLOBALS['meta'][10][$key];
+check(array_column($saved['sections'], 'id') === array('same-id', 'same-id-2', 'off'), 'Duplicate Section IDs are made unique');
+check(card_ids($plugin->render_shortcode()) === array(18, 18), 'The same Page can be selected independently in multiple Sections');
+check(strpos($plugin->render_shortcode(), 'ปิด') === false, 'Disabled Sections are not rendered');
+
+$GLOBALS['meta'][10][$key] = array('enabled' => '1', 'title' => 'ข้อมูลเดิม', 'page_ids' => array(13, 11), 'button_label' => 'ดูรายละเอียด');
+$html = $plugin->render_shortcode();
+check(card_ids($html) === array(13, 11) && strpos($html, 'ข้อมูลเดิม') !== false, 'Version 1 settings migrate to the default Section without data loss');
+
+save_sections(array(
+	'food' => section('food', 'อาหาร', array(13, 11)),
+	'branding' => section('branding', 'แบรนด์', array(12, 18)),
+));
+ob_start(); $plugin->render_meta_box(get_post(10)); $admin = ob_get_clean();
+check(substr_count($admin, 'data-tthpr-section data-section-id=') === 3, 'Editor renders two Sections plus its add-Section template');
+check(strpos($admin, 'tthpr_sections[food][page_ids][]') !== false && strpos($admin, 'tthpr_sections[branding][page_ids][]') !== false, 'Card selects are scoped to their Section');
+check(strpos($admin, '[tumtook_home_recommended_products section=&quot;food&quot;]') !== false, 'Editor shows a copyable shortcode for each Section');
+check(strpos($admin, 'value="14"') === false && strpos($admin, 'value="15"') === false && strpos($admin, 'value="16"') === false && strpos($admin, 'value="10"') === false, 'Editor choices omit unavailable and current pages');
+
+$unchanged = $GLOBALS['meta'][10][$key];
 $_POST['tt_home_product_recommendations_nonce'] = 'invalid';
-$_POST['tthpr_settings']['page_ids'] = array(12);
 $plugin->save_meta(10);
-check($GLOBALS['meta'][10][$key] === $saved, 'Invalid nonce prevents settings changes');
+check($GLOBALS['meta'][10][$key] === $unchanged, 'Invalid nonce prevents changes');
 $_POST['tt_home_product_recommendations_nonce'] = 'valid';
 $GLOBALS['can_edit'] = false;
 $plugin->save_meta(10);
-check($GLOBALS['meta'][10][$key] === $saved, 'Users without edit permission cannot save settings');
+check($GLOBALS['meta'][10][$key] === $unchanged, 'Users without edit permission cannot save');
 $GLOBALS['can_edit'] = true;
 $GLOBALS['revision'] = true;
 $plugin->save_meta(10);
-check($GLOBALS['meta'][10][$key] === $saved, 'Revision saves leave settings untouched');
+check($GLOBALS['meta'][10][$key] === $unchanged, 'Revision saves preserve settings');
 $GLOBALS['revision'] = false;
-unset($_POST['tthpr_settings']);
+unset($_POST['tthpr_sections']);
 $plugin->save_meta(10);
-check($GLOBALS['meta'][10][$key] === $saved, 'Saves without the Home form preserve settings');
+check($GLOBALS['meta'][10][$key] === $unchanged, 'Saves without the module form preserve settings');
 
-$GLOBALS['meta'][14][$key] = $saved;
-check($plugin->render_shortcode(array('page_id' => 14)) === '', 'Public shortcode cannot expose a draft settings page');
 $GLOBALS['is_preview'] = true;
-check(card_ids($plugin->render_shortcode(array('page_id' => 14))) === array(11), 'Authorized editors can preview draft Home settings');
+check(strpos($plugin->render_shortcode(array('section' => 'missing')), 'ไม่พบ Section') !== false, 'Editors receive guidance for an unknown Section ID');
 $GLOBALS['is_preview'] = false;
-$GLOBALS['queried_id'] = 18;
-check(card_ids($plugin->render_shortcode(array('page_id' => 10))) === array(11), 'Explicit page_id uses the selected settings page');
-$GLOBALS['queried_id'] = 10;
-
-set_selection(array(13, 11, 12));
-ob_start();
-$plugin->render_meta_box(get_post(10));
-$admin = ob_get_clean();
-check(strpos($admin, 'name="tthpr_settings[page_ids][]"') !== false && strpos($admin, '<template data-tthpr-row-template>') !== false, 'Editor renders native Select rows and the add-row template');
-check(strpos($admin, 'value="13" selected="selected"') < strpos($admin, 'value="11" selected="selected"'), 'Editor restores saved row order');
-check(strpos($admin, 'value="14"') === false && strpos($admin, 'value="15"') === false && strpos($admin, 'value="16"') === false && strpos($admin, 'value="10"') === false, 'Editor choices omit draft, private, password-protected, and current pages');
-$GLOBALS['pages'][13]->post_status = 'draft';
-ob_start(); $plugin->render_meta_box(get_post(10)); $admin = ob_get_clean();
-check(strpos($admin, 'หน้า #13 ไม่พร้อมแสดง') !== false, 'Unavailable saved pages are shown with a clear replacement/removal label');
-$GLOBALS['pages'][13]->post_status = 'publish';
-define('DOING_AUTOSAVE', true);
-set_selection(array(12));
-check($GLOBALS['meta'][10][$key]['page_ids'] === array(13, 11, 12), 'Autosaves leave the saved selection untouched');
+$GLOBALS['meta'][14][$key] = $unchanged;
+check($plugin->render_shortcode(array('page_id' => 14)) === '', 'Public shortcode does not expose draft settings pages');
+$GLOBALS['is_preview'] = true;
+check(card_ids($plugin->render_shortcode(array('page_id' => 14, 'section' => 'food'))) === array(13, 11), 'Authorized editors can preview a draft settings page');

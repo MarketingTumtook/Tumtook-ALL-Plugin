@@ -3,10 +3,13 @@ if (!defined('ABSPATH')) {
 	exit;
 }
 ?>
-<section class="tthpr-section" data-tthpr-slider id="<?php echo esc_attr($instance_id); ?>">
+<section class="tthpr-section" data-tthpr-slider data-tthpr-section-id="<?php echo esc_attr($settings['id']); ?>" id="<?php echo esc_attr($instance_id); ?>">
 	<div class="tthpr-shell">
+		<?php if ('' !== $settings['title'] || '' !== $settings['view_all_url']): ?>
 		<div class="tthpr-header">
-			<h2 class="tthpr-title"><?php echo esc_html($settings['title']); ?></h2>
+			<?php if ('' !== $settings['title']): ?>
+				<h2 class="tthpr-title"><?php echo esc_html($settings['title']); ?></h2>
+			<?php endif; ?>
 			<?php if (!empty($settings['view_all_url'])): ?>
 				<a class="tthpr-view-all" href="<?php echo esc_url($settings['view_all_url']); ?>">
 					<?php echo esc_html($settings['view_all_label']); ?>
@@ -14,6 +17,7 @@ if (!defined('ABSPATH')) {
 				</a>
 			<?php endif; ?>
 		</div>
+		<?php endif; ?>
 
 		<div class="tthpr-track-wrap">
 			<div class="tthpr-track" data-tthpr-track>

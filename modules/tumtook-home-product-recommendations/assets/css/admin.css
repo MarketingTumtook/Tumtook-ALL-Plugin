@@ -1,8 +1,56 @@
+.tthpr-admin,
+.tthpr-admin input,
+.tthpr-admin select,
+.tthpr-admin button {
+  box-sizing: border-box;
+}
+
+.tthpr-admin-sections {
+  display: grid;
+  gap: 20px;
+  margin-top: 18px;
+}
+
+.tthpr-admin-section {
+  border: 1px solid #c3c4c7;
+  border-radius: 12px;
+  background: #fff;
+  overflow: hidden;
+}
+
+.tthpr-admin-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 13px 16px;
+  background: #f6f7f7;
+  border-bottom: 1px solid #dcdcde;
+}
+
+.tthpr-admin-section-header h3 {
+  margin: 0;
+  min-width: 0;
+  font-size: 15px;
+}
+
+.tthpr-admin-section-actions,
+.tthpr-admin-row-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.tthpr-admin-section-body {
+  padding: 4px 16px 16px;
+}
+
 .tthpr-admin-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 16px;
-  margin: 20px 0;
+  margin: 18px 0;
 }
 
 .tthpr-admin-field,
@@ -13,7 +61,8 @@
 }
 
 .tthpr-admin-field > span:first-child,
-.tthpr-admin-page-label > span {
+.tthpr-admin-page-label > span,
+.tthpr-admin-shortcode > span:first-child {
   font-weight: 600;
 }
 
@@ -21,13 +70,38 @@
 .tthpr-admin-page-label select {
   width: 100%;
   max-width: none;
-  box-sizing: border-box;
+}
+
+.tthpr-admin-shortcode {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 14px 0 18px;
+  padding: 12px;
+  border-radius: 8px;
+  background: #f0f6fc;
+}
+
+.tthpr-admin-shortcode code {
+  flex: 1 1 360px;
+  padding: 7px 9px;
+  background: #fff;
+  border: 1px solid #c3c4c7;
+}
+
+.tthpr-admin-copy-status {
+  color: #008a20;
 }
 
 .tthpr-admin-pages {
   border-top: 1px solid #dcdcde;
-  border-bottom: 1px solid #dcdcde;
-  padding: 8px 0 16px;
+  padding-top: 10px;
+}
+
+.tthpr-admin-pages h4 {
+  margin-bottom: 6px;
+  font-size: 14px;
 }
 
 .tthpr-admin-row {
@@ -38,15 +112,28 @@
   margin-top: 12px;
 }
 
-.tthpr-admin-row-actions {
-  display: flex;
-  align-items: center;
-  gap: 6px;
+.tthpr-admin-add-section-wrap {
+  margin: 20px 0;
+}
+
+.tthpr-admin-usage {
+  padding: 14px 16px;
+  border-left: 4px solid #2271b1;
+  background: #f0f6fc;
+}
+
+.tthpr-admin-usage p:last-child {
+  margin-bottom: 0;
 }
 
 @media (max-width: 782px) {
   .tthpr-admin-grid,
   .tthpr-admin-row {
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  .tthpr-admin-section-header {
+    align-items: flex-start;
+    flex-direction: column;
   }
 }
