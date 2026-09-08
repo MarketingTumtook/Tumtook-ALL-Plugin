@@ -42,6 +42,25 @@
 3. Activate **Tumtook All-in-One Modules**.
 4. Keep existing shortcodes and page meta as-is. The plugin preserves the original meta keys and shortcode names.
 
+## Tumtook Page Article Recommendations
+
+วาง `[tumtook_recommended_articles]` ในเนื้อหา, บล็อก Shortcode หรือ widget Shortcode ของ Elementor บนหน้าอื่นได้ทันที โมดูลจะใช้การตั้งค่าในกล่อง **Card บทความ ทั้งหมด** ของหน้าที่แสดงอยู่ หากยังไม่เคยบันทึกจะใช้ค่าเริ่มต้น (หัวข้อ “บทความน่าสนใจ” และบทความสูงสุด 10 รายการ) ในหน้า archive หรือ template ที่ไม่มีหน้าปัจจุบันจะใช้ค่าเริ่มต้นเช่นกัน
+
+```text
+[tumtook_recommended_articles]
+[tumtook_recommended_articles limit="6"]
+[tumtook_recommended_articles page_id="123"]
+[tumtook_recommended_articles post_id="123" limit="6"]
+```
+
+- `page_id`: ID ของหน้าต้นทางที่ต้องการใช้การตั้งค่า เช่น หัวข้อ ข้อความปุ่ม ลิงก์ดูทั้งหมด และจำนวนบทความ กล่องตั้งค่าจะแสดง shortcode พร้อม ID ของหน้านั้นให้คัดลอก
+- `post_id`: ใช้แทน `page_id` ได้ และรองรับ shortcode เดิม หากระบุทั้งสองค่าจะใช้ `post_id` ที่มากกว่า 0 ก่อน
+- `limit`: จำนวนบทความ 1–10 รายการสำหรับ shortcode นั้น ไม่แก้ค่าที่บันทึกไว้ หากไม่ระบุหรือใช้ `0` จะใช้จำนวนจากการตั้งค่า
+
+หากปิด “เปิดใช้งาน section นี้” ในหน้าต้นทาง shortcode ที่อ้างอิงหน้านั้นจะไม่แสดงบนเว็บ วาง shortcode ซ้ำหลายตำแหน่งได้ โดยแต่ละ slider ทำงานแยกกัน ระบบยังสุ่มบทความที่เผยแพร่แล้วตามเดิม ทั้งตอนแสดงครั้งแรกและตอนโหลดรายการใหม่ผ่าน AJAX การอ้างอิงหน้าต้นทางเป็นการใช้การตั้งค่าร่วมกัน ไม่ได้ล็อกรายการบทความที่สุ่มได้
+
+ตรวจการทำงานฝั่ง PHP ด้วย `php modules/tumtook-page-article-recommendations/tests/smoke.php` จากโฟลเดอร์ปลั๊กอิน ชุดทดสอบใช้ข้อมูลจำลองและไม่เชื่อมต่อฐานข้อมูล
+
 ## Tumtook Home Product Recommendations
 
 โมดูล `modules/tumtook-home-product-recommendations/` ใช้รูปแบบการ์ดและ slider จาก Product Recommendations โดยเลือกหน้าที่ต้องการแสดงบน Home ได้เอง

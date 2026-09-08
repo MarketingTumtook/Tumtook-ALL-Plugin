@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Tumtook Page Article Recommendations
  * Description: Adds a random article slider section for Tumtook pages and posts with a layout tailored to article recommendations.
- * Version: 1.0.21
+ * Version: 1.0.22
  * Author: Tumtook
  * Text Domain: tumtook-page-article-recommendations
  */
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
 
 final class Tumtook_Page_Article_Recommendations
 {
-	const VERSION = '1.0.21';
+	const VERSION = '1.0.22';
 	const META_KEY = '_tt_page_article_recommendations';
 	const SHORTCODE = 'tumtook_recommended_articles';
 	const FONT_HANDLE = 'tumtook-kanit-font';
@@ -276,7 +276,15 @@ final class Tumtook_Page_Article_Recommendations
 				</div>
 
 				<p class="ttar-admin-note" style="margin-top:16px">
-					<?php esc_html_e('Shortcode ที่ใช้ได้: [tumtook_recommended_articles]', 'tumtook-page-article-recommendations'); ?>
+					<?php esc_html_e('วาง shortcode นี้ในเนื้อหาหรือ widget Shortcode ของ Elementor เพื่อแสดงบทความแนะนำ ใช้ได้ทันทีแม้ยังไม่เคยบันทึกการตั้งค่า:', 'tumtook-page-article-recommendations'); ?>
+					<code>[tumtook_recommended_articles]</code>
+				</p>
+				<p class="ttar-admin-note" style="margin-top:8px">
+					<?php esc_html_e('ดึงการตั้งค่าของหน้านี้ไปแสดงหน้าอื่น:', 'tumtook-page-article-recommendations'); ?>
+					<code><?php echo esc_html(sprintf('[tumtook_recommended_articles page_id="%d"]', $post->ID)); ?></code>
+				</p>
+				<p class="ttar-admin-hint" style="margin-top:8px">
+					<?php esc_html_e('เพิ่ม limit="6" เพื่อกำหนดจำนวนบทความ (1–10 รายการ) หรือใช้ post_id แทน page_id ได้ หากปิดใช้งาน section ของหน้าต้นทาง shortcode ที่อ้างอิงหน้านั้นจะไม่แสดงบนเว็บ', 'tumtook-page-article-recommendations'); ?>
 				</p>
 			</div>
 		</div>
@@ -353,6 +361,7 @@ final class Tumtook_Page_Article_Recommendations
 			$atts = shortcode_atts(
 				array(
 					'post_id' => 0,
+					'page_id' => 0,
 					'limit' => 0,
 				),
 				$atts,
@@ -361,6 +370,11 @@ final class Tumtook_Page_Article_Recommendations
 
 			$post_id = absint($atts['post_id']);
 			if (!$post_id) {
+				$post_id = absint($atts['page_id']);
+			}
+
+			// Archive query IDs refer to terms or users, not the settings post.
+			if (!$post_id && (is_singular() || $is_editor_preview)) {
 				$post_id = get_queried_object_id();
 			}
 
@@ -368,18 +382,11 @@ final class Tumtook_Page_Article_Recommendations
 				$post_id = get_the_ID();
 			}
 
-			if (!$post_id) {
-				return $is_editor_preview ? $this->render_section(0, $this->get_default_settings(), true) : '';
-			}
-
+			// A shortcode is an explicit request to render, including on unconfigured pages.
 			$settings = $this->get_settings($post_id);
 
 			if (absint($atts['limit']) > 0) {
 				$settings['limit'] = (string) max(1, min(10, absint($atts['limit'])));
-			}
-
-			if (!$this->has_saved_settings($post_id)) {
-				return $is_editor_preview ? $this->render_section($post_id, $settings, true) : '';
 			}
 
 			if ('1' !== $settings['enabled']) {
@@ -411,7 +418,7 @@ final class Tumtook_Page_Article_Recommendations
 			wp_enqueue_style('tt-page-article-recommendations');
 			wp_enqueue_script('tt-page-article-recommendations');
 
-				$instance_id = 'ttar-' . ($post_id ? $post_id : 'preview') . '-' . wp_rand(100, 999);
+				$instance_id = wp_unique_id('ttar-' . ($post_id ? $post_id : 'default') . '-');
 				$view_all_url = $this->get_view_all_url($settings);
 				$enable_dynamic_refresh = !$force_placeholder && !$this->is_editor_preview_context();
 
