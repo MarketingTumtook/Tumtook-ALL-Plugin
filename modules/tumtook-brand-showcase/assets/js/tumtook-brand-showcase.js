@@ -68,6 +68,7 @@
     }
 
     const totalSlides = slides.length;
+    const isCardsLayout = root.classList.contains("ttbs-showcase--cards");
 
     const getPixelValue = (value) => {
       const parsed = Number.parseFloat(value || "");
@@ -119,6 +120,10 @@
     };
 
     const syncDesktopContainerInset = () => {
+      if (isCardsLayout) {
+        return;
+      }
+
       syncFullBleedWidth();
 
       if (window.innerWidth <= 1024) {
@@ -677,6 +682,14 @@
     );
 
     slides.forEach((slide) => observer.observe(slide));
+
+    if (isCardsLayout && typeof ResizeObserver !== "undefined") {
+      const resizeObserver = new ResizeObserver(() => {
+        renderPagination();
+        setCurrentIndex(getNearestSlideIndex(track.scrollLeft));
+      });
+      resizeObserver.observe(track);
+    }
 
     window.addEventListener(
       "resize",

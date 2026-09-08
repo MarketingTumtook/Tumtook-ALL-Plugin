@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Tumtook brand showCase
  * Description: Add up to 6 page-level brand showcase images and display them in a looping slider.
- * Version: 1.0.26
+ * Version: 1.0.27
  * Author: Tumtook
  * Text Domain: tumtook-brand-showcase
  */
@@ -15,7 +15,7 @@ final class Tumtook_Brand_Showcase_Plugin
 {
 	const META_KEY = '_tumtook_brand_showcase_data';
 	const SHORTCODE = 'tumtook_brand_showcase';
-	const VERSION = '1.0.26';
+	const VERSION = '1.0.27';
 	const FONT_HANDLE = 'tumtook-kanit-font';
 	const SLIDE_COUNT = 6;
 
@@ -119,6 +119,8 @@ final class Tumtook_Brand_Showcase_Plugin
 			'image_url' => '',
 			'alt' => '',
 			'link_url' => '',
+			'brand_name' => '',
+			'description' => '',
 		);
 	}
 
@@ -176,6 +178,8 @@ final class Tumtook_Brand_Showcase_Plugin
 				'image_url' => $this->normalize_media_url($slide['image_id'], $slide['image_url']),
 				'alt' => sanitize_text_field($slide['alt']),
 				'link_url' => esc_url_raw($slide['link_url']),
+				'brand_name' => sanitize_text_field($slide['brand_name']),
+				'description' => sanitize_textarea_field($slide['description']),
 			);
 		}
 
@@ -196,6 +200,8 @@ final class Tumtook_Brand_Showcase_Plugin
 				'image_url' => $slide['image_url'],
 				'alt' => $slide['alt'],
 				'link_url' => $slide['link_url'],
+				'brand_name' => $slide['brand_name'],
+				'description' => $slide['description'],
 			);
 		}
 
@@ -378,6 +384,12 @@ final class Tumtook_Brand_Showcase_Plugin
 			<p class="ttbs-admin-intro">
 				<?php esc_html_e('Upload brand showcase images one by one from the media library. You can add up to 6 images for this page.', 'tumtook-brand-showcase'); ?>
 			</p>
+			<p class="ttbs-admin-intro">
+				<?php esc_html_e('ดีไซน์เดิม:', 'tumtook-brand-showcase'); ?>
+				<code><?php echo esc_html(sprintf('[tumtook_brand_showcase page_id="%d"]', $post->ID)); ?></code><br />
+				<?php esc_html_e('ดีไซน์การ์ดรูปภาพ พร้อมชื่อแบรนด์และคำอธิบาย ใช้ในหน้านี้หรือคัดลอกไปหน้าอื่น:', 'tumtook-brand-showcase'); ?>
+				<code><?php echo esc_html(sprintf('[tumtook_brand_showcase page_id="%d" layout="cards"]', $post->ID)); ?></code>
+			</p>
 
 			<section class="ttbs-admin-section">
 				<h3 class="ttbs-admin-title"><?php esc_html_e('Tumtook Brand Showcase', 'tumtook-brand-showcase'); ?></h3>
@@ -423,6 +435,18 @@ final class Tumtook_Brand_Showcase_Plugin
 									)
 								);
 								?>
+								<div class="ttbs-admin-field ttbs-admin-field--full">
+									<label for="ttbs-brand-name-<?php echo esc_attr($index); ?>"><?php esc_html_e('ชื่อแบรนด์ (ดีไซน์การ์ด)', 'tumtook-brand-showcase'); ?></label>
+									<input id="ttbs-brand-name-<?php echo esc_attr($index); ?>" type="text"
+										name="tumtook_brand_showcase_data[slides][<?php echo esc_attr($index); ?>][brand_name]"
+										value="<?php echo esc_attr($slide['brand_name']); ?>" />
+								</div>
+								<div class="ttbs-admin-field ttbs-admin-field--full">
+									<label for="ttbs-description-<?php echo esc_attr($index); ?>"><?php esc_html_e('คำอธิบายใต้ชื่อแบรนด์ (ดีไซน์การ์ด)', 'tumtook-brand-showcase'); ?></label>
+									<textarea id="ttbs-description-<?php echo esc_attr($index); ?>" rows="3"
+										name="tumtook_brand_showcase_data[slides][<?php echo esc_attr($index); ?>][description]"><?php echo esc_textarea($slide['description']); ?></textarea>
+									<p class="description"><?php esc_html_e('แนะนำรูปแนวตั้ง 3:4 และใส่ Card link URL เพื่อให้กดได้ทั้งรูปและข้อความ', 'tumtook-brand-showcase'); ?></p>
+								</div>
 							</div>
 						</div>
 					<?php endforeach; ?>
@@ -471,6 +495,8 @@ final class Tumtook_Brand_Showcase_Plugin
 				'image_url' => esc_url_raw(isset($slide['image_url']) ? $slide['image_url'] : ''),
 				'alt' => sanitize_text_field(isset($slide['alt']) ? $slide['alt'] : ''),
 				'link_url' => esc_url_raw(isset($slide['link_url']) ? $slide['link_url'] : ''),
+				'brand_name' => sanitize_text_field(isset($slide['brand_name']) ? $slide['brand_name'] : ''),
+				'description' => sanitize_textarea_field(isset($slide['description']) ? $slide['description'] : ''),
 			);
 		}
 
@@ -517,6 +543,7 @@ final class Tumtook_Brand_Showcase_Plugin
 				'subtitle' => '',
 				'view_all_label' => '',
 				'view_all_url' => '',
+				'layout' => 'classic',
 			)
 		);
 
@@ -524,10 +551,11 @@ final class Tumtook_Brand_Showcase_Plugin
 		wp_enqueue_script('tumtook-brand-showcase');
 
 		$instance_id = 'ttbs-showcase-' . $page_id . '-' . wp_generate_uuid4();
+		$is_cards = 'cards' === $args['layout'];
 
 		ob_start();
 		?>
-		<section class="ttbs-showcase" id="<?php echo esc_attr($instance_id); ?>" data-autoplay-delay="4500">
+		<section class="ttbs-showcase<?php echo $is_cards ? ' ttbs-showcase--cards' : ''; ?>" id="<?php echo esc_attr($instance_id); ?>" data-autoplay-delay="4500">
 			<?php if (!empty($args['title']) || !empty($args['view_all_url'])): ?>
 				<div class="ttbs-showcase__header">
 					<?php if (!empty($args['title'])): ?>
@@ -544,6 +572,9 @@ final class Tumtook_Brand_Showcase_Plugin
 			<div class="ttbs-showcase__viewport" data-slider-track>
 				<?php foreach ($slides as $index => $slide): ?>
 						<article class="ttbs-showcase__slide<?php echo 0 === $index ? ' is-active' : ''; ?>" data-slide>
+							<?php if ($is_cards): ?>
+								<?php $this->render_brand_card($slide); ?>
+							<?php else: ?>
 							<div class="ttbs-showcase__card">
 								<?php if (!empty($slide['link_url'])): ?>
 										<a class="ttbs-showcase__card-link" href="<?php echo esc_url($slide['link_url']); ?>" draggable="false"
@@ -559,6 +590,7 @@ final class Tumtook_Brand_Showcase_Plugin
 											alt="<?php echo esc_attr($slide['alt']); ?>" loading="lazy" decoding="async" draggable="false" />
 								<?php endif; ?>
 							</div>
+							<?php endif; ?>
 						</article>
 				<?php endforeach; ?>
 			</div>
@@ -587,13 +619,47 @@ final class Tumtook_Brand_Showcase_Plugin
 		return ob_get_clean();
 	}
 
-	public function render_shortcode($atts)
+	private function render_brand_card($slide)
+	{
+		$brand_name = '' !== $slide['brand_name'] ? $slide['brand_name'] : $slide['alt'];
+		$has_link = !empty($slide['link_url']);
+		?>
+		<?php if ($has_link): ?>
+			<a class="ttbs-brand-card" href="<?php echo esc_url($slide['link_url']); ?>" draggable="false"
+				<?php if ('' === $brand_name && '' === $slide['description']): ?>aria-label="<?php esc_attr_e('Open brand link', 'tumtook-brand-showcase'); ?>"<?php endif; ?>>
+		<?php else: ?>
+			<div class="ttbs-brand-card">
+		<?php endif; ?>
+			<div class="ttbs-brand-card__media">
+				<img class="ttbs-brand-card__image" src="<?php echo esc_url($slide['image_url']); ?>"
+					alt="<?php echo esc_attr($slide['alt']); ?>" loading="lazy" decoding="async" draggable="false" />
+			</div>
+			<?php if ('' !== $brand_name || '' !== $slide['description']): ?>
+				<div class="ttbs-brand-card__body">
+					<?php if ('' !== $brand_name): ?>
+						<h3 class="ttbs-brand-card__name"><?php echo esc_html($brand_name); ?></h3>
+					<?php endif; ?>
+					<?php if ('' !== $slide['description']): ?>
+						<p class="ttbs-brand-card__description"><?php echo esc_html($slide['description']); ?></p>
+					<?php endif; ?>
+				</div>
+			<?php endif; ?>
+		<?php if ($has_link): ?>
+			</a>
+		<?php else: ?>
+			</div>
+		<?php endif; ?>
+		<?php
+	}
+
+	public function render_shortcode($atts = array())
 	{
 		$this->register_front_assets();
 
 		$atts = shortcode_atts(
 			array(
 				'page_id' => 0,
+				'layout' => 'classic',
 				'title' => '',
 				'subtitle' => '',
 				'view_all_label' => '',
@@ -622,6 +688,7 @@ final class Tumtook_Brand_Showcase_Plugin
 			$page_id,
 			$slides,
 			array(
+				'layout' => 'cards' === $atts['layout'] ? 'cards' : 'classic',
 				'title' => '' !== $atts['title'] ? $atts['title'] : $page_data['title'],
 				'subtitle' => '' !== $atts['subtitle'] ? $atts['subtitle'] : $page_data['subtitle'],
 				'view_all_label' => '' !== $atts['view_all_label'] ? $atts['view_all_label'] : $page_data['view_all_label'],
