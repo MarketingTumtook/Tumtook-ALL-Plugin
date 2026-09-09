@@ -120,37 +120,22 @@
     };
 
     const syncContainerInset = () => {
-      if (!isCardsLayout) {
-        syncFullBleedWidth();
-      }
+      syncFullBleedWidth();
 
-      if (!isCardsLayout && window.innerWidth <= 1024) {
+      if (window.innerWidth <= 1024) {
         root.style.removeProperty("--ttbs-first-card-inset");
         return;
       }
 
       const containerMaxWidth = getContainerMaxWidth();
-      const containerInset = window.innerWidth <= 767
-        ? 15
-        : window.innerWidth <= 1024
-          ? 32
-          : Math.max(
-            getHeaderContentInset(),
-            (window.innerWidth - containerMaxWidth) / 2,
-            0
-          );
+      const containerInset = Math.max(
+        getHeaderContentInset(),
+        (window.innerWidth - containerMaxWidth) / 2,
+        0
+      );
       const trackRect = track.getBoundingClientRect();
 
       root.style.setProperty("--ttbs-first-card-inset", `${Math.max(0, containerInset - trackRect.left)}px`);
-
-      if (isCardsLayout) {
-        // Only add the missing gutter; boxed shortcodes already have an inset.
-        const rightInset = window.innerWidth - trackRect.right;
-        const trackEndInset = window.innerWidth <= 1024 ? containerInset : 15;
-
-        root.style.setProperty("--ttbs-last-card-inset", `${Math.max(0, trackEndInset - rightInset)}px`);
-        root.style.setProperty("--ttbs-header-end-inset", `${Math.max(0, containerInset - rightInset)}px`);
-      }
     };
 
     syncContainerInset();
@@ -700,6 +685,10 @@
         setCurrentIndex(getNearestSlideIndex(track.scrollLeft));
       });
       resizeObserver.observe(track);
+      // The shortcode's parent can move while the full-width track stays the same size.
+      if (root.parentElement) {
+        resizeObserver.observe(root.parentElement);
+      }
     }
 
     window.addEventListener(

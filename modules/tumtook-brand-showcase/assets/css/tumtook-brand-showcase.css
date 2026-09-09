@@ -34,16 +34,16 @@
 }
 
 @supports selector(:has(*)) {
-  .elementor-widget:has(.ttbs-showcase:not(.ttbs-showcase--cards)),
-  .elementor-element-populated:has(.ttbs-showcase:not(.ttbs-showcase--cards)),
-  .elementor-section:has(.ttbs-showcase:not(.ttbs-showcase--cards)),
-  .elementor-container:has(.ttbs-showcase:not(.ttbs-showcase--cards)),
-  .elementor-column:has(.ttbs-showcase:not(.ttbs-showcase--cards)),
-  .elementor-widget-wrap:has(.ttbs-showcase:not(.ttbs-showcase--cards)),
-  .elementor-widget-container:has(.ttbs-showcase:not(.ttbs-showcase--cards)),
-  .e-con:has(.ttbs-showcase:not(.ttbs-showcase--cards)),
-  .e-con-inner:has(.ttbs-showcase:not(.ttbs-showcase--cards)),
-  .elementor-element:has(> .elementor-widget-container > .ttbs-showcase:not(.ttbs-showcase--cards)) {
+  .elementor-widget:has(.ttbs-showcase),
+  .elementor-element-populated:has(.ttbs-showcase),
+  .elementor-section:has(.ttbs-showcase),
+  .elementor-container:has(.ttbs-showcase),
+  .elementor-column:has(.ttbs-showcase),
+  .elementor-widget-wrap:has(.ttbs-showcase),
+  .elementor-widget-container:has(.ttbs-showcase),
+  .e-con:has(.ttbs-showcase),
+  .e-con-inner:has(.ttbs-showcase),
+  .elementor-element:has(> .elementor-widget-container > .ttbs-showcase) {
     width: 100% !important;
     max-width: 100% !important;
     overflow: visible !important;
@@ -629,23 +629,11 @@
   }
 }
 
-/* Optional portrait cards stay within the shortcode's container. */
+/* Portrait cards share the classic full-width track and container gutters. */
 .ttbs-showcase.ttbs-showcase--cards {
-  --ttbs-first-card-inset: 0px;
-  --ttbs-last-card-inset: 0px;
-  --ttbs-header-end-inset: 0px;
   --ttbs-gap: 16px;
   --ttbs-slides-per-view: 4.2;
-  container-type: inline-size;
-  margin: 0;
-  max-width: 100%;
-  width: 100%;
-}
-
-.ttbs-showcase--cards .ttbs-showcase__header,
-.ttbs-showcase--cards .ttbs-showcase__nav {
-  padding-left: var(--ttbs-first-card-inset);
-  padding-right: var(--ttbs-header-end-inset);
+  margin-top: 0;
 }
 
 .ttbs-showcase--cards .ttbs-showcase__nav [hidden] {
@@ -659,8 +647,7 @@
   );
   max-width: 100%;
   width: 100%;
-  padding: 3px var(--ttbs-last-card-inset) 6px var(--ttbs-first-card-inset);
-  scroll-padding-inline: var(--ttbs-first-card-inset) var(--ttbs-last-card-inset);
+  padding-top: 3px;
 }
 
 .ttbs-showcase--cards .ttbs-showcase__slide {
@@ -778,14 +765,6 @@
 }
 
 @media (max-width: 767px) {
-  .ttbs-showcase--cards .ttbs-showcase__viewport { --ttbs-slides-per-view: 1.42; }
-}
-
-@container (max-width: 1024px) {
-  .ttbs-showcase--cards .ttbs-showcase__viewport { --ttbs-slides-per-view: 3.2; }
-}
-
-@container (max-width: 767px) {
   .ttbs-showcase--cards .ttbs-showcase__viewport { --ttbs-slides-per-view: 1.42; }
 }
 
