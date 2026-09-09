@@ -941,6 +941,7 @@ body.tthpr-slider-page {
     font-size: 16px;
     font-weight: 500;
     line-height: 1.2;
+    white-space: normal;
   }
 
   .tthpr-card-info {
