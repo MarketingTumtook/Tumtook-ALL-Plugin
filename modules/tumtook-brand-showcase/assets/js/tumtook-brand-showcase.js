@@ -119,31 +119,41 @@
       root.style.setProperty("--ttbs-viewport-shift", `${-rootLeft}px`);
     };
 
-    const syncDesktopContainerInset = () => {
-      if (isCardsLayout) {
-        return;
+    const syncContainerInset = () => {
+      if (!isCardsLayout) {
+        syncFullBleedWidth();
       }
 
-      syncFullBleedWidth();
-
-      if (window.innerWidth <= 1024) {
+      if (!isCardsLayout && window.innerWidth <= 1024) {
         root.style.removeProperty("--ttbs-first-card-inset");
         return;
       }
 
       const containerMaxWidth = getContainerMaxWidth();
-      const containerInset = Math.max(
-        getHeaderContentInset(),
-        (window.innerWidth - containerMaxWidth) / 2,
-        0
-      );
+      const containerInset = window.innerWidth <= 767
+        ? 15
+        : window.innerWidth <= 1024
+          ? 32
+          : Math.max(
+            getHeaderContentInset(),
+            (window.innerWidth - containerMaxWidth) / 2,
+            0
+          );
       const trackRect = track.getBoundingClientRect();
 
       root.style.setProperty("--ttbs-first-card-inset", `${Math.max(0, containerInset - trackRect.left)}px`);
+
+      if (isCardsLayout) {
+        // Only add the missing gutter; boxed shortcodes already have an inset.
+        const rightInset = window.innerWidth - trackRect.right;
+        const trackEndInset = window.innerWidth <= 1024 ? containerInset : 15;
+
+        root.style.setProperty("--ttbs-last-card-inset", `${Math.max(0, trackEndInset - rightInset)}px`);
+        root.style.setProperty("--ttbs-header-end-inset", `${Math.max(0, containerInset - rightInset)}px`);
+      }
     };
 
-    syncDesktopContainerInset();
-    window.addEventListener("resize", syncDesktopContainerInset, { passive: true });
+    syncContainerInset();
 
     slides.forEach((slide, index) => {
       slide.dataset.realIndex = index.toString();
@@ -685,6 +695,7 @@
 
     if (isCardsLayout && typeof ResizeObserver !== "undefined") {
       const resizeObserver = new ResizeObserver(() => {
+        syncContainerInset();
         renderPagination();
         setCurrentIndex(getNearestSlideIndex(track.scrollLeft));
       });
@@ -694,7 +705,7 @@
     window.addEventListener(
       "resize",
       () => {
-        syncDesktopContainerInset();
+        syncContainerInset();
         renderPagination();
       },
       { passive: true }
