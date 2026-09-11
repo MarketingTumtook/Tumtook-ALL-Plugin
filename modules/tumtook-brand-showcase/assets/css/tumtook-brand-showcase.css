@@ -699,7 +699,7 @@
   inset: 0;
   isolation: isolate;
   justify-content: flex-end;
-  padding: 16px;
+  padding: 22px;
   position: absolute;
   transform: translateY(0);
   transition: transform 350ms cubic-bezier(0.22, 0.61, 0.36, 1);
@@ -725,7 +725,7 @@
 .ttbs-showcase--cards .ttbs-brand-card__name {
   color: #fff;
   font-family: inherit;
-  font-size: 16px;
+  font-size: 20px;
   font-weight: 600;
   line-height: 1.4;
   margin: 0;
@@ -736,7 +736,7 @@
 .ttbs-showcase--cards .ttbs-brand-card__description {
   color: rgba(255, 255, 255, 0.92);
   font-family: inherit;
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 400;
   line-height: 1.4;
   margin: 4px 0 0;
