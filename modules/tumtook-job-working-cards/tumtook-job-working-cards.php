@@ -409,7 +409,7 @@ final class Tumtook_Job_Working_Cards
 
 		return '' !== trim($excerpt)
 			? wp_trim_words(wp_strip_all_tags($excerpt), 10, '...')
-			: __('', 'tumtook-job-working-cards');
+			: __(' ', 'tumtook-job-working-cards');
 	}
 
 	private function get_card_badge($post_id, $settings)
