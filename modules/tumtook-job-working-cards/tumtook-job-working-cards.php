@@ -405,8 +405,11 @@ final class Tumtook_Job_Working_Cards
 			}
 		}
 
-		$excerpt = get_the_excerpt($post_id);
-		return '' !== trim($excerpt) ? wp_trim_words(wp_strip_all_tags($excerpt), 10, '...') : __('รายละเอียดงาน', 'tumtook-job-working-cards');
+		$excerpt = get_post_field('post_excerpt', $post_id, 'raw');
+
+		return '' !== trim($excerpt)
+			? wp_trim_words(wp_strip_all_tags($excerpt), 10, '...')
+			: __('รายละเอียดงาน', 'tumtook-job-working-cards');
 	}
 
 	private function get_card_badge($post_id, $settings)
