@@ -135,6 +135,8 @@
 
 ใช้ shortcode `[tumtook_job_working_cards]` สำหรับดึง post type งานจาก JetEngine มาแสดงเป็น card slider โดย frontend class และ slider namespace จะใช้ `ttwc-*` ทั้งหมด
 
+ส่วน `ttwc-price` ดึงค่าจากฟิลด์ JetEngine ที่มี Name/ID เป็น `salary` ของแต่ละโพสต์โดยอัตโนมัติ เช่น `18,000–25,000 บาท` หรือ `ตามตกลง` ทั้งการแสดงครั้งแรกและการโหลดใหม่ผ่าน AJAX ถ้าไม่มีค่าจะเว้นว่าง โดยไม่ดึงสถานที่ บริษัท หรือข้อความย่อมาแทน
+
 ### วิธีใช้ Shortcode
 
 - แสดง Job Working posts ทั้งหมด: `[tumtook_job_working_cards]`
@@ -155,7 +157,7 @@
 - `view_all_label`: ข้อความลิงก์ดูทั้งหมด ค่าเริ่มต้นคือ `ดูงานทั้งหมด`
 - `view_all_url`: URL ของลิงก์ดูทั้งหมด
 - `button_label`: ข้อความปุ่มในการ์ด ค่าเริ่มต้นคือ `ดูรายละเอียด`
-- `info_meta`: meta key สำหรับข้อความรายละเอียดสั้นในการ์ด เช่น เงินเดือน/สถานที่
+- `info_meta`: meta key ที่ใช้แสดงใน `ttwc-price` ค่าเริ่มต้นคือ `salary` หากต้องการใช้ฟิลด์อื่นให้ระบุเอง เช่น `info_meta="salary_range"` โดยฟิลด์ที่ไม่มีค่าจะแสดงว่าง
 - `badge_meta`: meta key สำหรับ badge ถ้าไม่ใส่จะใช้ term แรกจาก taxonomy
 - `image_meta`: meta key รูปภาพ ถ้าไม่ใส่จะใช้ featured image ก่อน
 - `orderby`: วิธีเรียงข้อมูล รองรับ `rand`, `date`, `title`, `menu_order`

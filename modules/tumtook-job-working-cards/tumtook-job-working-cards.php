@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Tumtook Job Working Cards
  * Description: แสดง JetEngine Job Working posts เป็น card slider ด้วย shortcode [tumtook_job_working_cards] รองรับ post_type, taxonomy, category, category_id และ limit.
- * Version: 1.0.2
+ * Version: 1.0.3
  * Author: Tumtook
  * Text Domain: tumtook-job-working-cards
  */
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
 
 final class Tumtook_Job_Working_Cards
 {
-	const VERSION = '1.0.2';
+	const VERSION = '1.0.3';
 	const SHORTCODE = 'tumtook_job_working_cards';
 	const FONT_HANDLE = 'tumtook-kanit-font';
 	const STYLE_HANDLE = 'tumtook-job-working-cards';
@@ -140,6 +140,7 @@ final class Tumtook_Job_Working_Cards
 	private function normalize_settings($raw)
 	{
 		$raw = is_array($raw) ? wp_unslash($raw) : array();
+		$info_meta = isset($raw['info_meta']) ? sanitize_key($raw['info_meta']) : '';
 
 		return array(
 			'post_type' => isset($raw['post_type']) ? sanitize_key($raw['post_type']) : '',
@@ -151,7 +152,7 @@ final class Tumtook_Job_Working_Cards
 			'taxonomy' => isset($raw['taxonomy']) ? sanitize_key($raw['taxonomy']) : '',
 			'category' => isset($raw['category']) ? sanitize_text_field($raw['category']) : '',
 			'category_id' => isset($raw['category_id']) ? sanitize_text_field($raw['category_id']) : '',
-			'info_meta' => isset($raw['info_meta']) ? sanitize_key($raw['info_meta']) : '',
+			'info_meta' => '' !== $info_meta ? $info_meta : 'salary',
 			'badge_meta' => isset($raw['badge_meta']) ? sanitize_key($raw['badge_meta']) : '',
 			'image_meta' => isset($raw['image_meta']) ? sanitize_key($raw['image_meta']) : '',
 			'orderby' => isset($raw['orderby']) ? sanitize_key($raw['orderby']) : 'rand',
@@ -391,25 +392,8 @@ final class Tumtook_Job_Working_Cards
 
 	private function get_card_info($post_id, $settings)
 	{
-		if (!empty($settings['info_meta'])) {
-			$value = $this->normalize_text_meta(get_post_meta($post_id, $settings['info_meta'], true));
-			if ('' !== $value) {
-				return $value;
-			}
-		}
-
-		foreach (array('salary', 'job_salary', 'location', 'job_location', 'company', 'job_company') as $meta_key) {
-			$value = $this->normalize_text_meta(get_post_meta($post_id, $meta_key, true));
-			if ('' !== $value) {
-				return $value;
-			}
-		}
-
-		$excerpt = get_post_field('post_excerpt', $post_id, 'raw');
-
-		return '' !== trim($excerpt)
-			? wp_trim_words(wp_strip_all_tags($excerpt), 10, '...')
-			: __(' ', 'tumtook-job-working-cards');
+		// JetEngine exposes post-type fields through the WordPress metadata API.
+		return $this->normalize_text_meta(get_post_meta($post_id, $settings['info_meta'], true));
 	}
 
 	private function get_card_badge($post_id, $settings)
