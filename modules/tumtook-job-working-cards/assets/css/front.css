@@ -509,6 +509,9 @@ body.ttwc-slider-page {
 .ttwc-pagination {
   display: flex;
   gap: 4px;
+  justify-content: center;
+  max-width: min(100%, 340px);
+  overflow: hidden;
   transform: translateY(0);
 }
 
@@ -528,6 +531,10 @@ body.ttwc-slider-page {
 
 .ttwc-dot:hover{
   background-color: transparent !important;
+}
+
+.ttwc-dot.is-hidden {
+  display: none;
 }
 
 .ttwc-section[data-ttwc-slider] .ttwc-dot,

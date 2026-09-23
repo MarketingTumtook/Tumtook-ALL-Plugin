@@ -181,9 +181,36 @@
       return pageIndex;
     }
 
+    function getMaxVisibleDots() {
+      if (window.matchMedia && window.matchMedia("(max-width: 767px)").matches) {
+        return 5;
+      }
+
+      if (window.matchMedia && window.matchMedia("(max-width: 1024px)").matches) {
+        return 7;
+      }
+
+      return 9;
+    }
+
+    function getVisibleDotRange(totalDots, activeDotIndex) {
+      var maxVisible = Math.min(totalDots, getMaxVisibleDots());
+      var half = Math.floor(maxVisible / 2);
+      var start = Math.max(0, activeDotIndex - half);
+      var end = Math.min(totalDots - 1, start + maxVisible - 1);
+
+      start = Math.max(0, end - maxVisible + 1);
+
+      return {
+        start: start,
+        end: end
+      };
+    }
+
     function setActiveSlide(index) {
       var dots = Array.prototype.slice.call(root.querySelectorAll("." + config.dotClass));
       var activeDotIndex = 0;
+      var visibleDotRange;
 
       slides.forEach(function (slide) {
         slide.classList.toggle("is-active", getRealIndexFromSlide(slide) === index);
@@ -197,8 +224,11 @@
         }
       });
 
+      visibleDotRange = getVisibleDotRange(dots.length, activeDotIndex);
+
       dots.forEach(function (dot, dotIndex) {
         dot.classList.toggle("is-active", dotIndex === activeDotIndex);
+        dot.classList.toggle("is-hidden", dotIndex < visibleDotRange.start || dotIndex > visibleDotRange.end);
       });
     }
 
