@@ -35,6 +35,8 @@
     var dragMomentumFriction = 0.94;
     var dragMomentumMinVelocity = 0.04;
     var dragMomentumMaxVelocity = 2.8;
+    var dotWindowStart = 0;
+    var lastActiveDotIndex = 0;
 
     if (!track || !slides.length) {
       return;
@@ -196,10 +198,29 @@
     function getVisibleDotRange(totalDots, activeDotIndex) {
       var maxVisible = Math.min(totalDots, getMaxVisibleDots());
       var half = Math.floor(maxVisible / 2);
-      var start = Math.max(0, activeDotIndex - half);
-      var end = Math.min(totalDots - 1, start + maxVisible - 1);
+      var lastWindowStart = Math.max(0, totalDots - maxVisible);
+      var nearEndIndex = Math.max(0, totalDots - half - 1);
+      var start = dotWindowStart;
+      var end;
 
-      start = Math.max(0, end - maxVisible + 1);
+      if (totalDots <= maxVisible) {
+        start = 0;
+      } else if (activeDotIndex <= half) {
+        start = 0;
+      } else if (activeDotIndex >= nearEndIndex) {
+        start = lastWindowStart;
+      } else if (activeDotIndex > lastActiveDotIndex) {
+        if (activeDotIndex >= start + maxVisible - 1) {
+          start = activeDotIndex - maxVisible + 1;
+        }
+      } else if (activeDotIndex < lastActiveDotIndex && activeDotIndex <= start) {
+        start = activeDotIndex;
+      }
+
+      start = Math.max(0, Math.min(lastWindowStart, start));
+      end = Math.min(totalDots - 1, start + maxVisible - 1);
+      dotWindowStart = start;
+      lastActiveDotIndex = activeDotIndex;
 
       return {
         start: start,
