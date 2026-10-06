@@ -93,3 +93,31 @@ final class Tumtook_Elementor_Tag_Product_Price extends \Elementor\Core\DynamicT
 		echo esc_html(Tumtook_Elementor_Loop_Dynamic_Tags::get_price());
 	}
 }
+
+final class Tumtook_Elementor_Tag_Product_Url extends \Elementor\Core\DynamicTags\Data_Tag
+{
+	public function get_name()
+	{
+		return 'tthpr-url';
+	}
+
+	public function get_title()
+	{
+		return __('Tumtook Product URL', 'tumtook-page-product-recommendations');
+	}
+
+	public function get_group()
+	{
+		return Tumtook_Elementor_Loop_Dynamic_Tags::GROUP;
+	}
+
+	public function get_categories()
+	{
+		return array(\Elementor\Modules\DynamicTags\Module::URL_CATEGORY);
+	}
+
+	public function get_value(array $options = array())
+	{
+		return Tumtook_Elementor_Loop_Dynamic_Tags::get_url();
+	}
+}

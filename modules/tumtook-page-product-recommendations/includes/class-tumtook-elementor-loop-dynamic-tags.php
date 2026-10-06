@@ -35,6 +35,7 @@ final class Tumtook_Elementor_Loop_Dynamic_Tags
 		$dynamic_tags->register(new Tumtook_Elementor_Tag_Product_Image());
 		$dynamic_tags->register(new Tumtook_Elementor_Tag_Product_Title());
 		$dynamic_tags->register(new Tumtook_Elementor_Tag_Product_Price());
+		$dynamic_tags->register(new Tumtook_Elementor_Tag_Product_Url());
 	}
 
 	public static function get_context_post_id()
@@ -114,5 +115,11 @@ final class Tumtook_Elementor_Loop_Dynamic_Tags
 		}
 
 		return '฿' . $price;
+	}
+
+	public static function get_url($post_id = 0)
+	{
+		$post_id = $post_id ? absint($post_id) : self::get_context_post_id();
+		return $post_id ? get_permalink($post_id) : '';
 	}
 }
