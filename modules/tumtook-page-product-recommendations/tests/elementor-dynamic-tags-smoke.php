@@ -35,9 +35,12 @@ function check($condition, $message) {
 }
 
 require dirname(__DIR__) . '/includes/class-tumtook-elementor-loop-dynamic-tags.php';
+require dirname(__DIR__) . '/includes/class-tumtook-elementor-loop-query.php';
 $integration = new Tumtook_Elementor_Loop_Dynamic_Tags();
+$query_integration = new Tumtook_Elementor_Loop_Query();
 
 check(isset($GLOBALS['actions']['elementor/dynamic_tags/register']), 'Elementor dynamic-tag registration hook is added');
+check(isset($GLOBALS['actions']['elementor/element/loop-grid/section_query/before_section_end']), 'Loop Grid query-control hook is added');
 check(Tumtook_Elementor_Loop_Dynamic_Tags::get_title() === 'Fallback title', 'Title falls back to the current Loop Item title');
 check(Tumtook_Elementor_Loop_Dynamic_Tags::get_image() === array('id' => 911, 'url' => '/image/911.jpg'), 'Image falls back to the featured image');
 check(Tumtook_Elementor_Loop_Dynamic_Tags::get_price() === '', 'An empty price stays empty');
@@ -84,5 +87,34 @@ $manager = new Test_Dynamic_Tags_Manager();
 $integration->register_tags($manager);
 check(isset($manager->groups['tumtook-product-card']), 'Tumtook Product Card group is registered');
 check(array_keys($manager->tags) === array('tthpr-image', 'tthpr-product-title', 'tthpr-price', 'tthpr-url'), 'All four Elementor Loop Item tags are registered');
+
+class Test_Loop_Grid_Element
+{
+	public $control = array(
+		'options' => array(
+			'post_date' => 'Date',
+			'post_title' => 'Title',
+			'menu_order' => 'Menu Order',
+			'rand' => 'Random',
+		),
+	);
+
+	public function get_controls($control_id)
+	{
+		return 'post_query_orderby' === $control_id ? $this->control : null;
+	}
+
+	public function update_control($control_id, $args)
+	{
+		if ('post_query_orderby' === $control_id) {
+			$this->control = array_merge($this->control, $args);
+		}
+	}
+}
+
+$loop_grid = new Test_Loop_Grid_Element();
+$query_integration->add_selected_order_option($loop_grid);
+check(isset($loop_grid->control['options']['post__in']), 'Selected Order is added to the Loop Grid Order By control');
+check(array_keys($loop_grid->control['options']) === array('post_date', 'post_title', 'menu_order', 'post__in', 'rand'), 'Selected Order is inserted without removing Elementor options');
 
 echo "All Elementor dynamic-tag smoke tests passed.\n";
