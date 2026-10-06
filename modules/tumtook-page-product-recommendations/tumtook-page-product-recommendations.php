@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Tumtook Page Product Recommendations
  * Description: Adds a page-based Card Products ทั้งหมด slider with manual page selection, price fields, and a layout tailored for Tumtook landing pages.
- * Version: 1.1.33
+ * Version: 1.1.34
  * Author: Tumtook
  * Text Domain: tumtook-page-product-recommendations
  */
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
 
 final class Tumtook_Page_Product_Recommendations
 {
-	const VERSION = '1.1.33';
+	const VERSION = '1.1.34';
 	const META_KEY = '_tt_page_product_recommendations';
 	const PAGE_PRICE_META = '_ttpr_page_price';
 	const PAGE_BADGE_META = '_ttpr_page_badge';
@@ -33,6 +33,8 @@ final class Tumtook_Page_Product_Recommendations
 
 	public function __construct()
 	{
+		require_once __DIR__ . '/includes/class-tumtook-elementor-loop-dynamic-tags.php';
+
 		add_action('add_meta_boxes', array($this, 'register_meta_box'));
 		add_action('save_post_page', array($this, 'save_meta'));
 		add_action('admin_enqueue_scripts', array($this, 'enqueue_admin_assets'));
@@ -41,6 +43,7 @@ final class Tumtook_Page_Product_Recommendations
 		add_action('wp_ajax_nopriv_ttpr_refresh_items', array($this, 'ajax_get_items'));
 		add_shortcode(self::SHORTCODE, array($this, 'render_shortcode'));
 		add_shortcode(self::LEGACY_SHORTCODE, array($this, 'render_shortcode'));
+		new Tumtook_Elementor_Loop_Dynamic_Tags();
 	}
 
 	public function register_rest_routes()
