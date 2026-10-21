@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Tumtook Catalog Image Data
  * Description: Fetch and display image catalog data from API inside WordPress pages.
- * Version: 1.1.16
+ * Version: 1.1.17
  * Author: Tumtook
  * Text Domain: api-catalog-images-viewer
  */
@@ -14,10 +14,11 @@ if (!defined('ABSPATH')) {
 final class API_Catalog_Images_Plugin
 {
 	const OPTION_KEY = 'catalog_images_settings';
+	const CACHE_GENERATION_OPTION = 'tumtook_catalog_images_cache_generation';
 	const META_KEY = '_tumtook_catalog_images_page_settings';
 	const ITEM_CONTENT_META_KEY = '_tumtook_catalog_images_item_content';
 	const SHORTCODE = 'catalog_images';
-	const VERSION = '1.1.16';
+	const VERSION = '1.1.17';
 	const NONCE_KEY = 'tumtook_catalog_images_nonce';
 	const FONT_HANDLE = 'tumtook-kanit-font';
 
@@ -157,7 +158,7 @@ final class API_Catalog_Images_Plugin
 		$settings = $this->get_effective_settings_for_shortcode();
 		$atts = shortcode_atts(
 			array(
-				'limit' => 12,
+				'limit' => 0,
 				'post_id' => 0,
 			),
 			$atts,
@@ -239,7 +240,7 @@ final class API_Catalog_Images_Plugin
 		wp_nonce_field('tumtook_catalog_images_save_page_settings', self::NONCE_KEY);
 
 		if (!empty($settings['api_url'])) {
-			$result = $this->fetch_images($settings, 0);
+			$result = $this->fetch_images($settings, 0, true);
 			if (is_wp_error($result)) {
 				$preview_error = __('ดึงไม่สําเร็จ', 'api-catalog-images-viewer');
 			} else {
@@ -376,20 +377,24 @@ final class API_Catalog_Images_Plugin
 
 		if (empty($item_output)) {
 			delete_post_meta($post_id, self::ITEM_CONTENT_META_KEY);
-			return;
+		} else {
+			update_post_meta($post_id, self::ITEM_CONTENT_META_KEY, $item_output);
 		}
 
-		update_post_meta($post_id, self::ITEM_CONTENT_META_KEY, $item_output);
+		$this->refresh_cache_generation();
 	}
 
-	private function fetch_images($settings, $limit = 0)
+	private function fetch_images($settings, $limit = 0, $force_refresh = false)
 	{
 		$settings = wp_parse_args($settings, self::get_default_settings());
-		$cache_key = 'aiv_' . md5(self::VERSION . '|' . wp_json_encode($settings) . '|' . $limit);
-		$cached = get_transient($cache_key);
+		$cache_generation = (string) get_option(self::CACHE_GENERATION_OPTION, '1');
+		$cache_key = 'aiv_' . md5(self::VERSION . '|' . $cache_generation . '|' . wp_json_encode($settings) . '|' . $limit);
 
-		if (false !== $cached) {
-			return $cached;
+		if (!$force_refresh) {
+			$cached = get_transient($cache_key);
+			if (false !== $cached) {
+				return $cached;
+			}
 		}
 
 		$headers = array(
@@ -471,6 +476,11 @@ final class API_Catalog_Images_Plugin
 		set_transient($cache_key, $images, max(1, absint($settings['cache_minutes'])) * MINUTE_IN_SECONDS);
 
 		return $images;
+	}
+
+	private function refresh_cache_generation()
+	{
+		update_option(self::CACHE_GENERATION_OPTION, wp_generate_uuid4(), false);
 	}
 
 	private function extract_items($data, $items_path)
@@ -1083,7 +1093,7 @@ final class API_Catalog_Images_Plugin
 			wp_send_json_error(array('message' => __('ดึงไม่สําเร็จ', 'api-catalog-images-viewer')), 400);
 		}
 
-		$result = $this->fetch_images($settings, 0);
+		$result = $this->fetch_images($settings, 0, true);
 
 		if (is_wp_error($result) || empty($result)) {
 			wp_send_json_error(array('message' => __('ดึงไม่สําเร็จ', 'api-catalog-images-viewer')), 400);
