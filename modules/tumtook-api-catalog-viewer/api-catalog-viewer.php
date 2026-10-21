@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Tumtook Catalog Image Data
  * Description: Fetch and display image catalog data from API inside WordPress pages.
- * Version: 1.1.17
+ * Version: 1.1.18
  * Author: Tumtook
  * Text Domain: api-catalog-images-viewer
  */
@@ -14,11 +14,11 @@ if (!defined('ABSPATH')) {
 final class API_Catalog_Images_Plugin
 {
 	const OPTION_KEY = 'catalog_images_settings';
-	const CACHE_GENERATION_OPTION = 'tumtook_catalog_images_cache_generation';
+	const CACHE_GENERATION_META_KEY = '_tumtook_catalog_images_cache_generation';
 	const META_KEY = '_tumtook_catalog_images_page_settings';
 	const ITEM_CONTENT_META_KEY = '_tumtook_catalog_images_item_content';
 	const SHORTCODE = 'catalog_images';
-	const VERSION = '1.1.17';
+	const VERSION = '1.1.18';
 	const NONCE_KEY = 'tumtook_catalog_images_nonce';
 	const FONT_HANDLE = 'tumtook-kanit-font';
 
@@ -178,7 +178,7 @@ final class API_Catalog_Images_Plugin
 			return '<div class="aiv-message">' . esc_html__('Please configure the API URL in this Page first.', 'api-catalog-images-viewer') . '</div>';
 		}
 
-		$items = $this->fetch_images($settings, absint($atts['limit']));
+		$items = $this->fetch_images($settings, absint($atts['limit']), false, $content_post_id);
 
 		if (is_wp_error($items)) {
 			return '<div class="aiv-message">' . esc_html($items->get_error_message()) . '</div>';
@@ -234,19 +234,8 @@ final class API_Catalog_Images_Plugin
 	{
 		$page_settings = $this->get_page_settings($post->ID);
 		$settings = wp_parse_args($page_settings, self::get_default_settings());
-		$preview_items = array();
-		$preview_error = '';
 
 		wp_nonce_field('tumtook_catalog_images_save_page_settings', self::NONCE_KEY);
-
-		if (!empty($settings['api_url'])) {
-			$result = $this->fetch_images($settings, 0, true);
-			if (is_wp_error($result)) {
-				$preview_error = __('ดึงไม่สําเร็จ', 'api-catalog-images-viewer');
-			} else {
-				$preview_items = $result;
-			}
-		}
 
 		$fields = array(
 			'api_url' => __('ลิงก์ API', 'api-catalog-images-viewer'),
@@ -298,14 +287,8 @@ final class API_Catalog_Images_Plugin
 						<p class="aiv-preview-message">
 							<?php esc_html_e('ใส่ API URL แล้วระบบจะลองโหลดรูปในส่วนนี้ทันที', 'api-catalog-images-viewer'); ?>
 						</p>
-					<?php elseif (!empty($preview_error)): ?>
-						<div class="notice notice-error inline aiv-preview-message">
-							<p><?php echo esc_html($preview_error); ?></p>
-						</div>
-					<?php elseif (empty($preview_items)): ?>
-						<p class="aiv-preview-message"><?php esc_html_e('ดึงไม่สําเร็จ', 'api-catalog-images-viewer'); ?></p>
 					<?php else: ?>
-						<?php echo $this->render_editable_preview_items($preview_items); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+						<p class="aiv-preview-message"><?php esc_html_e('กําลังโหลดรูป...', 'api-catalog-images-viewer'); ?></p>
 					<?php endif; ?>
 				</div>
 			</div>
@@ -381,13 +364,13 @@ final class API_Catalog_Images_Plugin
 			update_post_meta($post_id, self::ITEM_CONTENT_META_KEY, $item_output);
 		}
 
-		$this->refresh_cache_generation();
+		$this->refresh_cache_generation($post_id);
 	}
 
-	private function fetch_images($settings, $limit = 0, $force_refresh = false)
+	private function fetch_images($settings, $limit = 0, $force_refresh = false, $post_id = 0)
 	{
 		$settings = wp_parse_args($settings, self::get_default_settings());
-		$cache_generation = (string) get_option(self::CACHE_GENERATION_OPTION, '1');
+		$cache_generation = $post_id > 0 ? (string) get_post_meta($post_id, self::CACHE_GENERATION_META_KEY, true) : '';
 		$cache_key = 'aiv_' . md5(self::VERSION . '|' . $cache_generation . '|' . wp_json_encode($settings) . '|' . $limit);
 
 		if (!$force_refresh) {
@@ -478,9 +461,9 @@ final class API_Catalog_Images_Plugin
 		return $images;
 	}
 
-	private function refresh_cache_generation()
+	private function refresh_cache_generation($post_id)
 	{
-		update_option(self::CACHE_GENERATION_OPTION, wp_generate_uuid4(), false);
+		update_post_meta($post_id, self::CACHE_GENERATION_META_KEY, wp_generate_uuid4());
 	}
 
 	private function extract_items($data, $items_path)
@@ -1093,7 +1076,7 @@ final class API_Catalog_Images_Plugin
 			wp_send_json_error(array('message' => __('ดึงไม่สําเร็จ', 'api-catalog-images-viewer')), 400);
 		}
 
-		$result = $this->fetch_images($settings, 0, true);
+		$result = $this->fetch_images($settings, 0, true, $post_id);
 
 		if (is_wp_error($result) || empty($result)) {
 			wp_send_json_error(array('message' => __('ดึงไม่สําเร็จ', 'api-catalog-images-viewer')), 400);

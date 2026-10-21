@@ -25,6 +25,7 @@
 
 	let timer = null;
 	let requestId = 0;
+	let previewController = null;
 
 	const getPayload = () => ({
 		api_url: fields.api_url ? fields.api_url.value.trim() : "",
@@ -161,8 +162,15 @@
 		const currentRequestId = ++requestId;
 		const payload = getPayload();
 
+		if (previewController) {
+			previewController.abort();
+		}
+		previewController = new AbortController();
+		const currentController = previewController;
+
 		if (!payload.api_url) {
 			renderMessage(TumtookApiImageViewerAdmin.emptyUrlText, false);
+			previewController = null;
 			return;
 		}
 
@@ -181,7 +189,8 @@
 			const response = await fetch(TumtookApiImageViewerAdmin.ajaxUrl, {
 				method: "POST",
 				credentials: "same-origin",
-				body: formData
+				body: formData,
+				signal: currentController.signal
 			});
 			const data = await response.json();
 
@@ -197,7 +206,14 @@
 			previewContent.innerHTML = data.data.html;
 			initCustomEditors(previewContent);
 		} catch (error) {
+			if (error.name === "AbortError") {
+				return;
+			}
 			renderMessage(TumtookApiImageViewerAdmin.failureText, true);
+		} finally {
+			if (previewController === currentController) {
+				previewController = null;
+			}
 		}
 	};
 
@@ -224,11 +240,11 @@
 				return;
 			}
 
-			schedulePreviewReload(120);
+			schedulePreviewReload(600);
 			return;
 		}
 
-		schedulePreviewReload(eventName === "blur" || eventName === "change" ? 100 : 400);
+		schedulePreviewReload(eventName === "blur" || eventName === "change" ? 100 : 600);
 	};
 
 	["input", "change", "keyup", "blur", "paste"].forEach((eventName) => {
