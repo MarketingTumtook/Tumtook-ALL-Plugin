@@ -15,9 +15,11 @@
 9. Tumtook Video How To Slider
 10. Tumtook Gallery Auto
 11. Tumtook Home Product Recommendations
+12. Tumtook Contact Map
 
 ## Shortcodes Included
 
+- `[tumtook_contact_map]`
 - `[tumtook_brand_showcase]`
 - `[tumtook_brand_showCase]`
 - `[tumtook_catalog code="PDF"]`
@@ -177,3 +179,41 @@ Do not activate this combined plugin together with the old standalone versions. 
 - Fixed Tumtook catalog image rendering by adding a same-origin WordPress image proxy fallback.
 - Catalog images now use server-side cached image URLs first and fall back to the original remote image URL if needed.
 - Added support for multiple possible API image URL fields such as `fileUrl`, `imageUrl`, `url`, and `path`.
+
+## Contact Map — v1.0.99
+
+เพิ่มโมดูล `modules/tumtook-contact-map/` สำหรับแผนที่ Mapbox พร้อมโมเดล GLB อุดมสุข สุขสวัสดิ์ และพระประแดง
+
+### ตั้งค่าและวางใน Elementor
+
+1. อัปเดตปลั๊กอิน **Tumtook All-in-One Modules** ด้วยไฟล์ ZIP เวอร์ชัน 1.0.99 ถ้าเคยใช้ Tumtook Contact Map ตัวแยก ให้ปิดตัวแยกก่อน
+2. ไป **Settings → Tumtook Contact Map** ใส่ Mapbox Public token ที่ขึ้นต้น `pk.` แล้วกด **บันทึกการตั้งค่า**
+3. เปิดหน้า Contact ใน Elementor ค้นหาวิดเจ็ต **Tumtook Contact Map** แล้วลากลง Container หรือใช้ Shortcode widget ใส่ `[tumtook_contact_map]`
+4. อัปเดตหน้าแล้วตรวจหน้าจริง ใน Elementor editor ต้องกดเปิดแผนที่เองเพื่อหลีกเลี่ยงการโหลดแผนที่ซ้ำระหว่างแก้หน้า
+
+ไม่ต้องติดตั้งปลั๊กอินแผนที่ตัวแยก และไม่ต้องกรอก token บนหน้าเว็บ โมดูลไม่ได้ฝัง token ของบัญชีใดไว้ในแพ็กเกจ หากมีค่า `ttcm_token` จากตัวแยกเดิม จะอ่านเป็นค่าเริ่มต้นได้
+
+### สิ่งที่รวมอยู่
+
+- ภาพรวม 3 สาขาเมื่อเปิดหน้า หมุดจัดอยู่บริเวณกลางแผนที่ คลิกหมุดหรือการ์ดสาขาเพื่อซูมเข้า
+- สีพื้นขาวอมเทา แม่น้ำฟ้าอ่อน หมุดแดง และปุ่ม Google Maps สีแดง
+- โมเดลครบ 3 สาขา พร้อมตำแหน่งและมุมกล้องที่จัดไว้ในพรีวิว
+- พื้นที่ clip เฉพาะใต้โมเดลเพื่อตัดอาคารเดิมที่ซ้อนกัน อาคารรอบข้างยังคงเป็น 3D
+- ตั้งค่า Longitude, Latitude และองศาโมเดลแยกแต่ละสาขาได้ในหลังบ้าน เว้นว่างเพื่อคืนค่าเริ่มต้น
+- โหลด asset แผนที่เฉพาะหน้าที่ใช้ shortcode หรือวิดเจ็ต รองรับวิดเจ็ตที่ Elementor เพิ่มหรือแทนที่ภายหลัง
+- เมื่อ WebGL หรือ Mapbox ใช้งานไม่ได้ ยังเลือกสาขาและกด Google Maps ได้
+
+Public token อยู่ในหน้าเว็บตามการทำงานปกติของ Mapbox ควรกำหนด Allowed URLs ให้ตรงโดเมนเว็บไซต์ ไม่ใช้ Secret token (`sk.`) ตำแหน่งโมเดลยังเป็นการจัดวางจากภาพโดยประมาณ ส่วนลิงก์นำทางเก็บจุด Google Maps ที่ให้มา
+
+โมดูลนี้ไม่แก้ header/footer ไม่เปลี่ยนหน้า Contact ให้อัตโนมัติ และไม่ลบการตั้งค่าเมื่อปิดปลั๊กอิน
+
+### Contact Map: ตรวจ Token และข้อความสำรอง — v1.0.100
+
+ก่อนสร้างแผนที่ โมดูลตรวจ Public token และขอข้อมูล Mapbox Standard เพื่อยืนยันว่าบริการตอบกลับได้ หากไม่มี token รูปแบบผิด ถูกปฏิเสธ (401/403) คำตอบว่าง/ผิดรูปแบบ หรือเครือข่ายล้มเหลว จะแสดงข้อความแทนแผนที่ พร้อมปุ่มลองใหม่ โดยยังเลือกสาขาและเปิด Google Maps ได้
+
+การตรวจการเชื่อมต่อมีเวลารอสูงสุด 10 วินาที และการโหลดแผนที่มีเวลารอสูงสุด 20 วินาที หากแผนที่รายงานข้อผิดพลาดภายหลัง จะนำแผนที่ออกและแสดงข้อความสำรองเช่นกัน การถอดวิดเจ็ต Elementor จะยกเลิกคำขอและตัวจับเวลาที่ค้างอยู่
+
+ตรวจด้วยการจำลอง 55 เงื่อนไข รวมถึง retry, การถอดวิดเจ็ตระหว่างรอ และคำตอบที่ว่าง พร้อมทดสอบ token ใช้งานจริงบนพรีวิว
+
+### Contact Map typography — v1.0.104
+Module text and HTML controls inherit the surrounding theme/Elementor font family, without loading a separate web font. Mapbox canvas place labels continue to use the basemap glyph font. Wrapper margin and max-width are left to the Elementor container.

@@ -1,5 +1,6 @@
 .aiv-gallery,
 .aiv-gallery button,
+.aiv-load-more-wrap,
 .aiv-gallery input,
 .aiv-gallery select,
 .aiv-gallery textarea,
@@ -13,6 +14,49 @@
 	gap: 20px;
 	max-width: 1180px;
 	margin: 0 auto;
+}
+
+.aiv-load-more-wrap {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 8px;
+	margin: 24px auto 0;
+}
+
+.aiv-load-more-button {
+	min-width: 180px;
+	min-height: 46px;
+	padding: 10px 24px;
+	border: 1px solid #f72c2c;
+	border-radius: 999px;
+	background: #f72c2c;
+	color: #ffffff;
+	font-family: "Kanit", sans-serif;
+	font-size: 16px;
+	font-weight: 500;
+	cursor: pointer;
+	transition: opacity 160ms ease, transform 160ms ease;
+}
+
+.aiv-load-more-button:hover,
+.aiv-load-more-button:focus-visible {
+	opacity: 0.9;
+	transform: translateY(-1px);
+}
+
+.aiv-load-more-button:disabled {
+	cursor: wait;
+	opacity: 0.65;
+	transform: none;
+}
+
+.aiv-load-more-status {
+	min-height: 24px;
+	margin: 0;
+	color: #b91c1c;
+	font-size: 14px;
+	text-align: center;
 }
 
 .aiv-gallery-item {

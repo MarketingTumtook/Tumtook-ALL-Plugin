@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Tumtook Catalog Image Data
  * Description: Fetch and display image catalog data from API inside WordPress pages.
- * Version: 1.1.18
+ * Version: 1.1.19
  * Author: Tumtook
  * Text Domain: api-catalog-images-viewer
  */
@@ -18,7 +18,7 @@ final class API_Catalog_Images_Plugin
 	const META_KEY = '_tumtook_catalog_images_page_settings';
 	const ITEM_CONTENT_META_KEY = '_tumtook_catalog_images_item_content';
 	const SHORTCODE = 'catalog_images';
-	const VERSION = '1.1.18';
+	const VERSION = '1.1.19';
 	const NONCE_KEY = 'tumtook_catalog_images_nonce';
 	const FONT_HANDLE = 'tumtook-kanit-font';
 
@@ -27,6 +27,8 @@ final class API_Catalog_Images_Plugin
 		add_action('add_meta_boxes', array($this, 'register_page_meta_box'));
 		add_action('save_post_page', array($this, 'save_page_settings'));
 		add_action('wp_ajax_tumtook_catalog_images_preview', array($this, 'ajax_preview_page_images'));
+		add_action('wp_ajax_tumtook_catalog_images_load_more', array($this, 'ajax_load_more_images'));
+		add_action('wp_ajax_nopriv_tumtook_catalog_images_load_more', array($this, 'ajax_load_more_images'));
 		add_action('admin_enqueue_scripts', array($this, 'enqueue_admin_assets'));
 		add_action('wp_enqueue_scripts', array($this, 'enqueue_frontend_assets'));
 		add_shortcode(self::SHORTCODE, array($this, 'render_shortcode'));
@@ -107,6 +109,18 @@ final class API_Catalog_Images_Plugin
 			true
 		);
 
+		wp_localize_script(
+			'api-catalog-images-viewer-frontend',
+			'TumtookApiImageViewer',
+			array(
+				'ajaxUrl' => admin_url('admin-ajax.php'),
+				'nonce' => wp_create_nonce('tumtook_catalog_images_load_more'),
+				'loadMoreText' => __('โหลดเพิ่มเติม', 'api-catalog-images-viewer'),
+				'loadingText' => __('กําลังโหลด...', 'api-catalog-images-viewer'),
+				'failureText' => __('โหลดข้อมูลไม่สําเร็จ กรุณาลองใหม่', 'api-catalog-images-viewer'),
+			)
+		);
+
 		wp_register_style(
 			'api-catalog-images-viewer-frontend',
 			plugin_dir_url(__FILE__) . 'assets/css/frontend.css',
@@ -159,6 +173,7 @@ final class API_Catalog_Images_Plugin
 		$atts = shortcode_atts(
 			array(
 				'limit' => 0,
+				'per_page' => 12,
 				'post_id' => 0,
 			),
 			$atts,
@@ -178,7 +193,13 @@ final class API_Catalog_Images_Plugin
 			return '<div class="aiv-message">' . esc_html__('Please configure the API URL in this Page first.', 'api-catalog-images-viewer') . '</div>';
 		}
 
-		$items = $this->fetch_images($settings, absint($atts['limit']), false, $content_post_id);
+		$total_limit = absint($atts['limit']);
+		$per_page = max(1, min(50, absint($atts['per_page'])));
+		if ($total_limit > 0) {
+			$per_page = min($per_page, $total_limit);
+		}
+
+		$items = $this->fetch_images($settings, $total_limit, false, $content_post_id);
 
 		if (is_wp_error($items)) {
 			return '<div class="aiv-message">' . esc_html($items->get_error_message()) . '</div>';
@@ -190,31 +211,54 @@ final class API_Catalog_Images_Plugin
 
 		wp_enqueue_style('api-catalog-images-viewer-frontend');
 		wp_enqueue_script('api-catalog-images-viewer-frontend');
+		$initial_items = array_slice($items, 0, $per_page);
+		$has_more = count($items) > count($initial_items);
 
 		ob_start();
 		?>
-		<div class="aiv-gallery">
-			<?php foreach ($items as $item): ?>
-				<figure class="aiv-gallery-item">
-					<?php echo $this->render_item_media($item, 'frontend'); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
-					<?php if (!empty($item['content']) || !empty($item['spec_fields'])): ?>
-						<figcaption class="aiv-accordion">
-							<button type="button" class="aiv-accordion-toggle" aria-expanded="false">
-								<span
-									class="aiv-figure-title"><?php esc_html_e('ข้อมูลสินค้าเพิ่มเติม', 'api-catalog-images-viewer'); ?></span>
-								<span class="aiv-accordion-icon" aria-hidden="true"></span>
-							</button>
-							<div class="aiv-accordion-panel" hidden>
-								<div class="aiv-accordion-panel-inner">
-									<?php echo $this->render_item_detail_tabs($item); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
-								</div>
-							</div>
-						</figcaption>
-					<?php endif; ?>
-				</figure>
-			<?php endforeach; ?>
+		<div class="aiv-gallery-wrapper" data-post-id="<?php echo esc_attr($content_post_id); ?>"
+			data-offset="<?php echo esc_attr(count($initial_items)); ?>" data-per-page="<?php echo esc_attr($per_page); ?>"
+			data-limit="<?php echo esc_attr($total_limit); ?>">
+			<div class="aiv-gallery">
+				<?php echo $this->render_gallery_items($initial_items); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+			</div>
+			<?php if ($has_more): ?>
+				<div class="aiv-load-more-wrap">
+					<button type="button" class="aiv-load-more-button">
+						<?php esc_html_e('โหลดเพิ่มเติม', 'api-catalog-images-viewer'); ?>
+					</button>
+					<p class="aiv-load-more-status" aria-live="polite"></p>
+				</div>
+			<?php endif; ?>
 		</div>
 		<?php
+		return ob_get_clean();
+	}
+
+	private function render_gallery_items($items)
+	{
+		ob_start();
+		foreach ($items as $item):
+			?>
+			<figure class="aiv-gallery-item">
+				<?php echo $this->render_item_media($item, 'frontend'); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+				<?php if (!empty($item['content']) || !empty($item['spec_fields'])): ?>
+					<figcaption class="aiv-accordion">
+						<button type="button" class="aiv-accordion-toggle" aria-expanded="false">
+							<span class="aiv-figure-title"><?php esc_html_e('ข้อมูลสินค้าเพิ่มเติม', 'api-catalog-images-viewer'); ?></span>
+							<span class="aiv-accordion-icon" aria-hidden="true"></span>
+						</button>
+						<div class="aiv-accordion-panel" hidden>
+							<div class="aiv-accordion-panel-inner">
+								<?php echo $this->render_item_detail_tabs($item); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+							</div>
+						</div>
+					</figcaption>
+				<?php endif; ?>
+			</figure>
+			<?php
+		endforeach;
+
 		return ob_get_clean();
 	}
 
@@ -1085,6 +1129,45 @@ final class API_Catalog_Images_Plugin
 		wp_send_json_success(
 			array(
 				'html' => $this->render_editable_preview_items($result),
+			)
+		);
+	}
+
+	public function ajax_load_more_images()
+	{
+		check_ajax_referer('tumtook_catalog_images_load_more', 'nonce');
+
+		$post_id = isset($_POST['post_id']) ? absint($_POST['post_id']) : 0;
+		$offset = isset($_POST['offset']) ? absint($_POST['offset']) : 0;
+		$per_page = isset($_POST['per_page']) ? max(1, min(50, absint($_POST['per_page']))) : 12;
+		$total_limit = isset($_POST['limit']) ? absint($_POST['limit']) : 0;
+
+		if ($post_id <= 0 || 'page' !== get_post_type($post_id)) {
+			wp_send_json_error(array('message' => __('ไม่พบหน้าที่ต้องการ', 'api-catalog-images-viewer')), 400);
+		}
+
+		if ('publish' !== get_post_status($post_id) && !current_user_can('edit_post', $post_id)) {
+			wp_send_json_error(array('message' => __('ไม่สามารถเข้าถึงข้อมูลหน้านี้ได้', 'api-catalog-images-viewer')), 403);
+		}
+
+		$settings = $this->get_effective_settings_for_post($post_id);
+		if (empty($settings['api_url'])) {
+			wp_send_json_error(array('message' => __('ไม่พบการตั้งค่า API', 'api-catalog-images-viewer')), 400);
+		}
+
+		$items = $this->fetch_images($settings, $total_limit, false, $post_id);
+		if (is_wp_error($items)) {
+			wp_send_json_error(array('message' => $items->get_error_message()), 502);
+		}
+
+		$slice = array_slice($items, $offset, $per_page);
+		$new_offset = $offset + count($slice);
+
+		wp_send_json_success(
+			array(
+				'html' => $this->render_gallery_items($slice),
+				'offset' => $new_offset,
+				'hasMore' => $new_offset < count($items),
 			)
 		);
 	}

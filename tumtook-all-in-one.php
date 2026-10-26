@@ -1,8 +1,8 @@
 <?php
 /**
  * Plugin Name: Tumtook All-in-One Modules
- * Description: Combined Tumtook page modules: API catalog viewer, brand showcase, comparison table, PDF catalog, gallery, auto Pinterest gallery, article recommendations, Card Products  ทั้งหมด, product recommendations, Home product recommendations, and video how-to slider.
- * Version: 1.0.97
+ * Description: Combined Tumtook page modules: API catalog viewer, brand showcase, comparison table, PDF catalog, gallery, auto Pinterest gallery, article recommendations, Card Products  ทั้งหมด, product recommendations, Home product recommendations, video how-to slider, and Contact Map with three GLB branch models.
+ * Version: 1.0.104
  * Author: Tumtook
  * Text Domain: tumtook-all-in-one
  */
@@ -12,7 +12,7 @@ if (!defined('ABSPATH')) {
 }
 
 if (!defined('TUMTOOK_AIO_VERSION')) {
-	define('TUMTOOK_AIO_VERSION', '1.0.97');
+	define('TUMTOOK_AIO_VERSION', '1.0.104');
 }
 
 if (!defined('TUMTOOK_AIO_PLUGIN_FILE')) {
@@ -73,6 +73,11 @@ function tumtook_aio_register_kanit_font($handle)
 function tumtook_aio_get_modules()
 {
 	return array(
+		array(
+			'name' => 'Tumtook Contact Map',
+			'file' => 'tumtook-contact-map/tumtook-contact-map.php',
+			'guard' => array('type' => 'class', 'name' => 'Tumtook_Contact_Map'),
+		),
 		array(
 			'name' => 'Tumtook API Catalog Viewer',
 			'file' => 'tumtook-api-catalog-viewer/api-catalog-viewer.php',
