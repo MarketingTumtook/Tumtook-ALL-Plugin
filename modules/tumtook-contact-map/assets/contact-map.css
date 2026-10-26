@@ -17,3 +17,18 @@
 .tt-contact-map > .tt-map-heading{position:static;inset:auto;z-index:auto}
 .tt-contact-map button.tt-map-marker{display:flex;align-items:center;justify-content:center;box-sizing:border-box;padding:0!important;margin:0;width:34px;min-width:34px;max-width:34px;height:34px;min-height:34px;max-height:34px;flex-shrink:0;border:3px solid #fff;border-radius:50%;background:#ed2426;color:#fff;font-size:12px;font-weight:600;line-height:1;letter-spacing:0;text-indent:0;text-align:center;white-space:nowrap}
 .tt-contact-map button.tt-map-marker::before,.tt-contact-map button.tt-map-marker::after{display:none}
+
+/* Keep branch text readable against theme hover/focus button colors. */
+.tt-contact-map button.tt-branch,
+.tt-contact-map button.tt-branch:is(:hover,:focus,:focus-visible,:active,[aria-pressed="true"]){color:#202124}
+.tt-contact-map button.tt-branch strong{color:#202124}
+.tt-contact-map button.tt-branch small{color:var(--tt-muted)}
+.tt-contact-map button.tt-branch .tt-branch-num{color:var(--tt-red)}
+.tt-contact-map button.tt-branch:is(:focus,:active){background:#fafafa}
+.tt-contact-map button.tt-branch[aria-pressed="true"],
+.tt-contact-map button.tt-branch[aria-pressed="true"]:is(:hover,:focus,:active){background:#fff5f5;border-color:#f5d0d0}
+.tt-contact-map .tt-map-tools button:is(:hover,:focus,:focus-visible,:active){color:#525762;background:#f3f4f5}
+.tt-contact-map .tt-map-tools button[aria-pressed="true"],
+.tt-contact-map .tt-map-tools button[aria-pressed="true"]:is(:hover,:focus,:active){color:#fff;background:var(--tt-red)}
+.tt-contact-map button.tt-map-load:is(:hover,:focus,:focus-visible,:active){color:#fff;background:#d71920}
+.tt-contact-map button.tt-map-marker:is(:hover,:focus,:focus-visible,:active){color:#fff;background:var(--tt-red)}
