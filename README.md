@@ -217,3 +217,6 @@ Public token อยู่ในหน้าเว็บตามการทำ�
 
 ### Contact Map typography — v1.0.104
 Module text and HTML controls inherit the surrounding theme/Elementor font family, without loading a separate web font. Mapbox canvas place labels continue to use the basemap glyph font. Wrapper margin and max-width are left to the Elementor container.
+
+### Contact Map theme compatibility — v1.0.105
+Use a div for the module heading instead of header: the live site's global header selector sets sticky position and z-index 9999. Marker buttons now explicitly use flex centering, zero padding, and fixed border-box dimensions to prevent Hello Elementor button defaults from displacing their numbers. Theme font inheritance is preserved.

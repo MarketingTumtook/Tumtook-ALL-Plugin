@@ -5,7 +5,7 @@ function mount(root,cfg){
  let map=null,starting=false,ready=false,active=-1,is3D=true,markers=[],disposed=false,attempt=0,requestController=null,loadTimer=null;
  const el=(tag,cls,text)=>{const x=document.createElement(tag);if(cls)x.className=cls;if(text)x.textContent=text;return x;};
  const branches=cfg.branches;
- const heading=el('header','tt-map-heading'),title=el('div');title.append(el('h2','','พบกันได้ที่ทำถูก'),el('p','','เลือกสถานที่ที่คุณต้องการติดต่อ'));heading.append(title,el('p','','ออฟฟิศและโรงงานของเรา'));
+ const heading=el('div','tt-map-heading'),title=el('div');title.append(el('h2','','พบกันได้ที่ทำถูก'),el('p','','เลือกสถานที่ที่คุณต้องการติดต่อ'));heading.append(title,el('p','','ออฟฟิศและโรงงานของเรา'));
  const layout=el('div','tt-map-layout'),list=el('div','tt-map-branches'),stage=el('div','tt-map-stage'),canvas=el('div','tt-map-canvas');canvas.setAttribute('aria-label','แผนที่ที่ตั้งบริษัททำถูก');
  const details=el('div','tt-map-details'),detailTitle=el('strong'),address=el('p'),direction=el('a','tt-map-directions','ดูเส้นทางบน Google Maps ↗');direction.target='_blank';direction.rel='noopener noreferrer';details.append(detailTitle,address,direction);
  const buttons=branches.map((b,i)=>{const btn=el('button','tt-branch');btn.type='button';const copy=el('span');copy.append(el('strong','',b.name),el('small','',b.kind));btn.append(el('span','tt-branch-num',String(i+1).padStart(2,'0')),copy);btn.onclick=()=>select(i);list.append(btn);return btn;});list.append(details);

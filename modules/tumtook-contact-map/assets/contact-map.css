@@ -12,3 +12,8 @@
 
 /* Use the surrounding theme/Elementor font for all module text and controls. */
 .tt-contact-map,.tt-contact-map *{font-family:inherit!important}
+
+/* Avoid the site's global sticky-header selector and theme button padding. */
+.tt-contact-map > .tt-map-heading{position:static;inset:auto;z-index:auto}
+.tt-contact-map button.tt-map-marker{display:flex;align-items:center;justify-content:center;box-sizing:border-box;padding:0!important;margin:0;width:34px;min-width:34px;max-width:34px;height:34px;min-height:34px;max-height:34px;flex-shrink:0;border:3px solid #fff;border-radius:50%;background:#ed2426;color:#fff;font-size:12px;font-weight:600;line-height:1;letter-spacing:0;text-indent:0;text-align:center;white-space:nowrap}
+.tt-contact-map button.tt-map-marker::before,.tt-contact-map button.tt-map-marker::after{display:none}

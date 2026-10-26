@@ -8,7 +8,7 @@ if (!defined('ABSPATH')) {
 
 final class Tumtook_Contact_Map
 {
-    const VERSION = '1.0.5';
+    const VERSION = '1.0.6';
     const OPTION = 'tumtook_contact_map_settings';
     const PAGE = 'tumtook-contact-map';
     private static $instance;
