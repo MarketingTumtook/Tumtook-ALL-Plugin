@@ -43,9 +43,12 @@
 		const button = wrapper.querySelector(".aiv-load-more-button");
 		const status = wrapper.querySelector(".aiv-load-more-status");
 
-		if (!gallery || !button || !config.ajaxUrl || !config.nonce) {
+		if (!gallery || !button || !config.ajaxUrl) {
 			return;
 		}
+
+		if (button.dataset.aivReady) return;
+		button.dataset.aivReady = "true";
 
 		button.addEventListener("click", async () => {
 			if (button.disabled) {
@@ -103,8 +106,13 @@
 		});
 	};
 
-	document.querySelectorAll(".aiv-gallery-wrapper").forEach((wrapper) => {
+	const init = () => document.querySelectorAll(".aiv-gallery-wrapper").forEach((wrapper) => {
 		initAccordions(wrapper);
 		initLoadMore(wrapper);
 	});
+	if (document.readyState === "loading") {
+		document.addEventListener("DOMContentLoaded", init, { once: true });
+	} else {
+		init();
+	}
 })();

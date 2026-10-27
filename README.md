@@ -220,3 +220,17 @@ Module text and HTML controls inherit the surrounding theme/Elementor font famil
 
 ### Contact Map theme compatibility — v1.0.105
 Use a div for the module heading instead of header: the live site's global header selector sets sticky position and z-index 9999. Marker buttons now explicitly use flex centering, zero padding, and fixed border-box dimensions to prevent Hello Elementor button defaults from displacing their numbers. Theme font inheritance is preserved.
+
+
+## 1.0.107 — Catalog API resilience
+
+- Share upstream API responses across pages, item filters and display limits; serialize refreshes with an expiring database lock.
+- Increase API timeout from 5 to 15 seconds and allow up to five redirects.
+- Keep last successful catalog images for up to seven days as an outage fallback; retry failures after a 30-second cooldown. Admin preview still reports failures.
+- Public read-only load-more requests no longer require a nonce embedded in cached HTML. Page publication and private-page capability checks remain enforced; admin preview and saving retain nonce checks.
+- Initialize gallery controls after the DOM is ready, including delayed script execution.
+- Mark server-rendered catalog errors as non-cacheable, so compatible page-cache plugins do not persist transient failures.
+
+After installing, purge FlyingPress page cache and any CDN HTML cache once. Existing cached error pages must be removed. If JavaScript delay is enabled and the gallery controls only respond after interaction, exclude `api-catalog-images-viewer/assets/js/frontend.js` from delay and test again. No FlyingPress-specific hook is required by this release.
+
+Validation: standalone simulated API/cache regression tests (10 checks), PHP syntax validation and JavaScript syntax validation. Live server-to-API connectivity and FlyingPress behavior must be verified on the deployment server; this workspace has no FlyingPress installation.

@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Tumtook Catalog Image Data
  * Description: Fetch and display image catalog data from API inside WordPress pages.
- * Version: 1.1.19
+ * Version: 1.1.20
  * Author: Tumtook
  * Text Domain: api-catalog-images-viewer
  */
@@ -18,7 +18,7 @@ final class API_Catalog_Images_Plugin
 	const META_KEY = '_tumtook_catalog_images_page_settings';
 	const ITEM_CONTENT_META_KEY = '_tumtook_catalog_images_item_content';
 	const SHORTCODE = 'catalog_images';
-	const VERSION = '1.1.19';
+	const VERSION = '1.1.20';
 	const NONCE_KEY = 'tumtook_catalog_images_nonce';
 	const FONT_HANDLE = 'tumtook-kanit-font';
 
@@ -202,6 +202,11 @@ final class API_Catalog_Images_Plugin
 		$items = $this->fetch_images($settings, $total_limit, false, $content_post_id);
 
 		if (is_wp_error($items)) {
+			// Do not preserve a temporary outage in a full-page cache.
+			if (!defined('DONOTCACHEPAGE')) {
+				define('DONOTCACHEPAGE', true);
+			}
+			nocache_headers();
 			return '<div class="aiv-message">' . esc_html($items->get_error_message()) . '</div>';
 		}
 
@@ -424,30 +429,17 @@ final class API_Catalog_Images_Plugin
 			}
 		}
 
-		$headers = array(
-			'Accept' => 'application/json',
-		);
-
-		$response = wp_remote_get(
-			$settings['api_url'],
-			array(
-				'headers' => $headers,
-				'timeout' => 5,
-				'redirection' => 2,
-			)
-		);
+		$response = $this->request_catalog($settings, $force_refresh);
 
 		if (is_wp_error($response)) {
-			$error = new WP_Error('aiv_request_failed', __('Could not connect to the configured API.', 'api-catalog-images-viewer'));
-			set_transient($cache_key, $error, 2 * MINUTE_IN_SECONDS);
-			return $error;
+			$error = new WP_Error('aiv_request_failed', __('Could not connect to the configured API.', 'api-catalog-images-viewer'), array('upstream_code' => $response->get_error_code(), 'upstream_message' => $response->get_error_message()));
+			return $this->cache_fetch_failure($cache_key, $error, $force_refresh);
 		}
 
 		$status_code = wp_remote_retrieve_response_code($response);
 		if ($status_code < 200 || $status_code >= 300) {
 			$error = new WP_Error('aiv_bad_status', sprintf(__('The API returned HTTP %d.', 'api-catalog-images-viewer'), absint($status_code)));
-			set_transient($cache_key, $error, 2 * MINUTE_IN_SECONDS);
-			return $error;
+			return $this->cache_fetch_failure($cache_key, $error, $force_refresh);
 		}
 
 		$body = wp_remote_retrieve_body($response);
@@ -455,15 +447,13 @@ final class API_Catalog_Images_Plugin
 
 		if (JSON_ERROR_NONE !== json_last_error()) {
 			$error = new WP_Error('aiv_invalid_json', __('The API response is not valid JSON.', 'api-catalog-images-viewer'));
-			set_transient($cache_key, $error, 2 * MINUTE_IN_SECONDS);
-			return $error;
+			return $this->cache_fetch_failure($cache_key, $error, $force_refresh);
 		}
 
 		$items = $this->extract_items($data, $settings['items_path']);
 		if (empty($items) || !is_array($items)) {
 			$error = new WP_Error('aiv_no_items', __('No list of images was found at the configured items path.', 'api-catalog-images-viewer'));
-			set_transient($cache_key, $error, 2 * MINUTE_IN_SECONDS);
-			return $error;
+			return $this->cache_fetch_failure($cache_key, $error, $force_refresh);
 		}
 
 		$images = array();
@@ -500,9 +490,62 @@ final class API_Catalog_Images_Plugin
 			}
 		}
 
+		set_transient($cache_key . '_last', $images, 7 * DAY_IN_SECONDS);
 		set_transient($cache_key, $images, max(1, absint($settings['cache_minutes'])) * MINUTE_IN_SECONDS);
 
 		return $images;
+	}
+
+	private function cache_fetch_failure($key, $error, $force_refresh)
+	{
+		// Keep a temporary upstream failure from replacing the last usable catalog.
+		$last = get_transient($key . '_last');
+		set_transient($key, false !== $last ? $last : $error, 30);
+		return !$force_refresh && false !== $last ? $last : $error;
+	}
+
+	private function request_catalog($settings, $force_refresh)
+	{
+		// Share the upstream response across pages, filters and shortcode limits.
+		$key = 'aiv_http_' . md5($settings['api_url']);
+		if (!$force_refresh) {
+			$cached = get_transient($key);
+			if (false !== $cached) {
+				return $cached;
+			}
+		}
+		$lock = $key . '_lock';
+		$expires = (int) get_option($lock, 0);
+		if ($expires && $expires < time()) {
+			delete_option($lock);
+		}
+		if (!add_option($lock, time() + 30, '', false)) {
+			$last = get_transient($key . '_last');
+			return !$force_refresh && false !== $last ? $last : new WP_Error('aiv_busy', 'Catalog refresh in progress.');
+		}
+		try {
+			$response = wp_remote_get($settings['api_url'], array(
+				'headers' => array('Accept' => 'application/json'),
+				'timeout' => 15,
+				'redirection' => 5,
+			));
+			$status = is_wp_error($response) ? 0 : wp_remote_retrieve_response_code($response);
+			$valid = false;
+			if ($status >= 200 && $status < 300) {
+				json_decode(wp_remote_retrieve_body($response), true);
+				$valid = JSON_ERROR_NONE === json_last_error();
+			}
+			if ($valid) {
+				set_transient($key, $response, max(1, absint($settings['cache_minutes'])) * MINUTE_IN_SECONDS);
+				set_transient($key . '_last', $response, 7 * DAY_IN_SECONDS);
+			} else {
+				// Back off briefly even when the very first request fails.
+				set_transient($key, $response, 30);
+			}
+			return $response;
+		} finally {
+			delete_option($lock);
+		}
 	}
 
 	private function refresh_cache_generation($post_id)
@@ -1135,7 +1178,8 @@ final class API_Catalog_Images_Plugin
 
 	public function ajax_load_more_images()
 	{
-		check_ajax_referer('tumtook_catalog_images_load_more', 'nonce');
+		// Public, read-only data: cached pages must not depend on an expiring nonce.
+		// Post type/status and edit capability are checked below before reading settings.
 
 		$post_id = isset($_POST['post_id']) ? absint($_POST['post_id']) : 0;
 		$offset = isset($_POST['offset']) ? absint($_POST['offset']) : 0;
