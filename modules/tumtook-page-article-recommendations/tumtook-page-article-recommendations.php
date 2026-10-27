@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Tumtook Page Article Recommendations
  * Description: Adds a random article slider section for Tumtook pages and posts with a layout tailored to article recommendations.
- * Version: 1.0.24
+ * Version: 1.0.25
  * Author: Tumtook
  * Text Domain: tumtook-page-article-recommendations
  */
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
 
 final class Tumtook_Page_Article_Recommendations
 {
-	const VERSION = '1.0.24';
+	const VERSION = '1.0.25';
 	const META_KEY = '_tt_page_article_recommendations';
 	const SHORTCODE = 'tumtook_recommended_articles';
 	const FONT_HANDLE = 'tumtook-kanit-font';
@@ -70,7 +70,7 @@ final class Tumtook_Page_Article_Recommendations
 		wp_register_script(
 			'tt-page-article-recommendations',
 			plugin_dir_url(__FILE__) . 'assets/js/front.js',
-			array(),
+			(function_exists('tumtook_aio_image_recovery_dependencies') ? tumtook_aio_image_recovery_dependencies() : array()),
 			$this->get_asset_version('assets/js/front.js'),
 			true
 		);
@@ -501,6 +501,7 @@ final class Tumtook_Page_Article_Recommendations
 						<?php if (!empty($item['image'])): ?>
 							<img class="ttar-image" src="<?php echo esc_url($item['image']); ?>"
 								alt="<?php echo esc_attr($item['title']); ?>" loading="lazy" decoding="async"
+								onload="this.style.removeProperty('display');this.parentNode.classList.remove('ttar-image-link--missing');"
 								onerror="this.style.display='none';this.parentNode.classList.add('ttar-image-link--missing');" />
 						<?php endif; ?>
 						<div class="ttar-image ttar-image--placeholder" aria-hidden="true">
@@ -562,7 +563,7 @@ final class Tumtook_Page_Article_Recommendations
 				);
 			}
 
-			$items = $this->get_recommended_articles($post_id, $settings, false);
+			$items = $this->get_recommended_articles($post_id, $settings);
 
 			return array(
 				'enabled' => true,
@@ -618,6 +619,7 @@ final class Tumtook_Page_Article_Recommendations
 			);
 
 			if (!$query->have_posts()) {
+				if ($use_cache) set_transient($cache_key, array(), MINUTE_IN_SECONDS);
 				return array();
 			}
 
@@ -651,7 +653,7 @@ final class Tumtook_Page_Article_Recommendations
 			wp_reset_postdata();
 
 				if ($use_cache) {
-					set_transient($cache_key, $items, 10 * MINUTE_IN_SECONDS);
+					set_transient($cache_key, $items, MINUTE_IN_SECONDS);
 				}
 
 				return $items;

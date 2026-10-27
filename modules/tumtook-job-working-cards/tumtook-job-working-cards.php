@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Tumtook Job Working Cards
  * Description: แสดง JetEngine Job Working posts เป็น card slider ด้วย shortcode [tumtook_job_working_cards] รองรับ post_type, taxonomy, category, category_id และ limit.
- * Version: 1.0.7
+ * Version: 1.0.8
  * Author: Tumtook
  * Text Domain: tumtook-job-working-cards
  */
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
 
 final class Tumtook_Job_Working_Cards
 {
-	const VERSION = '1.0.7';
+	const VERSION = '1.0.8';
 	const SHORTCODE = 'tumtook_job_working_cards';
 	const FONT_HANDLE = 'tumtook-kanit-font';
 	const STYLE_HANDLE = 'tumtook-job-working-cards';
@@ -126,7 +126,7 @@ final class Tumtook_Job_Working_Cards
 		}
 
 		$settings['post_type'] = $post_type;
-		$items = $this->get_job_items($settings, false);
+		$items = $this->get_job_items($settings);
 
 		wp_send_json_success(
 			array(
@@ -203,7 +203,7 @@ final class Tumtook_Job_Working_Cards
 			wp_register_script(
 				self::SCRIPT_HANDLE,
 				plugin_dir_url(__FILE__) . 'assets/js/front.js',
-				array(),
+				(function_exists('tumtook_aio_image_recovery_dependencies') ? tumtook_aio_image_recovery_dependencies() : array()),
 				$this->get_asset_version('assets/js/front.js'),
 				true
 			);
@@ -239,7 +239,7 @@ final class Tumtook_Job_Working_Cards
 
 	private function get_job_items($settings, $use_cache = true)
 	{
-		$limit = absint($settings['limit']);
+		$limit = min(50, max(1, absint($settings['limit']) ?: 12));
 		$cache_key = 'ttwc_items_' . md5(wp_json_encode($settings) . '|' . self::VERSION);
 		$cached = $use_cache ? get_transient($cache_key) : false;
 
@@ -250,7 +250,7 @@ final class Tumtook_Job_Working_Cards
 		$args = array(
 			'post_type' => $settings['post_type'],
 			'post_status' => 'publish',
-			'posts_per_page' => $limit > 0 ? $limit : -1,
+			'posts_per_page' => $limit,
 			'fields' => 'ids',
 			'orderby' => in_array($settings['orderby'], array('date', 'title', 'menu_order', 'rand'), true) ? $settings['orderby'] : 'rand',
 			'order' => 'rand' === $settings['orderby'] ? 'ASC' : 'DESC',
@@ -264,7 +264,7 @@ final class Tumtook_Job_Working_Cards
 		if (!empty($include_ids)) {
 			$args['post__in'] = $include_ids;
 			$args['orderby'] = 'post__in';
-			$args['posts_per_page'] = $limit > 0 ? max($limit, count($include_ids)) : count($include_ids);
+			$args['posts_per_page'] = min($limit, count($include_ids));
 		}
 
 		$exclude_ids = $this->parse_id_list($settings['exclude']);
@@ -309,7 +309,7 @@ final class Tumtook_Job_Working_Cards
 		wp_reset_postdata();
 
 		if ($use_cache) {
-			set_transient($cache_key, $items, 10 * MINUTE_IN_SECONDS);
+			set_transient($cache_key, $items, MINUTE_IN_SECONDS);
 		}
 
 		return $items;
@@ -332,6 +332,7 @@ final class Tumtook_Job_Working_Cards
 						<?php if (!empty($item['image'])): ?>
 							<img class="ttwc-image" src="<?php echo esc_url($item['image']); ?>"
 								alt="<?php echo esc_attr($item['title']); ?>" loading="lazy" decoding="async"
+								onload="this.style.removeProperty('display');this.parentNode.classList.remove('ttwc-image-link--missing');"
 								onerror="this.style.display='none';this.parentNode.classList.add('ttwc-image-link--missing');" />
 						<?php endif; ?>
 						<div class="ttwc-image ttwc-image--placeholder" aria-hidden="true">

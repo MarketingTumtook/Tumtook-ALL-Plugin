@@ -77,7 +77,7 @@ final class Tumtook_Page_Product_Cards
 		wp_register_script(
 			'tt-page-product-cards',
 			plugin_dir_url(__FILE__) . 'assets/js/front.js',
-			array(),
+			(function_exists('tumtook_aio_image_recovery_dependencies') ? tumtook_aio_image_recovery_dependencies() : array()),
 			$this->get_asset_version('assets/js/front.js'),
 			true
 		);
@@ -615,6 +615,7 @@ final class Tumtook_Page_Product_Cards
 									<?php if (!empty($item['image'])): ?>
 										<img class="ttpc-image" src="<?php echo esc_url($item['image']); ?>"
 											alt="<?php echo esc_attr($item['title']); ?>" loading="lazy" decoding="async"
+											onload="this.style.removeProperty('display');this.parentNode.classList.remove('ttpc-image-link--missing');"
 											onerror="this.style.display='none';this.parentNode.classList.add('ttpc-image-link--missing');" />
 									<?php endif; ?>
 									<div class="ttpc-image ttpc-image--placeholder" aria-hidden="true">

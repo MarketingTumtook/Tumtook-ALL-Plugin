@@ -67,6 +67,8 @@ function _prime_post_caches(...$args) {}
 function wp_unique_id($prefix) { static $id = 0; return $prefix . ++$id; }
 function wp_style_is(...$args) { return true; }
 function wp_register_style(...$args) {}
+function wp_register_script(...$args) { $GLOBALS['registered_scripts'][$args[0]] = $args; }
+function plugins_url($path, $file) { return 'https://example.test/plugin/' . $path; }
 function wp_enqueue_style(...$args) { $GLOBALS['assets'][] = $args; }
 function wp_enqueue_script(...$args) { $GLOBALS['assets'][] = $args; }
 function get_posts($args) {

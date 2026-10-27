@@ -663,7 +663,7 @@
     setCurrentIndex(0);
   }
 
-  document.addEventListener("DOMContentLoaded", function () {
+  function initSliders() {
     var sliders = document.querySelectorAll(config.root);
 
     if (sliders.length) {
@@ -672,5 +672,10 @@
     }
 
     Array.prototype.forEach.call(sliders, setupSlider);
-  });
+  }
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initSliders, { once: true });
+  } else {
+    initSliders();
+  }
 })();

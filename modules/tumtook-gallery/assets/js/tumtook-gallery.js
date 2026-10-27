@@ -1,5 +1,6 @@
-document.addEventListener('DOMContentLoaded', function () {
+function initTumtookGallery() {
 	var shells = document.querySelectorAll('.ttg-gallery-shell');
+	if (!shells.length || typeof TumtookGalleryData === 'undefined') return;
 	var lightboxState = {
 		items: [],
 		index: 0,
@@ -209,6 +210,8 @@ document.addEventListener('DOMContentLoaded', function () {
 			}
 		});
 		image.addEventListener('load', function () {
+			image.hidden = false;
+			noImage.hidden = true;
 			var parentGallery = article.closest('.ttg-gallery');
 			media.classList.add('ttg-media--loaded');
 			if (parentGallery) {
@@ -338,12 +341,9 @@ document.addEventListener('DOMContentLoaded', function () {
 		return Math.min(Math.max(columns * 2, 6), 12);
 	}
 
-	function getBatchPerPage(shell) {
-		var columns = Math.max(1, getColumns(shell));
-		return Math.min(Math.max(columns * 2, 6), 12);
-	}
-
 	shells.forEach(function (shell) {
+		if (shell.__ttgInitialized) return;
+		shell.__ttgInitialized = true;
 		var gallery = shell.querySelector('.ttg-gallery');
 		var loader = shell.querySelector('.ttg-loader');
 		var sentinel = shell.querySelector('.ttg-sentinel');
@@ -354,6 +354,18 @@ document.addEventListener('DOMContentLoaded', function () {
 		var loading = false;
 		var complete = false;
 		var pendingLoad = false;
+		var failed = false;
+		var batchSize = getInitialPerPage(shell);
+		var retry = document.createElement('button');
+		retry.type = 'button';
+		retry.className = 'ttg-retry';
+		retry.textContent = 'ลองอีกครั้ง';
+		retry.hidden = true;
+		shell.insertBefore(retry, sentinel);
+		retry.addEventListener('click', function () {
+			failed = false;
+			requestLoad(batchSize);
+		});
 		var observer;
 		var resizeFrame;
 		var scrollFrame;
@@ -370,7 +382,7 @@ document.addEventListener('DOMContentLoaded', function () {
 			url.searchParams.set('page_id', pageId);
 			url.searchParams.set('endpoint', endpoint);
 			url.searchParams.set('page', page);
-			url.searchParams.set('per_page', perPage);
+			url.searchParams.set('per_page', batchSize);
 			url.searchParams.set('limit', limit);
 
 			return url.toString();
@@ -388,7 +400,7 @@ document.addEventListener('DOMContentLoaded', function () {
 		}
 
 			function requestLoad(perPage) {
-				if (loading || complete) {
+				if (loading || complete || failed) {
 					if (loading && !complete) {
 					pendingLoad = true;
 				}
@@ -399,16 +411,20 @@ document.addEventListener('DOMContentLoaded', function () {
 		}
 
 		function loadPage(perPage) {
-			if (loading || complete) {
+			if (loading || complete || failed) {
 				return;
 			}
 
 			loading = true;
+			retry.hidden = true;
+			var controller = new AbortController();
+			var timeout = window.setTimeout(function () { controller.abort(); }, 10000);
 			setLoaderState(TumtookGalleryData.strings.loading, false);
 
 			fetch(buildUrl(perPage), {
 				method: 'GET',
-				credentials: 'same-origin'
+				credentials: 'same-origin',
+				signal: controller.signal
 			})
 				.then(function (response) {
 					if (!response.ok) {
@@ -418,7 +434,8 @@ document.addEventListener('DOMContentLoaded', function () {
 					return response.json();
 				})
 				.then(function (data) {
-					var items = Array.isArray(data.items) ? data.items : [];
+					if (!data || !Array.isArray(data.items)) throw new Error('Invalid gallery response');
+					var items = data.items;
 					var uniqueItems = items.filter(function (item) {
 						var itemKey = getItemKey(item);
 
@@ -450,7 +467,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
 					gallery.appendChild(fragment);
 
-					complete = !data.has_more;
+					complete = !data.has_more || !items.length;
 					page += 1;
 					setLoaderState('', true);
 
@@ -466,20 +483,34 @@ document.addEventListener('DOMContentLoaded', function () {
 					}
 				})
 				.catch(function () {
+					failed = true;
+					pendingLoad = false;
+					retry.hidden = false;
 					setLoaderState(TumtookGalleryData.strings.error, false);
 				})
 				.finally(function () {
+					window.clearTimeout(timeout);
 					loading = false;
-					if (!complete && (pendingLoad || isSentinelNearViewport())) {
+					if (!failed && !complete && (pendingLoad || isSentinelNearViewport())) {
 						pendingLoad = false;
 						window.requestAnimationFrame(function () {
-							requestLoad(getBatchPerPage(shell));
+							requestLoad(batchSize);
 						});
 					}
 				});
 		}
 
-		requestLoad(getInitialPerPage(shell));
+		if ('IntersectionObserver' in window) {
+			var startObserver = new IntersectionObserver(function (entries) {
+				if (entries.some(function (entry) { return entry.isIntersecting; })) {
+					startObserver.disconnect();
+					requestLoad(batchSize);
+				}
+			}, { rootMargin: '600px 0px' });
+			startObserver.observe(shell);
+		} else {
+			requestLoad(batchSize);
+		}
 
 		window.addEventListener('resize', function () {
 			window.cancelAnimationFrame(resizeFrame);
@@ -488,11 +519,11 @@ document.addEventListener('DOMContentLoaded', function () {
 			});
 		});
 
-		observer = new IntersectionObserver(
+		if ('IntersectionObserver' in window) observer = new IntersectionObserver(
 			function (entries) {
 				entries.forEach(function (entry) {
 					if (entry.isIntersecting) {
-						requestLoad(getBatchPerPage(shell));
+						requestLoad(batchSize);
 					}
 				});
 			},
@@ -501,7 +532,7 @@ document.addEventListener('DOMContentLoaded', function () {
 			}
 		);
 
-		observer.observe(sentinel);
+		if (observer) observer.observe(sentinel);
 
 		window.addEventListener('scroll', function () {
 			if (scrollFrame) {
@@ -511,9 +542,15 @@ document.addEventListener('DOMContentLoaded', function () {
 			scrollFrame = window.requestAnimationFrame(function () {
 				scrollFrame = null;
 				if (!complete && isSentinelNearViewport()) {
-					requestLoad(getBatchPerPage(shell));
+					requestLoad(batchSize);
 				}
 			});
 		}, { passive: true });
 	});
-});
+}
+
+if (document.readyState === 'loading') {
+	document.addEventListener('DOMContentLoaded', initTumtookGallery, { once: true });
+} else {
+	initTumtookGallery();
+}

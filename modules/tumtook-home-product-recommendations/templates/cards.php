@@ -16,6 +16,7 @@ foreach ($items as $item):
 				<?php if (!empty($item['image'])): ?>
 					<img class="tthpr-image" src="<?php echo esc_url($item['image']); ?>"
 						alt="<?php echo esc_attr($item['title']); ?>" loading="lazy" decoding="async"
+						onload="this.style.removeProperty('display');this.parentNode.classList.remove('tthpr-image-link--missing');"
 						onerror="this.style.display='none';this.parentNode.classList.add('tthpr-image-link--missing');" />
 				<?php endif; ?>
 				<div class="tthpr-image tthpr-image--placeholder" aria-hidden="true">

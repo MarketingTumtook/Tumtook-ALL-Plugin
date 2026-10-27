@@ -102,7 +102,7 @@ final class API_Catalog_Images_Plugin
 		wp_register_script(
 			'api-catalog-images-viewer-frontend',
 			plugin_dir_url(__FILE__) . 'assets/js/frontend.js',
-			array(),
+			(function_exists('tumtook_aio_image_recovery_dependencies') ? tumtook_aio_image_recovery_dependencies() : array()),
 			$this->get_asset_version('assets/js/frontend.js'),
 			true
 		);
@@ -385,6 +385,7 @@ final class API_Catalog_Images_Plugin
 	private function fetch_images($settings, $limit = 0, $force_refresh = false, $post_id = 0)
 	{
 		$settings = wp_parse_args($settings, self::get_default_settings());
+		$last_key = 'aiv_good_' . md5(wp_json_encode($settings) . '|' . $limit);
 		$cache_generation = $post_id > 0 ? (string) get_post_meta($post_id, self::CACHE_GENERATION_META_KEY, true) : '';
 		$cache_key = 'aiv_' . md5(self::VERSION . '|' . $cache_generation . '|' . wp_json_encode($settings) . '|' . $limit);
 
@@ -399,13 +400,13 @@ final class API_Catalog_Images_Plugin
 
 		if (is_wp_error($response)) {
 			$error = new WP_Error('aiv_request_failed', __('Could not connect to the configured API.', 'api-catalog-images-viewer'), array('upstream_code' => $response->get_error_code(), 'upstream_message' => $response->get_error_message()));
-			return $this->cache_fetch_failure($cache_key, $error, $force_refresh);
+			return $this->cache_fetch_failure($cache_key, $error, $force_refresh, $last_key);
 		}
 
 		$status_code = wp_remote_retrieve_response_code($response);
 		if ($status_code < 200 || $status_code >= 300) {
 			$error = new WP_Error('aiv_bad_status', sprintf(__('The API returned HTTP %d.', 'api-catalog-images-viewer'), absint($status_code)));
-			return $this->cache_fetch_failure($cache_key, $error, $force_refresh);
+			return $this->cache_fetch_failure($cache_key, $error, $force_refresh, $last_key);
 		}
 
 		$body = wp_remote_retrieve_body($response);
@@ -413,13 +414,13 @@ final class API_Catalog_Images_Plugin
 
 		if (JSON_ERROR_NONE !== json_last_error()) {
 			$error = new WP_Error('aiv_invalid_json', __('The API response is not valid JSON.', 'api-catalog-images-viewer'));
-			return $this->cache_fetch_failure($cache_key, $error, $force_refresh);
+			return $this->cache_fetch_failure($cache_key, $error, $force_refresh, $last_key);
 		}
 
 		$items = $this->extract_items($data, $settings['items_path']);
 		if (empty($items) || !is_array($items)) {
 			$error = new WP_Error('aiv_no_items', __('No list of images was found at the configured items path.', 'api-catalog-images-viewer'));
-			return $this->cache_fetch_failure($cache_key, $error, $force_refresh);
+			return $this->cache_fetch_failure($cache_key, $error, $force_refresh, $last_key);
 		}
 
 		$images = array();
@@ -457,21 +458,26 @@ final class API_Catalog_Images_Plugin
 		}
 
 		set_transient($cache_key . '_last', $images, 7 * DAY_IN_SECONDS);
+		set_transient($last_key, $images, 7 * DAY_IN_SECONDS);
 		set_transient($cache_key, $images, max(1, absint($settings['cache_minutes'])) * MINUTE_IN_SECONDS);
 
 		return $images;
 	}
 
-	private function cache_fetch_failure($key, $error, $force_refresh)
+	private function cache_fetch_failure($key, $error, $force_refresh, $last_key = '')
 	{
 		// Keep a temporary upstream failure from replacing the last usable catalog.
-		$last = get_transient($key . '_last');
+		$last = $last_key ? get_transient($last_key) : false;
+		if (false === $last) $last = get_transient($key . '_last');
 		set_transient($key, false !== $last ? $last : $error, 30);
 		return !$force_refresh && false !== $last ? $last : $error;
 	}
 
 	private function request_catalog($settings, $force_refresh)
 	{
+		if (class_exists('Tumtook_AIO_API_Cache')) {
+			return Tumtook_AIO_API_Cache::get($settings['api_url'], max(1, absint($settings['cache_minutes'])) * MINUTE_IN_SECONDS, false, $force_refresh);
+		}
 		// Share the upstream response across pages, filters and shortcode limits.
 		$key = 'aiv_http_' . md5($settings['api_url']);
 		if (!$force_refresh) {
@@ -492,8 +498,8 @@ final class API_Catalog_Images_Plugin
 		try {
 			$response = wp_remote_get($settings['api_url'], array(
 				'headers' => array('Accept' => 'application/json'),
-				'timeout' => 15,
-				'redirection' => 5,
+				'timeout' => 5,
+				'redirection' => 2,
 			));
 			$status = is_wp_error($response) ? 0 : wp_remote_retrieve_response_code($response);
 			$valid = false;
@@ -1031,6 +1037,7 @@ final class API_Catalog_Images_Plugin
 			</div>
 			<?php if (!empty($image)): ?>
 				<img src="<?php echo esc_url($image); ?>" alt="<?php echo esc_attr($alt); ?>" loading="lazy" decoding="async"
+					onload="this.hidden=false; var p=this.parentNode.querySelector('.aiv-noimage'); if(p){p.hidden=true;}"
 					onerror="this.hidden=true; var p=this.parentNode.querySelector('.aiv-noimage'); if(p){p.hidden=false;}" />
 			<?php endif; ?>
 		</div>

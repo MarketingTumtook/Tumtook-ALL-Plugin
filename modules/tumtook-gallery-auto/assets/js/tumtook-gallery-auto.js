@@ -362,7 +362,10 @@ function initTumtookGalleryAuto() {
 				url.searchParams.set('endpoint', shell.dataset.endpoint);
 				url.searchParams.set('endpoint_signature', shell.dataset.endpointSignature || '');
 			}
+			var controller = new AbortController();
+			var timeout = window.setTimeout(function () { controller.abort(); }, 10000);
 			fetch(url.toString(), {
+				signal: controller.signal,
 				credentials: 'same-origin',
 				headers: config.nonce ? { 'X-WP-Nonce': config.nonce } : {}
 			})
@@ -402,6 +405,7 @@ function initTumtookGalleryAuto() {
 					retry.hidden = false;
 				})
 				.finally(function () {
+					window.clearTimeout(timeout);
 					loading = false;
 					gallery.setAttribute('aria-busy', 'false');
 					scheduleLayout();

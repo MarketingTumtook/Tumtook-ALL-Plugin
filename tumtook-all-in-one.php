@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Tumtook All-in-One Modules
  * Description: Combined Tumtook page modules: API catalog viewer, brand showcase, comparison table, PDF catalog, gallery, auto Pinterest gallery, article recommendations, Card Products  ทั้งหมด, product recommendations, Home product recommendations, video how-to slider, and Contact Map with three GLB branch models.
- * Version: 1.0.110
+ * Version: 1.0.111
  * Author: Tumtook
  * Text Domain: tumtook-all-in-one
  */
@@ -12,7 +12,7 @@ if (!defined('ABSPATH')) {
 }
 
 if (!defined('TUMTOOK_AIO_VERSION')) {
-	define('TUMTOOK_AIO_VERSION', '1.0.110');
+	define('TUMTOOK_AIO_VERSION', '1.0.111');
 }
 
 if (!defined('TUMTOOK_AIO_PLUGIN_FILE')) {
@@ -25,6 +25,14 @@ if (!defined('TUMTOOK_AIO_PLUGIN_DIR')) {
 
 if (!defined('TUMTOOK_AIO_MODULES_DIR')) {
 	define('TUMTOOK_AIO_MODULES_DIR', TUMTOOK_AIO_PLUGIN_DIR . 'modules/');
+}
+
+require_once __DIR__ . '/includes/class-tumtook-api-cache.php';
+
+function tumtook_aio_image_recovery_dependencies()
+{
+	wp_register_script('tumtook-aio-image-recovery', plugins_url('assets/js/image-recovery.js', TUMTOOK_AIO_PLUGIN_FILE), array(), TUMTOOK_AIO_VERSION, true);
+	return array('tumtook-aio-image-recovery');
 }
 
 function tumtook_aio_asset_version($module_file, $relative_path, $fallback_version = TUMTOOK_AIO_VERSION)

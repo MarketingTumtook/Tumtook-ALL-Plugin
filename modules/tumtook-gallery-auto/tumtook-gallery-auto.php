@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Tumtook Gallery Auto
  * Description: Pinterest-style gallery with mixed aspect ratios, unique images and early lazy loading. Derived from Tumtook Gallery.
- * Version: 1.0.2
+ * Version: 1.0.3
  * Author: Tumtook
  * Text Domain: tumtook-gallery-auto
  */
@@ -16,7 +16,7 @@ final class Tumtook_Gallery_Auto_Plugin
 	const OPTION_KEY = 'tumtook_gallery_auto_settings';
 	const SHORTCODE = 'tumtook_gallery_auto';
 	const META_KEY = '_tumtook_gallery_auto_settings';
-	const VERSION = '1.0.2';
+	const VERSION = '1.0.3';
 	const DEFAULT_LIMIT = 50;
 	const FONT_HANDLE = 'tumtook-kanit-font';
 
@@ -630,49 +630,50 @@ final class Tumtook_Gallery_Auto_Plugin
 		}
 
 		$cache_key = 'ttga_' . md5($endpoint . wp_json_encode($settings) . $limit . self::VERSION . '_multi_code_mixed_allocations');
+		$last_key = 'ttga_good_' . md5($endpoint . wp_json_encode($settings) . $limit);
 		$cached = get_transient($cache_key);
 
 		if (false !== $cached) {
 			return $cached;
 		}
 
-		$response = wp_safe_remote_get(
-			$endpoint,
-			array(
-				'headers' => array(
-					'Accept' => 'application/json',
-				),
-				'timeout' => 5,
-				'redirection' => 2,
-			)
-		);
+		if (class_exists('Tumtook_AIO_API_Cache')) {
+			$response = Tumtook_AIO_API_Cache::get($endpoint, max(1, absint($settings['cache_minutes'])) * MINUTE_IN_SECONDS, true);
+		} else {
+			$response = wp_safe_remote_get(
+				$endpoint,
+				array(
+					'headers' => array(
+						'Accept' => 'application/json',
+					),
+					'timeout' => 5,
+					'redirection' => 2,
+				)
+			);
+		}
 
 		if (is_wp_error($response)) {
 			$error = new WP_Error('ttga_request_failed', __('Could not connect to the image API.', 'tumtook-gallery-auto'));
-			set_transient($cache_key, $error, 2 * MINUTE_IN_SECONDS);
-			return $error;
+			return $this->cache_gallery_failure($cache_key, $last_key, $error);
 		}
 
 		$status = wp_remote_retrieve_response_code($response);
 		if ($status < 200 || $status >= 300) {
 			$error = new WP_Error('ttga_bad_status', sprintf(__('Image API returned HTTP %d.', 'tumtook-gallery-auto'), absint($status)));
-			set_transient($cache_key, $error, 2 * MINUTE_IN_SECONDS);
-			return $error;
+			return $this->cache_gallery_failure($cache_key, $last_key, $error);
 		}
 
 		$body = wp_remote_retrieve_body($response);
 		$data = json_decode($body, true);
 		if (JSON_ERROR_NONE !== json_last_error()) {
 			$error = new WP_Error('ttga_invalid_json', __('The API response is not valid JSON.', 'tumtook-gallery-auto'));
-			set_transient($cache_key, $error, 2 * MINUTE_IN_SECONDS);
-			return $error;
+			return $this->cache_gallery_failure($cache_key, $last_key, $error);
 		}
 
 		$items = $this->get_collection_by_path($data, $settings['items_path']);
 		if (!is_array($items)) {
 			$error = new WP_Error('ttga_invalid_items', __('The configured items path does not point to an array.', 'tumtook-gallery-auto'));
-			set_transient($cache_key, $error, 2 * MINUTE_IN_SECONDS);
-			return $error;
+			return $this->cache_gallery_failure($cache_key, $last_key, $error);
 		}
 
 		$gallery_items = array();
@@ -699,16 +700,25 @@ final class Tumtook_Gallery_Auto_Plugin
 		}
 
 		if (empty($gallery_items)) {
-			return new WP_Error('ttga_no_matching_code', __('ไม่พบข้อมูลสำหรับ Item Code Filter ที่ระบุ', 'tumtook-gallery-auto'));
+			return $this->cache_gallery_failure($cache_key, $last_key, new WP_Error('ttga_no_matching_code', __('ไม่พบข้อมูลสำหรับ Item Code Filter ที่ระบุ', 'tumtook-gallery-auto')));
 		}
 
 		if (count($gallery_items) > 1) {
 			shuffle($gallery_items);
 		}
 
+		set_transient($last_key, $gallery_items, 7 * DAY_IN_SECONDS);
 		set_transient($cache_key, $gallery_items, max(1, absint($settings['cache_minutes'])) * MINUTE_IN_SECONDS);
 
 		return $gallery_items;
+	}
+
+	private function cache_gallery_failure($key, $last_key, $error)
+	{
+		$last = get_transient($last_key);
+		$value = false !== $last ? $last : $error;
+		set_transient($key, $value, 30);
+		return $value;
 	}
 
 	private function normalize_gallery_limit($limit)

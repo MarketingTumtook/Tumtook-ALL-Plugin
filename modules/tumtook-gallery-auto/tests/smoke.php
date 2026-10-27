@@ -9,6 +9,7 @@ set_error_handler(function ($severity, $message, $file, $line) {
 });
 define('ABSPATH', __DIR__);
 define('MINUTE_IN_SECONDS', 60);
+define('DAY_IN_SECONDS', 86400);
 $GLOBALS['meta'] = array();
 $GLOBALS['cache'] = array();
 $GLOBALS['shortcodes'] = array();

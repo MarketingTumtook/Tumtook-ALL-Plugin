@@ -246,3 +246,21 @@ Catalog renders every item immediately. Removed the load-more button, frontend A
 Restores product image handling and article initialization from 1.0.108, removing the automatic image retries, eager original-image fallback and added article Elementor hooks introduced in 1.0.109. Keeps the catalog API resilience and full-catalog rendering changes. Module asset versions are bumped to invalidate the 1.0.109 JavaScript URLs.
 
 Purge FlyingPress and CDN HTML caches after deployment, then compare a first visit and a cached visit. This rollback mitigates the reported regression; it does not establish the cause of slow server responses.
+
+
+## 1.0.111 — Production resilience and request limits
+
+- Gallery stops after a failed fetch, exposes a manual retry button, and aborts stalled requests after 10 seconds. Its page size stays fixed across viewport changes. Gallery data starts loading within 600px of the viewport.
+- Gallery, Article Recommendations, Product Recommendations, Product Cards and Job Cards initialize whether DOMContentLoaded is pending or already complete. Dynamic recommendation sections refresh only near the viewport, once per instance, with an 8-second timeout and the existing server-rendered fallback. Gallery Auto requests also have a 10-second timeout.
+- API Catalog, Gallery and Gallery Auto use a shared JSON HTTP cache with an expiring database lock. Expired responses with a retained last-good copy are served immediately; a deduplicated WordPress cron event refreshes them in the background. A failed refresh has a 30-second cooldown and preserves usable data. Cold requests still need the upstream API and use a 5-second timeout and up to two redirects. Failed cold fetches also queue one background recovery attempt with a 15-second timeout; that longer wait happens outside the page response. Safe HTTP validation remains enabled for Gallery Auto.
+- Processed API/Gallery snapshots survive module-version changes under keys scoped to their endpoint, paths, filters and settings. Last-good snapshots are retained for seven days after storage. Existing standalone module behavior remains available when the shared All-in-One cache class is absent.
+- Recommendation refreshes reuse short backend caches instead of bypassing them. Product recommendation queries are cached for one minute. Job Cards now default to 12 entries and enforce a maximum of 50, including explicit include lists; use `limit` to choose a smaller supported count. Recommendation selections can remain the same for up to a minute.
+- A small shared image-recovery script is loaded as a dependency only on pages using the affected modules. Broken card/catalog/gallery images get a manual retry control, and a successful load clears the missing-image state. It does not automatically retry images, force eager loading, preload originals, or bypass the browser cache. Responsive variants are removed only when the user explicitly retries the original image.
+
+### Deployment and validation
+
+Pull the complete release, including the new `includes/` and `assets/js/image-recovery.js` files. Purge FlyingPress page cache and CDN HTML cache after deployment so markup, module scripts and dependencies update together. Background API refresh requires working WordPress cron (or the site's existing server cron when DISABLE_WP_CRON is enabled). Cold-cache/API-outage pages cannot be made instantaneous without an existing snapshot.
+
+Validate a first visit, scroll through Gallery and recommendations, test the retry controls on a deliberately failed request in a test environment, and compare page-cache headers. This release does not change FlyingPress/Cloudflare settings or explain why the production homepage returned no-store/MISS/BYPASS during the audit.
+
+Regression checks: `node tests/frontend-resilience.js`, `node tests/image-recovery.js`, `php tests/api-cache.php`, `php tests/gallery-cache-integration.php`, `php tests/server-query-bounds.php`, existing module smoke suites, plus PHP and JavaScript syntax checks. Tests use simulated APIs and WordPress doubles; production speed and optimizer behavior must still be verified after deployment.

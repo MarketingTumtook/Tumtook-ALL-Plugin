@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Tumtook Page Product Recommendations
  * Description: Adds a page-based Card Products ทั้งหมด slider with manual page selection, price fields, and a layout tailored for Tumtook landing pages.
- * Version: 1.1.36
+ * Version: 1.1.37
  * Author: Tumtook
  * Text Domain: tumtook-page-product-recommendations
  */
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
 
 final class Tumtook_Page_Product_Recommendations
 {
-	const VERSION = '1.1.36';
+	const VERSION = '1.1.37';
 	const META_KEY = '_tt_page_product_recommendations';
 	const PAGE_PRICE_META = '_ttpr_page_price';
 	const PAGE_BADGE_META = '_ttpr_page_badge';
@@ -117,7 +117,7 @@ final class Tumtook_Page_Product_Recommendations
 		wp_register_script(
 			'tt-page-product-recommendations',
 			plugin_dir_url(__FILE__) . 'assets/js/front.js',
-			array(),
+			(function_exists('tumtook_aio_image_recovery_dependencies') ? tumtook_aio_image_recovery_dependencies() : array()),
 			$this->get_asset_version('assets/js/front.js'),
 			true
 		);
@@ -664,6 +664,7 @@ final class Tumtook_Page_Product_Recommendations
 							<?php if (!empty($item['image'])): ?>
 								<img class="ttpr-image" src="<?php echo esc_url($item['image']); ?>"
 									alt="<?php echo esc_attr($item['title']); ?>" loading="lazy" decoding="async"
+									onload="this.style.removeProperty('display');this.parentNode.classList.remove('ttpr-image-link--missing');"
 									onerror="this.style.display='none';this.parentNode.classList.add('ttpr-image-link--missing');" />
 							<?php endif; ?>
 							<div class="ttpr-image ttpr-image--placeholder" aria-hidden="true">
@@ -767,6 +768,9 @@ final class Tumtook_Page_Product_Recommendations
 	{
 		$limit = isset($settings['limit']) ? absint($settings['limit']) : 0;
 		$limit = $limit > 0 ? $limit : 6;
+		$cache_key = 'ttpr_items_' . md5($post_id . '|' . wp_json_encode($settings) . '|' . $this->get_cache_version());
+		$cached = get_transient($cache_key);
+		if (false !== $cached) return $cached;
 		$exclude_ids = $post_id ? array(absint($post_id)) : array();
 		$query_limit = min(100, max($limit * 4, $limit));
 
@@ -784,6 +788,7 @@ final class Tumtook_Page_Product_Recommendations
 		);
 
 		if (empty($page_ids)) {
+			set_transient($cache_key, array(), MINUTE_IN_SECONDS);
 			return array();
 		}
 
@@ -827,6 +832,7 @@ final class Tumtook_Page_Product_Recommendations
 			}
 		}
 
+		set_transient($cache_key, $items, MINUTE_IN_SECONDS);
 		return $items;
 	}
 
