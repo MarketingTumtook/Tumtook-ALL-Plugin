@@ -234,3 +234,8 @@ Use a div for the module heading instead of header: the live site's global heade
 After installing, purge FlyingPress page cache and any CDN HTML cache once. Existing cached error pages must be removed. If JavaScript delay is enabled and the gallery controls only respond after interaction, exclude `api-catalog-images-viewer/assets/js/frontend.js` from delay and test again. No FlyingPress-specific hook is required by this release.
 
 Validation: standalone simulated API/cache regression tests (10 checks), PHP syntax validation and JavaScript syntax validation. Live server-to-API connectivity and FlyingPress behavior must be verified on the deployment server; this workspace has no FlyingPress installation.
+
+
+## 1.0.108 — Show the full catalog
+
+Catalog renders every item immediately. Removed the load-more button, frontend AJAX requests, and load-more endpoint. Existing `limit` and `per_page` shortcode attributes no longer truncate the catalog. Images retain lazy loading; product detail accordions remain available. Purge page/CDN caches after deployment.
