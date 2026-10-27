@@ -94,6 +94,7 @@ $GLOBALS['meta'][42]['_tumtook_gallery_settings'] = $legacy;
 $html = $plugin->render_shortcode(array());
 check(strpos($html, 'ttga-gallery-shell') !== false && strpos($html, 'data-columns="0"') !== false, 'New shortcode inherits existing page configuration and defaults to auto columns');
 check(strpos($html, 'secret') === false, 'Configured API URL stays on the server');
+check(strpos($html, 'ttga-retry') === false, 'Public gallery markup contains no retry button');
 $html = $plugin->render_shortcode(array('columns' => 99, 'gap' => 999, 'min_width' => 1, 'radius' => 999));
 check(strpos($html, 'data-columns="12"') !== false && strpos($html, 'data-gap="64"') !== false && strpos($html, 'data-min-width="140"') !== false, 'Layout settings stay within supported bounds');
 ob_start(); $plugin->render_field(array('key' => 'cache_minutes')); $field = ob_get_clean();

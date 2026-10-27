@@ -102,7 +102,7 @@ final class API_Catalog_Images_Plugin
 		wp_register_script(
 			'api-catalog-images-viewer-frontend',
 			plugin_dir_url(__FILE__) . 'assets/js/frontend.js',
-			(function_exists('tumtook_aio_image_recovery_dependencies') ? tumtook_aio_image_recovery_dependencies() : array()),
+			array(),
 			$this->get_asset_version('assets/js/frontend.js'),
 			true
 		);

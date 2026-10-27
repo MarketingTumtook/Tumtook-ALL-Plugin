@@ -343,7 +343,7 @@ final class Tumtook_Home_Product_Recommendations
 			wp_register_style(self::FONT_HANDLE, 'https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700;800&display=swap', array(), null);
 		}
 		wp_enqueue_style(self::ASSET_HANDLE, plugin_dir_url(__FILE__) . 'assets/css/front.css', array(self::FONT_HANDLE), $this->get_asset_version('assets/css/front.css'));
-		wp_enqueue_script(self::ASSET_HANDLE, plugin_dir_url(__FILE__) . 'assets/js/front.js', (function_exists('tumtook_aio_image_recovery_dependencies') ? tumtook_aio_image_recovery_dependencies() : array()), $this->get_asset_version('assets/js/front.js'), true);
+		wp_enqueue_script(self::ASSET_HANDLE, plugin_dir_url(__FILE__) . 'assets/js/front.js', array(), $this->get_asset_version('assets/js/front.js'), true);
 	}
 
 	private function render_section($post_id, $settings)

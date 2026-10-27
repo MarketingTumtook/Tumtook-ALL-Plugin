@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Tumtook Gallery Auto
  * Description: Pinterest-style gallery with mixed aspect ratios, unique images and early lazy loading. Derived from Tumtook Gallery.
- * Version: 1.0.3
+ * Version: 1.0.4
  * Author: Tumtook
  * Text Domain: tumtook-gallery-auto
  */
@@ -16,7 +16,7 @@ final class Tumtook_Gallery_Auto_Plugin
 	const OPTION_KEY = 'tumtook_gallery_auto_settings';
 	const SHORTCODE = 'tumtook_gallery_auto';
 	const META_KEY = '_tumtook_gallery_auto_settings';
-	const VERSION = '1.0.3';
+	const VERSION = '1.0.4';
 	const DEFAULT_LIMIT = 50;
 	const FONT_HANDLE = 'tumtook-kanit-font';
 
@@ -98,7 +98,6 @@ final class Tumtook_Gallery_Auto_Plugin
 					'loading' => __('Loading images...', 'tumtook-gallery-auto'),
 					'empty' => __('No images found from the API response.', 'tumtook-gallery-auto'),
 					'error' => __('โหลดรูปไม่สำเร็จ กรุณาลองอีกครั้ง', 'tumtook-gallery-auto'),
-					'retry' => __('ลองอีกครั้ง', 'tumtook-gallery-auto'),
 				),
 			)
 		);
@@ -558,7 +557,6 @@ final class Tumtook_Gallery_Auto_Plugin
 			<div class="ttga-gallery" role="list" aria-label="<?php esc_attr_e('แกลเลอรีรูปภาพ', 'tumtook-gallery-auto'); ?>"></div>
 			<div class="ttga-end-panel" aria-hidden="true"></div>
 			<div class="ttga-loader" aria-live="polite"><?php esc_html_e('Loading images...', 'tumtook-gallery-auto'); ?></div>
-			<button class="ttga-retry" type="button" hidden><?php esc_html_e('ลองอีกครั้ง', 'tumtook-gallery-auto'); ?></button>
 			<div class="ttga-sentinel" aria-hidden="true"></div>
 			<noscript><?php esc_html_e('กรุณาเปิด JavaScript เพื่อดูแกลเลอรีรูปภาพ', 'tumtook-gallery-auto'); ?></noscript>
 		</div>

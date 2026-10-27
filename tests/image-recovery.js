@@ -18,25 +18,17 @@ const image = {
 const document = {
   readyState: 'complete', querySelectorAll: () => [image],
   addEventListener(name, fn) { events[name] = fn; },
-  createElement() { return { style: {}, handlers: {}, addEventListener(name, fn) { this.handlers[name] = fn; } }; }
+  createElement() { throw new Error('Compatibility script must not create frontend controls'); }
 };
 vm.runInNewContext(fs.readFileSync('assets/js/image-recovery.js', 'utf8'), { document });
-assert.equal(requests, 0, 'Detecting a broken image must not request any files');
-assert.equal(holder.children.length, 1);
-events.error({ target: image });
-assert.equal(holder.children.length, 1, 'Repeated errors must not duplicate controls');
-const button = holder.children[0];
-button.handlers.click({ preventDefault() {}, stopPropagation() {} });
-assert.equal(requests, 1, 'Only a user click retries an image');
-assert.equal(image.loading, 'lazy', 'Manual retry must preserve native lazy loading');
-assert.equal(attrs.src, '/original.webp');
-assert.equal(attrs.srcset, undefined, 'Manual retry can recover from a broken responsive variant');
-events.error({ target: image });
-assert.equal(button.disabled, false, 'A failed manual retry allows another user attempt');
-assert.equal(requests, 1, 'Failed manual retry must not schedule an automatic retry');
+assert.equal(requests, 0, 'Compatibility script must not request any files');
+assert.equal(holder.children.length, 0, 'No retry controls may be created');
+assert.equal(events.error, undefined, 'Image errors do not create public controls');
 events.load({ target: image });
 assert.equal(image.hidden, false);
 assert.equal(image.style.display, '');
 assert.equal(classes.size, 0);
-assert.equal(button.hidden, true);
-console.log('PASS Image recovery: zero automatic requests, single manual retry control, original fallback, preserved lazy loading, recovery after success');
+assert.equal(requests, 0);
+assert.equal(image.loading, 'lazy');
+assert.equal(attrs.srcset, '/variant.webp 300w');
+console.log('PASS Image compatibility: no controls, no requests, preserved lazy loading and responsive sources, restoration on load');

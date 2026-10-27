@@ -203,7 +203,7 @@ final class Tumtook_Job_Working_Cards
 			wp_register_script(
 				self::SCRIPT_HANDLE,
 				plugin_dir_url(__FILE__) . 'assets/js/front.js',
-				(function_exists('tumtook_aio_image_recovery_dependencies') ? tumtook_aio_image_recovery_dependencies() : array()),
+				array(),
 				$this->get_asset_version('assets/js/front.js'),
 				true
 			);

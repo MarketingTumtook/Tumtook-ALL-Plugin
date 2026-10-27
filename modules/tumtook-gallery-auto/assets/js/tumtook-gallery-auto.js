@@ -258,7 +258,6 @@ function initTumtookGalleryAuto() {
 		shell.dataset.ttgaInitialized = '1';
 		var gallery = shell.querySelector('.ttga-gallery');
 		var loader = shell.querySelector('.ttga-loader');
-		var retry = shell.querySelector('.ttga-retry');
 		var sentinel = shell.querySelector('.ttga-sentinel');
 		var gap = Math.max(0, Number(shell.dataset.gap) || 0);
 		var page = 1;
@@ -275,7 +274,7 @@ function initTumtookGalleryAuto() {
 		var seen = new Set();
 		var seenUrls = new Set();
 		var config = window.TumtookGalleryAutoData;
-		if (!gallery || !loader || !retry || !sentinel || !config) return;
+		if (!gallery || !loader || !sentinel || !config) return;
 
 		function startImage(image) {
 			if (!image.dataset.src) return;
@@ -350,7 +349,6 @@ function initTumtookGalleryAuto() {
 		function loadPage() {
 			if (loading || complete || failed) return;
 			loading = true;
-			retry.hidden = true;
 			gallery.setAttribute('aria-busy', 'true');
 			setStatus(config.strings.loading);
 			var url = new URL(config.restUrl, window.location.origin);
@@ -402,7 +400,6 @@ function initTumtookGalleryAuto() {
 				.catch(function () {
 					failed = true;
 					setStatus(config.strings.error);
-					retry.hidden = false;
 				})
 				.finally(function () {
 					window.clearTimeout(timeout);
@@ -412,10 +409,6 @@ function initTumtookGalleryAuto() {
 				});
 		}
 
-		retry.addEventListener('click', function () {
-			failed = false;
-			loadPage();
-		});
 		if ('ResizeObserver' in window) {
 			var lastWidth = -1;
 			var resizeObserver = new ResizeObserver(function () {

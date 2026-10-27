@@ -77,7 +77,7 @@ final class Tumtook_Page_Product_Cards
 		wp_register_script(
 			'tt-page-product-cards',
 			plugin_dir_url(__FILE__) . 'assets/js/front.js',
-			(function_exists('tumtook_aio_image_recovery_dependencies') ? tumtook_aio_image_recovery_dependencies() : array()),
+			array(),
 			$this->get_asset_version('assets/js/front.js'),
 			true
 		);

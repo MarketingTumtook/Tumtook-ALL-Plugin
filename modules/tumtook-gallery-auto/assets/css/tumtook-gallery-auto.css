@@ -269,17 +269,7 @@
 	text-align: center;
 }
 
-.ttga-gallery-shell .ttga-retry {
-	display: block;
-	margin: 0 auto 16px;
-	padding: 8px 20px;
-	border: 1px solid #cbd5e1;
-	border-radius: 999px;
-	background: #fff;
-	color: #334155;
-	font: inherit;
-	cursor: pointer;
-}
+
 
 .ttga-sentinel {
 	height: 1px;

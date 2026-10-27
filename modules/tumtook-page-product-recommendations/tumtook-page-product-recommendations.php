@@ -117,7 +117,7 @@ final class Tumtook_Page_Product_Recommendations
 		wp_register_script(
 			'tt-page-product-recommendations',
 			plugin_dir_url(__FILE__) . 'assets/js/front.js',
-			(function_exists('tumtook_aio_image_recovery_dependencies') ? tumtook_aio_image_recovery_dependencies() : array()),
+			array(),
 			$this->get_asset_version('assets/js/front.js'),
 			true
 		);

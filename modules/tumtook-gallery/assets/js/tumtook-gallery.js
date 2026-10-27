@@ -356,16 +356,6 @@ function initTumtookGallery() {
 		var pendingLoad = false;
 		var failed = false;
 		var batchSize = getInitialPerPage(shell);
-		var retry = document.createElement('button');
-		retry.type = 'button';
-		retry.className = 'ttg-retry';
-		retry.textContent = 'ลองอีกครั้ง';
-		retry.hidden = true;
-		shell.insertBefore(retry, sentinel);
-		retry.addEventListener('click', function () {
-			failed = false;
-			requestLoad(batchSize);
-		});
 		var observer;
 		var resizeFrame;
 		var scrollFrame;
@@ -416,7 +406,6 @@ function initTumtookGallery() {
 			}
 
 			loading = true;
-			retry.hidden = true;
 			var controller = new AbortController();
 			var timeout = window.setTimeout(function () { controller.abort(); }, 10000);
 			setLoaderState(TumtookGalleryData.strings.loading, false);
@@ -485,7 +474,6 @@ function initTumtookGallery() {
 				.catch(function () {
 					failed = true;
 					pendingLoad = false;
-					retry.hidden = false;
 					setLoaderState(TumtookGalleryData.strings.error, false);
 				})
 				.finally(function () {

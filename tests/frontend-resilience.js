@@ -39,50 +39,46 @@ function environment(roots, state = 'complete') {
   return { context: { document, window, IntersectionObserver: Observer, AbortController, URL, console, Date, Promise }, observers, timers, frames, listeners, queryCount: () => queries };
 }
 const source = module => fs.readFileSync(`modules/${module}/assets/js/${module === 'tumtook-gallery' ? 'tumtook-gallery.js' : 'front.js'}`, 'utf8');
-async function galleryTest() {
+async function galleryTest(mode) {
   const shell = element(), gallery = element(), loader = element(), sentinel = element();
   shell.dataset = { pageId: '42', columns: '6', limit: '50', endpoint: 'https://example.test/api' };
   shell.querySelector = selector => ({ '.ttg-gallery': gallery, '.ttg-loader': loader, '.ttg-sentinel': sentinel }[selector] || null);
   const env = environment([shell]);
   const urls = [];
-  let mode = 'error';
   env.context.TumtookGalleryData = { restUrl: 'https://example.test/wp-json/gallery', strings: { loading: 'loading', empty: 'empty', error: 'error' } };
   env.context.fetch = (url, options) => {
     urls.push(String(url));
     if (mode === 'error') return Promise.reject(new Error('Simulated transport failure'));
     if (mode === 'timeout') return new Promise((resolve, reject) => options.signal.addEventListener('abort', () => reject(new Error('Aborted'))));
-    return Promise.resolve({ ok: true, json: async () => ({ items: [], has_more: false }) });
+    return Promise.resolve({ ok: true, json: async () => ({ items: urls.length === 1 ? [{ image: '/one.webp' }] : [], has_more: urls.length === 1 }) });
   };
   vm.runInNewContext(source('tumtook-gallery'), env.context);
   assert.equal(urls.length, 0, 'Below-fold Gallery must not start a network request');
+  assert.equal(shell.children.length, 0, 'Initialization must not insert retry buttons');
   env.observers[0].enter(shell);
+  if (mode === 'timeout') Array.from(env.timers.values()).forEach(fn => fn());
   await flush();
   assert.equal(urls.length, 1);
-  const retry = shell.children.find(x => x.className === 'ttg-retry');
-  assert.equal(retry.hidden, false);
-  for (let i = 0; i < 8; i++) {
-    const next = env.frames.shift(); if (next) next();
+  if (mode !== 'success') {
+    for (let i = 0; i < 8; i++) {
+      const next = env.frames.shift(); if (next) next();
+      env.observers[1].enter(sentinel);
+      await flush();
+    }
+    assert.equal(urls.length, 1, 'Failures must not loop or restart on scrolling');
+    assert.equal(shell.children.length, 0, 'Failures must not insert public controls');
+  } else {
+    env.context.window.innerWidth = 375;
     env.observers[1].enter(sentinel);
     await flush();
+    assert.equal(urls.length, 2);
+    assert.equal(new URL(urls[0]).searchParams.get('per_page'), new URL(urls[1]).searchParams.get('per_page'), 'Breakpoint changes must not change pagination size');
+    assert.equal(shell.children.length, 0, 'Successful pagination must not insert retry buttons');
   }
-  assert.equal(urls.length, 1, 'Failures must not loop or restart on scrolling');
-  assert.equal(env.timers.size, 0, 'Failed fetch must clear its timeout');
-  env.context.window.innerWidth = 375;
-  mode = 'timeout';
-  retry.handlers.click();
-  assert.equal(urls.length, 2, 'Manual retry permits one additional request');
-  assert.equal(new URL(urls[0]).searchParams.get('per_page'), new URL(urls[1]).searchParams.get('per_page'), 'Breakpoint changes must not change pagination size');
-  Array.from(env.timers.values()).forEach(fn => fn());
-  await flush();
-  assert.equal(retry.hidden, false, 'Timeout restores retry control');
-  assert.equal(urls.length, 2, 'Timeout must not create an automatic retry loop');
-  mode = 'success';
-  retry.handlers.click(); await flush();
-  assert.equal(urls.length, 3);
-  assert.equal(retry.hidden, true, 'Successful manual retry clears the error control');
-  assert.equal(env.timers.size, 0);
-  console.log('PASS Gallery: delayed initialization, near-viewport requests, stop on error, manual retry, timeout, fixed pagination size, recovery');
+  assert.equal(env.timers.size, 0, 'Settled requests must clear their timeout');
+  console.log(`PASS Gallery: ${mode}, no public retry controls, bounded requests, fixed pagination size`);
 }
+
 async function recommendationsTest(module, prefix) {
   for (const state of ['loading', 'complete']) {
     const root = element(), track = element();
@@ -106,7 +102,7 @@ async function recommendationsTest(module, prefix) {
   }
 }
 (async () => {
-  await galleryTest();
+  for (const mode of ['error', 'timeout', 'success']) await galleryTest(mode);
   for (const [module, prefix] of [['tumtook-page-article-recommendations','ttar'],['tumtook-page-product-recommendations','ttpr'],['tumtook-job-working-cards','ttwc']]) await recommendationsTest(module, prefix);
   for (const state of ['loading','complete']) {
     const env = environment([], state);

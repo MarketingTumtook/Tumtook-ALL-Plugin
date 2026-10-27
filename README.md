@@ -264,3 +264,10 @@ Pull the complete release, including the new `includes/` and `assets/js/image-re
 Validate a first visit, scroll through Gallery and recommendations, test the retry controls on a deliberately failed request in a test environment, and compare page-cache headers. This release does not change FlyingPress/Cloudflare settings or explain why the production homepage returned no-store/MISS/BYPASS during the audit.
 
 Regression checks: `node tests/frontend-resilience.js`, `node tests/image-recovery.js`, `php tests/api-cache.php`, `php tests/gallery-cache-integration.php`, `php tests/server-query-bounds.php`, existing module smoke suites, plus PHP and JavaScript syntax checks. Tests use simulated APIs and WordPress doubles; production speed and optimizer behavior must still be verified after deployment.
+
+
+## 1.0.112 — Remove public retry controls
+
+Removes the Gallery, Gallery Auto and individual-image retry buttons from the public website. No retry controls are generated on initial load or on error. Failed Gallery requests still stop without an automatic retry loop; timeouts, stale API fallback, viewport loading and backend caches remain in place. The image-recovery dependency is no longer enqueued. Its old URL remains as a compatibility asset for cached HTML and only restores a successfully loaded image; it creates no controls and sends no requests.
+
+Purge FlyingPress and CDN HTML/optimized asset caches after pulling this version so older cached JavaScript cannot continue inserting the removed controls.
