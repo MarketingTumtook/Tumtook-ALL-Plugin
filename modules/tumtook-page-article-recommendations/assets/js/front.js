@@ -11,6 +11,49 @@
     pageLabel: "Go to article group "
   };
 
+  function initImages(root) {
+    root.querySelectorAll("img.ttar-image").forEach(function (image) {
+      if (image.__ttImageReady) return;
+      image.__ttImageReady = true;
+      var attempts = 0;
+      var timer = null;
+      var holder = image.parentNode;
+
+      function loaded() {
+        if (timer !== null) window.clearTimeout(timer);
+        timer = null;
+        image.style.removeProperty("display");
+        holder.classList.remove("ttar-image-link--missing");
+      }
+
+      function failed() {
+        if (timer !== null) return;
+        var original = image.getAttribute("src");
+        if (!original) return;
+        if (attempts >= 2) {
+          image.style.display = "none";
+          holder.classList.add("ttar-image-link--missing");
+          return;
+        }
+        attempts += 1;
+        // A failed responsive variant can recover using the original image.
+        timer = window.setTimeout(function () {
+          timer = null;
+          image.removeAttribute("srcset");
+          image.removeAttribute("sizes");
+          image.loading = "eager";
+          image.removeAttribute("src");
+          image.setAttribute("src", original);
+        }, attempts * 800);
+      }
+
+      image.addEventListener("load", loaded);
+      image.addEventListener("error", failed);
+      // Catch failures that happened before a deferred script attached listeners.
+      if (image.complete && !image.naturalWidth && image.getAttribute("src")) failed();
+    });
+  }
+
   function setupSlider(root) {
     var track = root.querySelector(config.track);
     var slides = Array.prototype.slice.call(root.querySelectorAll(config.slide));
@@ -736,18 +779,41 @@
     setupSlider(root);
   }
 
-  document.addEventListener("DOMContentLoaded", function () {
-    var sliders = document.querySelectorAll(config.root);
-
+  function initSliders(scope) {
+    var container = scope && scope.querySelectorAll ? scope : document;
+    var sliders = Array.prototype.slice.call(container.querySelectorAll(config.root));
+    if (container.matches && container.matches(config.root)) sliders.unshift(container);
     if (sliders.length) {
       document.documentElement.classList.add("ttar-slider-page");
       document.body.classList.add("ttar-slider-page");
     }
-
-    Array.prototype.forEach.call(sliders, function (slider) {
+    sliders.forEach(function (slider) {
+      if (slider.__ttarInitStarted) return;
+      slider.__ttarInitStarted = true;
+      initImages(slider);
       refreshDynamicItems(slider).then(function () {
+        initImages(slider);
         initSlider(slider);
       });
     });
-  });
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", function () { initSliders(document); }, { once: true });
+  } else {
+    initSliders(document);
+  }
+
+  var elementorHookAdded = false;
+  function bindElementor() {
+    if (elementorHookAdded || !window.elementorFrontend || !window.elementorFrontend.hooks) return;
+    elementorHookAdded = true;
+    window.elementorFrontend.hooks.addAction("frontend/element_ready/global", function (scope) {
+      initSliders(scope && scope[0] ? scope[0] : scope);
+    });
+  }
+  bindElementor();
+  if (window.jQuery) {
+    window.jQuery(window).on("elementor/frontend/init.ttar", bindElementor);
+  }
 })();

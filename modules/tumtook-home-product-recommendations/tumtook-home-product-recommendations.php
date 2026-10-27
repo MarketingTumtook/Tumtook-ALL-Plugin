@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Tumtook Home Product Recommendations
  * Description: Displays repeatable, manually selected page-card sections on Home.
- * Version: 2.0.0
+ * Version: 2.0.1
  * Author: Tumtook
  * Text Domain: tumtook-home-product-recommendations
  */
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
 
 final class Tumtook_Home_Product_Recommendations
 {
-	const VERSION = '2.0.0';
+	const VERSION = '2.0.1';
 	const META_KEY = '_tt_home_product_recommendations';
 	const SHORTCODE = 'tumtook_home_recommended_products';
 	const ASSET_HANDLE = 'tt-home-product-recommendations';

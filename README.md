@@ -239,3 +239,10 @@ Validation: standalone simulated API/cache regression tests (10 checks), PHP syn
 ## 1.0.108 — Show the full catalog
 
 Catalog renders every item immediately. Removed the load-more button, frontend AJAX requests, and load-more endpoint. Existing `limit` and `per_page` shortcode attributes no longer truncate the catalog. Images retain lazy loading; product detail accordions remain available. Purge page/CDN caches after deployment.
+
+
+## 1.0.109 — Recover slider images and deferred article initialization
+
+Product and article card images retry twice before showing the missing-image placeholder. Retries fall back from responsive variants to the original URL without cache-busting; successful loads restore the image. Failures before deferred script execution are also detected. Article sliders initialize whether DOMContentLoaded is pending or already complete and support Elementor element-ready hooks, including images inserted by dynamic article refresh.
+
+After pulling this release, purge FlyingPress and CDN HTML caches so templates and scripts update together. This fixes identified code risks; the intermittent first-visit issue still needs verification on the optimized production page.

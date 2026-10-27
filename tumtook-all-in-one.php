@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Tumtook All-in-One Modules
  * Description: Combined Tumtook page modules: API catalog viewer, brand showcase, comparison table, PDF catalog, gallery, auto Pinterest gallery, article recommendations, Card Products  ทั้งหมด, product recommendations, Home product recommendations, video how-to slider, and Contact Map with three GLB branch models.
- * Version: 1.0.108
+ * Version: 1.0.109
  * Author: Tumtook
  * Text Domain: tumtook-all-in-one
  */
@@ -12,7 +12,7 @@ if (!defined('ABSPATH')) {
 }
 
 if (!defined('TUMTOOK_AIO_VERSION')) {
-	define('TUMTOOK_AIO_VERSION', '1.0.108');
+	define('TUMTOOK_AIO_VERSION', '1.0.109');
 }
 
 if (!defined('TUMTOOK_AIO_PLUGIN_FILE')) {
