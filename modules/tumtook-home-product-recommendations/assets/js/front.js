@@ -11,49 +11,6 @@
     pageLabel: "ไปยังกลุ่มสินค้า "
   };
 
-  function initImages(root) {
-    root.querySelectorAll("img.tthpr-image").forEach(function (image) {
-      if (image.__ttImageReady) return;
-      image.__ttImageReady = true;
-      var attempts = 0;
-      var timer = null;
-      var holder = image.parentNode;
-
-      function loaded() {
-        if (timer !== null) window.clearTimeout(timer);
-        timer = null;
-        image.style.removeProperty("display");
-        holder.classList.remove("tthpr-image-link--missing");
-      }
-
-      function failed() {
-        if (timer !== null) return;
-        var original = image.getAttribute("src");
-        if (!original) return;
-        if (attempts >= 2) {
-          image.style.display = "none";
-          holder.classList.add("tthpr-image-link--missing");
-          return;
-        }
-        attempts += 1;
-        // A failed responsive variant can recover using the original image.
-        timer = window.setTimeout(function () {
-          timer = null;
-          image.removeAttribute("srcset");
-          image.removeAttribute("sizes");
-          image.loading = "eager";
-          image.removeAttribute("src");
-          image.setAttribute("src", original);
-        }, attempts * 800);
-      }
-
-      image.addEventListener("load", loaded);
-      image.addEventListener("error", failed);
-      // Catch failures that happened before a deferred script attached listeners.
-      if (image.complete && !image.naturalWidth && image.getAttribute("src")) failed();
-    });
-  }
-
   function setupSlider(root) {
     var track = root.querySelector(config.track);
     var slides = Array.prototype.slice.call(root.querySelectorAll(config.slide));
@@ -649,7 +606,6 @@
       if (slider.__tthprInitialized) {
         return;
       }
-      initImages(slider);
       slider.__tthprInitialized = true;
       setupSlider(slider);
     });
