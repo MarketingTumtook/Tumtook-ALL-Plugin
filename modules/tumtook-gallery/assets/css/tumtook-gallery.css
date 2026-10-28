@@ -183,6 +183,7 @@
 
 .ttg-gallery-shell .ttg-gallery.is-masonry {
 	display: block;
+	overflow: hidden;
 }
 
 .ttg-gallery-shell .ttg-card {
