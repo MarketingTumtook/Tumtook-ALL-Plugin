@@ -321,7 +321,11 @@
 	.ttg-gallery-shell .ttg-end-panel {
 		display: none !important;
 	}
-
+	
+	.ttg-gallery-shell {
+		padding: 0 15px;
+	}
+	
 	.ttg-lightbox {
 		padding: 14px;
 	}
