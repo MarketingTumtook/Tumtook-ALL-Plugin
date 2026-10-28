@@ -33,6 +33,7 @@ function add_shortcode($name, $callback) { $GLOBALS['shortcodes'][$name] = $call
 function register_activation_hook(...$args) {}
 function register_rest_route($namespace, $path, $args) { $GLOBALS['routes'][$namespace . $path] = $args; }
 function get_the_ID() { return 42; }
+function is_front_page() { return !empty($GLOBALS['front_page']); }
 function get_post($id) { return $id ? (object) array('ID' => $id) : null; }
 function current_user_can(...$args) { return $GLOBALS['can_edit']; }
 function is_user_logged_in() { return false; }
@@ -99,6 +100,11 @@ $GLOBALS['meta'][42]['_tumtook_gallery_settings'] = $legacy;
 $html = $plugin->render_shortcode(array());
 check(strpos($html, 'ttg-gallery-shell') !== false && strpos($html, 'data-columns="0"') !== false, 'New shortcode inherits existing page configuration and defaults to auto columns');
 check(strpos($html, 'secret') === false, 'Configured API URL stays on the server');
+check(strpos($html, 'data-layout="natural"') !== false, 'Regular galleries preserve original image proportions');
+$GLOBALS['front_page'] = true;
+$home_html = $plugin->render_shortcode(array());
+check(strpos($home_html, 'data-layout="mixed"') !== false, 'Home retains mixed frames with the same shortcode');
+$GLOBALS['front_page'] = false;
 check(strpos($html, 'ttg-retry') === false, 'Public gallery markup contains no retry button');
 $html = $plugin->render_shortcode(array('columns' => 99, 'gap' => 999, 'min_width' => 1, 'radius' => 999));
 check(strpos($html, 'data-columns="12"') !== false && strpos($html, 'data-gap="64"') !== false && strpos($html, 'data-min-width="140"') !== false, 'Layout settings stay within supported bounds');

@@ -237,6 +237,11 @@
 	object-position: center;
 }
 
+/* Show the complete source image on ordinary pages. */
+.ttg-gallery-shell[data-layout="natural"] .ttg-media img {
+	object-fit: contain;
+}
+
 .ttg-gallery-shell .ttg-media:focus-visible {
 	outline: 3px solid #2563eb;
 	outline-offset: -3px;

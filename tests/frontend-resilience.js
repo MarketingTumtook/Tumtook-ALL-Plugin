@@ -5,7 +5,7 @@ const flush = async () => { for (let i = 0; i < 5; i++) await new Promise(setImm
 function element() {
   const attrs = {}, handlers = {}, classes = new Set();
   return {
-    dataset: {}, children: [], hidden: false, style: { setProperty() {}, removeProperty() {} },
+    dataset: {}, children: [], hidden: false, style: { setProperty(k, v) { this[k] = v; }, removeProperty(k) { delete this[k]; } },
     classList: { add: x => classes.add(x), remove: x => classes.delete(x), contains: x => classes.has(x) },
     setAttribute(k, v) { attrs[k] = v; }, getAttribute(k) { return attrs[k] || ''; }, removeAttribute(k) { delete attrs[k]; },
     addEventListener(k, fn) { handlers[k] = fn; }, handlers,
@@ -40,18 +40,25 @@ function environment(roots, state = 'complete') {
   return { context: { document, window, IntersectionObserver: Observer, AbortController, URL, console, Date, Promise }, observers, timers, frames, listeners, queryCount: () => queries };
 }
 const source = module => fs.readFileSync(`modules/${module}/assets/js/${module === 'tumtook-gallery' ? 'tumtook-gallery.js' : 'front.js'}`, 'utf8');
-async function galleryTest(mode) {
+async function galleryTest(mode, layout = 'natural', home = false, width = 0, requested = '0') {
   const shell = element(), gallery = element(), loader = element(), sentinel = element();
   shell.dataset = { pageId: '42', columns: '6', limit: '50', endpoint: 'https://example.test/api' };
   shell.querySelector = selector => ({ '.ttg-gallery': gallery, '.ttg-loader': loader, '.ttg-sentinel': sentinel }[selector] || null);
   const env = environment([shell]);
+  if (width) {
+    shell.dataset.columns = requested;
+    gallery.clientWidth = width;
+    env.context.window.getComputedStyle = () => ({ direction: 'ltr' });
+  }
+  if (layout) shell.dataset.layout = layout;
+  if (home) env.context.document.body.classList.add('home');
   const urls = [];
   env.context.window.TumtookGalleryData = { restUrl: 'https://example.test/wp-json/gallery', strings: { loading: 'loading', empty: 'empty', error: 'error' } };
   env.context.fetch = (url, options) => {
     urls.push(String(url));
     if (mode === 'error') return Promise.reject(new Error('Simulated transport failure'));
     if (mode === 'timeout') return new Promise((resolve, reject) => options.signal.addEventListener('abort', () => reject(new Error('Aborted'))));
-    return Promise.resolve({ ok: true, json: async () => ({ items: urls.length === 1 ? [{ image: '/one.webp' }] : [], has_more: urls.length === 1 }) });
+    return Promise.resolve({ ok: true, json: async () => ({ items: urls.length === 1 ? [{ image: '/one.webp', width: 300, height: 600 }] : [], has_more: urls.length === 1 }) });
   };
   vm.runInNewContext(source('tumtook-gallery'), env.context);
   assert.equal(urls.length, 0, 'Below-fold Gallery must not start a network request');
@@ -70,6 +77,20 @@ async function galleryTest(mode) {
     assert.equal(urls.length, 1, 'Failures must not loop or restart on scrolling');
     assert.equal(shell.children.length, 0, 'Failures must not insert public controls');
   } else {
+    const mixed = layout === 'mixed' || (!layout && home);
+    const media = gallery.children[0].children[0].children[0];
+    const image = media.children[0];
+    assert.equal(media.style['--ttg-ratio'], mixed ? '1 / 1' : '300 / 600', 'Only Home uses mixed frames; ordinary galleries reserve the API image ratio');
+    image.naturalWidth = 400;
+    image.naturalHeight = 1000;
+    image.handlers.load();
+    assert.equal(media.style['--ttg-ratio'], mixed ? '1 / 1' : '400 / 1000', 'Natural galleries correct dimensions after image load while Home keeps its frame');
+    if (!mixed) assert.equal(env.frames.length, 1, 'Image dimension updates share one scheduled masonry layout');
+    if (width) {
+      env.frames.shift()();
+      const expected = requested !== '0' ? Number(requested) : width <= 767 ? 2 : width <= 1024 ? 3 : 6;
+      assert.equal(Number(shell.dataset.activeColumns), expected, 'Ordinary Gallery restores 6 desktop, 3 tablet and 2 mobile columns, with explicit overrides respected');
+    }
     env.context.window.innerWidth = 375;
     sentinel.getBoundingClientRect = () => ({ top: 500, bottom: 600 });
       env.observers.find(observer => observer.targets.includes(sentinel)).enter(sentinel);
@@ -106,6 +127,11 @@ async function recommendationsTest(module, prefix) {
 }
 (async () => {
   for (const mode of ['error', 'timeout', 'success']) await galleryTest(mode);
+  await galleryTest('success', 'mixed');
+  await galleryTest('success', '', true);
+  await galleryTest('success', '', false);
+  for (const width of [1440, 1140, 1024, 768, 767, 375]) await galleryTest('success', 'natural', false, width);
+  await galleryTest('success', 'natural', false, 1440, '5');
   for (const [module, prefix] of [['tumtook-page-article-recommendations','ttar'],['tumtook-page-product-recommendations','ttpr'],['tumtook-job-working-cards','ttwc']]) await recommendationsTest(module, prefix);
   for (const state of ['loading','complete']) {
     const env = environment([], state);

@@ -185,6 +185,10 @@ function initTumtookGallery() {
 		if (requested) {
 			return Math.min(12, requested, capacity);
 		}
+		// Restore the original Gallery defaults without requiring a columns attribute.
+		if (shell.dataset.layout === 'natural') {
+			return Math.min(width <= 767 ? 2 : width <= 1024 ? 3 : 6, capacity);
+		}
 		if (width <= 600) {
 			return Math.min(2, capacity);
 		}
@@ -208,18 +212,24 @@ function initTumtookGallery() {
 		}
 	}
 
-	function createCard(item, index, eager, priority) {
+	function createCard(item, index, eager, priority, mixed, onResize) {
 		var article = document.createElement('article');
 		var media = document.createElement('button');
 		var image = document.createElement('img');
 		var fallback = document.createElement('span');
-		// Assign once per unique card, independently of source dimensions or viewport size.
+		// Only Home crops images into a fixed mix; other pages preserve source proportions.
 		var ratios = ['1 / 1', '16 / 9', '5 / 4', '16 / 9', '5 / 4', '1 / 1', '5 / 4', '1 / 1', '16 / 9'];
 		article.className = 'ttg-card';
 		article.setAttribute('role', 'listitem');
 		article.dataset.ttgKey = String(item.key || item.image);
 		media.className = 'ttg-media';
-		media.style.setProperty('--ttg-ratio', ratios[index % ratios.length]);
+		var width = Number(item.width);
+		var height = Number(item.height);
+		if (mixed) {
+			media.style.setProperty('--ttg-ratio', ratios[index % ratios.length]);
+		} else if (width > 0 && height > 0 && Number.isFinite(width) && Number.isFinite(height)) {
+			media.style.setProperty('--ttg-ratio', width + ' / ' + height);
+		}
 		media.type = 'button';
 		media.setAttribute('aria-label', item.alt || item.title || 'เปิดรูปภาพ');
 		media.setAttribute('aria-haspopup', 'dialog');
@@ -232,6 +242,10 @@ function initTumtookGallery() {
 		if (eager) image.dataset.ttgEager = '1';
 		if (priority) image.setAttribute('fetchpriority', 'high');
 		image.addEventListener('load', function () {
+			if (!mixed && image.naturalWidth > 0 && image.naturalHeight > 0) {
+				media.style.setProperty('--ttg-ratio', image.naturalWidth + ' / ' + image.naturalHeight);
+				onResize();
+			}
 			media.classList.add('is-loaded');
 		});
 		image.addEventListener('error', function () {
@@ -259,6 +273,9 @@ function initTumtookGallery() {
 		var gallery = shell.querySelector('.ttg-gallery');
 		var loader = shell.querySelector('.ttg-loader');
 		var sentinel = shell.querySelector('.ttg-sentinel');
+		// Support previously cached markup without data-layout as well.
+		var mixed = shell.dataset.layout ? shell.dataset.layout === 'mixed' : document.body.classList.contains('home');
+		shell.dataset.layout = mixed ? 'mixed' : 'natural';
 		var gap = Math.max(0, Number(shell.dataset.gap) || 0);
 		var page = 1;
 		// Keep the batch size fixed: changing it on resize would skip API offsets.
@@ -385,7 +402,7 @@ function initTumtookGallery() {
 						if ((key && seen.has(key)) || seenUrls.has(source)) return;
 						if (key) seen.add(key);
 						seenUrls.add(source);
-						fragment.appendChild(createCard(item, seenUrls.size - 1, eager && added < columns * 2, eager && added < columns));
+						fragment.appendChild(createCard(item, seenUrls.size - 1, eager && added < columns * 2, eager && added < columns, mixed, scheduleLayout));
 						added += 1;
 					});
 					gallery.appendChild(fragment);
