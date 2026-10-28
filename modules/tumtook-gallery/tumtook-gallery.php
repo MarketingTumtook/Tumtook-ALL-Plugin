@@ -1,8 +1,8 @@
 <?php
 /**
  * Plugin Name: Tumtook Gallery
- * Description: Fetch images from an API and display them in a masonry gallery via shortcode.
- * Version: 1.0.50
+ * Description: Pinterest-style gallery with mixed aspect ratios, unique images and early lazy loading. Derived from Tumtook Gallery.
+ * Version: 1.1.0
  * Author: Tumtook
  * Text Domain: tumtook-gallery
  */
@@ -16,7 +16,7 @@ final class Tumtook_Gallery_Plugin
 	const OPTION_KEY = 'tumtook_gallery_settings';
 	const SHORTCODE = 'tumtook_gallery';
 	const META_KEY = '_tumtook_gallery_settings';
-	const VERSION = '1.0.50';
+	const VERSION = '1.1.0';
 	const DEFAULT_LIMIT = 50;
 	const FONT_HANDLE = 'tumtook-kanit-font';
 
@@ -28,6 +28,8 @@ final class Tumtook_Gallery_Plugin
 		add_action('admin_enqueue_scripts', array($this, 'enqueue_admin_assets'));
 		add_action('rest_api_init', array($this, 'register_rest_routes'));
 		add_shortcode(self::SHORTCODE, array($this, 'render_shortcode'));
+		// Compatibility alias only: both shortcodes use the same settings and assets.
+		add_shortcode('tumtook_gallery_auto', array($this, 'render_shortcode'));
 	}
 
 	public function enqueue_admin_assets($hook)
@@ -93,10 +95,11 @@ final class Tumtook_Gallery_Plugin
 			'TumtookGalleryData',
 			array(
 				'restUrl' => esc_url_raw(rest_url('tumtook-gallery/v1/items')),
+				'nonce' => is_user_logged_in() ? wp_create_nonce('wp_rest') : '',
 				'strings' => array(
 					'loading' => __('Loading images...', 'tumtook-gallery'),
 					'empty' => __('No images found from the API response.', 'tumtook-gallery'),
-					'error' => __('Could not load more images right now.', 'tumtook-gallery'),
+					'error' => __('โหลดรูปไม่สำเร็จ กรุณาลองอีกครั้ง', 'tumtook-gallery'),
 				),
 			)
 		);
@@ -125,37 +128,43 @@ final class Tumtook_Gallery_Plugin
 
 	public function register_rest_routes()
 	{
-		register_rest_route(
-			'tumtook-gallery/v1',
-			'/items',
-			array(
-				'methods' => WP_REST_Server::READABLE,
-				'callback' => array($this, 'rest_get_items'),
-				'permission_callback' => '__return_true',
-				'args' => array(
-					'page_id' => array(
-						'default' => 0,
-						'sanitize_callback' => 'absint',
+		foreach (array('tumtook-gallery/v1', 'tumtook-gallery-auto/v1') as $namespace) {
+			register_rest_route(
+				$namespace,
+				'/items',
+				array(
+					'methods' => WP_REST_Server::READABLE,
+					'callback' => array($this, 'rest_get_items'),
+					'permission_callback' => array($this, 'can_view_gallery'),
+					'args' => array(
+						'page_id' => array(
+							'default' => 0,
+							'sanitize_callback' => 'absint',
+						),
+						'endpoint' => array(
+							'default' => '',
+							'sanitize_callback' => 'esc_url_raw',
+						),
+						'endpoint_signature' => array(
+							'default' => '',
+							'sanitize_callback' => 'sanitize_text_field',
+						),
+						'limit' => array(
+							'default' => self::DEFAULT_LIMIT,
+							'sanitize_callback' => 'absint',
+						),
+						'page' => array(
+							'default' => 1,
+							'sanitize_callback' => 'absint',
+						),
+						'per_page' => array(
+							'default' => 12,
+							'sanitize_callback' => 'absint',
+						),
 					),
-					'endpoint' => array(
-						'required' => false,
-						'sanitize_callback' => 'esc_url_raw',
-					),
-					'limit' => array(
-						'default' => self::DEFAULT_LIMIT,
-						'sanitize_callback' => 'absint',
-					),
-					'page' => array(
-						'default' => 1,
-						'sanitize_callback' => 'absint',
-					),
-					'per_page' => array(
-						'default' => 12,
-						'sanitize_callback' => 'absint',
-					),
-				),
-			)
-		);
+				)
+			);
+		}
 	}
 
 	public function register_meta_box()
@@ -172,6 +181,7 @@ final class Tumtook_Gallery_Plugin
 
 	private function sanitize_settings($input)
 	{
+		$input = array_filter($input, 'is_scalar');
 		$defaults = self::get_default_settings();
 		$output = array();
 
@@ -239,46 +249,10 @@ final class Tumtook_Gallery_Plugin
 		}
 	}
 
-	public function render_settings_page()
-	{
-		if (isset($_GET['ttg_cache_cleared']) && '1' === $_GET['ttg_cache_cleared']) {
-				echo '<div class="notice notice-success is-dismissible"><p>' . esc_html__('ล้างแคช Tumtook Gallery เรียบร้อยแล้ว', 'tumtook-gallery') . '</p></div>';
-		}
-
-		$clear_cache_url = wp_nonce_url(
-			add_query_arg(
-				array(
-					'page' => 'tumtook-gallery',
-					'tumtook_action' => 'clear_cache',
-				),
-				admin_url('options-general.php')
-			),
-			'tumtook_gallery_clear_cache'
-		);
-
-		?>
-		<div class="wrap">
-				<h1><?php esc_html_e('Tumtook Gallery', 'tumtook-gallery'); ?></h1>
-				<p><?php esc_html_e('ใช้ shortcode [tumtook_gallery] เพื่อแสดง Gallery บนหน้าเว็บ', 'tumtook-gallery'); ?></p>
-				<p><?php esc_html_e('สามารถกำหนดค่า shortcode เพิ่มเติมได้ เช่น limit, columns, gap, endpoint', 'tumtook-gallery'); ?></p>
-				<p><?php esc_html_e('สำหรับ API ของ Tumtook ให้ใส่ API URL แบบเต็มที่มี x-api-key อยู่ใน URL ได้เลย', 'tumtook-gallery'); ?>
-				</p>
-				<p><a href="<?php echo esc_url($clear_cache_url); ?>"
-						class="button button-secondary"><?php esc_html_e('ล้างแคช Gallery', 'tumtook-gallery'); ?></a></p>
-			<form method="post" action="options.php">
-				<?php
-				settings_fields('tumtook_gallery_group');
-				do_settings_sections('tumtook-gallery');
-				submit_button();
-				?>
-			</form>
-		</div>
-		<?php
-	}
-
 	public function render_meta_box($post)
 	{
 		$settings = $this->get_page_settings($post->ID);
+		echo '<p>' . esc_html__('หากยังไม่เคยบันทึกโมดูลนี้ จะใช้ค่าจาก Tumtook Gallery เดิมของหน้านี้เป็นค่าเริ่มต้น หลังบันทึกแล้วจะแยกการตั้งค่าออกจากกัน', 'tumtook-gallery') . '</p>';
 		$fields = array(
 			'api_url',
 			'cache_minutes',
@@ -299,7 +273,7 @@ final class Tumtook_Gallery_Plugin
 		);
 
 		wp_nonce_field('tumtook_gallery_save_page_settings', 'tumtook_gallery_nonce');
-		echo '<p>' . esc_html__('หน้านี้ใช้แหล่งข้อมูล Tumtook Gallery แยกของตัวเอง ให้ใส่ shortcode [tumtook_gallery] ในเนื้อหาหน้านี้เพื่อแสดงผลตามค่าที่ตั้งไว้ด้านล่าง', 'tumtook-gallery') . '</p>';
+		echo '<p>' . esc_html__('หน้านี้ใช้แหล่งข้อมูล Tumtook Gallery แยกของตัวเอง ให้ใส่ shortcode [tumtook_gallery] เพื่อจัดภาพแบบ Pinterest โดยปรับคอลัมน์และความสูงตามสัดส่วนภาพอัตโนมัติ', 'tumtook-gallery') . '</p>';
 		echo '<p>' . esc_html__('แนะนำให้ใส่ API URL แบบเต็มที่มี x-api-key อยู่ใน query string แล้ว ไม่ต้องใส่ Bearer token หรือ custom header เพิ่ม', 'tumtook-gallery') . '</p>';
 		echo '<table class="form-table" role="presentation"><tbody>';
 
@@ -341,13 +315,14 @@ final class Tumtook_Gallery_Plugin
 			}
 
 			.ttg-admin-preview-grid {
-				display: grid;
-				grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+				column-width: 140px;
 				gap: 12px;
 				margin-top: 12px;
 			}
 
 			.ttg-admin-preview-card {
+				break-inside: avoid;
+				margin-bottom: 12px;
 				border: 1px solid #dcdcde;
 				border-radius: 12px;
 				overflow: hidden;
@@ -357,8 +332,7 @@ final class Tumtook_Gallery_Plugin
 			.ttg-admin-preview-card img {
 				display: block;
 				width: 100%;
-				aspect-ratio: 1 / 1;
-				object-fit: cover;
+				height: auto;
 				background: #f6f7f7;
 			}
 
@@ -390,7 +364,7 @@ final class Tumtook_Gallery_Plugin
 
 				function renderItems(items) {
 					gridNode.innerHTML = '';
-					items.forEach(function (item) {
+					items.forEach(function (item, index) {
 						var card = document.createElement('div');
 						var image = document.createElement('img');
 						var title = document.createElement('div');
@@ -399,6 +373,8 @@ final class Tumtook_Gallery_Plugin
 						image.src = item.image;
 						image.alt = item.alt || item.title || '';
 						image.loading = 'lazy';
+						image.style.aspectRatio = ['1 / 1', '16 / 9', '5 / 4', '16 / 9', '5 / 4', '1 / 1', '5 / 4', '1 / 1', '16 / 9'][index % 9];
+						image.style.objectFit = 'cover';
 						title.className = 'ttg-admin-preview-title';
 						title.textContent = item.title || '';
 
@@ -416,8 +392,8 @@ final class Tumtook_Gallery_Plugin
 					var altKey = fieldValue('alt_key');
 					var cacheMinutes = fieldValue('cache_minutes') || '1';
 
-					if (!apiUrl || !itemsPath || !imageKey) {
-							statusNode.textContent = 'กรุณากรอก API URL, ตำแหน่งรายการรูป และตำแหน่ง URL รูป เพื่อดูตัวอย่าง';
+					if (!apiUrl || !imageKey) {
+							statusNode.textContent = 'กรุณากรอก API URL และตำแหน่ง URL รูป เพื่อดูตัวอย่าง';
 							gridNode.innerHTML = '';
 							return;
 						}
@@ -479,8 +455,8 @@ final class Tumtook_Gallery_Plugin
 				}
 
 					wrap.querySelectorAll('input, textarea').forEach(function (field) {
-						field.addEventListener('input', queuePreview);
-						field.addEventListener('change', queuePreview);
+						field.addEventListener('input', function () { queuePreview(false); });
+						field.addEventListener('change', function () { queuePreview(false); });
 					});
 
 				queuePreview(true);
@@ -503,6 +479,10 @@ final class Tumtook_Gallery_Plugin
 			return;
 		}
 
+		if (!isset($_POST[self::META_KEY]) || !is_array($_POST[self::META_KEY])) {
+			return;
+		}
+
 		$input = isset($_POST[self::META_KEY]) ? wp_unslash($_POST[self::META_KEY]) : array();
 		update_post_meta($post_id, self::META_KEY, $this->sanitize_settings(is_array($input) ? $input : array()));
 	}
@@ -511,7 +491,8 @@ final class Tumtook_Gallery_Plugin
 	{
 		check_ajax_referer('ttg_preview_items');
 
-		if (!current_user_can('edit_pages')) {
+		$page_id = isset($_POST['page_id']) ? absint($_POST['page_id']) : 0;
+		if (!$page_id || !current_user_can('edit_post', $page_id)) {
 			wp_send_json_error(array('message' => __('You do not have permission to preview this gallery.', 'tumtook-gallery')), 403);
 		}
 
@@ -523,7 +504,6 @@ final class Tumtook_Gallery_Plugin
 		$input['alt_key'] = isset($_POST['alt_key']) ? wp_unslash($_POST['alt_key']) : '';
 		$input['cache_minutes'] = isset($_POST['cache_minutes']) ? wp_unslash($_POST['cache_minutes']) : '1';
 
-		$page_id = isset($_POST['page_id']) ? absint($_POST['page_id']) : 0;
 		$settings = $this->sanitize_settings($input);
 		$items = $this->get_gallery_items($settings['api_url'], $settings, self::DEFAULT_LIMIT, $page_id);
 
@@ -543,42 +523,61 @@ final class Tumtook_Gallery_Plugin
 		$atts = shortcode_atts(
 			array(
 				'limit' => self::DEFAULT_LIMIT,
-				'columns' => 6,
-				'gap' => 12,
+				'columns' => 'auto',
+				'min_width' => 220,
+				'gap' => 16,
+				'radius' => 16,
 				'endpoint' => '',
 			),
 			$atts,
 			self::SHORTCODE
 		);
 
-		$endpoint = !empty($atts['endpoint']) ? esc_url_raw($atts['endpoint']) : $settings['api_url'];
-		if (empty($endpoint)) {
+		$endpoint = !empty($atts['endpoint']) ? esc_url_raw($atts['endpoint']) : '';
+		wp_enqueue_style('tumtook-gallery');
+		if (empty($endpoint) && empty($settings['api_url'])) {
 			return $this->render_message(__('Please configure Tumtook Gallery in this page settings.', 'tumtook-gallery'));
 		}
 
-		wp_enqueue_style('tumtook-gallery');
 		wp_enqueue_script('tumtook-gallery');
 
-		$columns = min(12, max(6, absint($atts['columns'])));
-		$gap = max(0, absint($atts['gap']));
+		$columns = 'auto' === strtolower(trim((string) $atts['columns'])) || !absint($atts['columns']) ? 0 : min(12, max(1, absint($atts['columns'])));
+		$min_width = min(640, max(140, absint($atts['min_width'])));
+		$gap = min(64, absint($atts['gap']));
+		$radius = min(100, absint($atts['radius']));
 		$limit = $this->normalize_gallery_limit($atts['limit']);
-		$end_panel_background = !empty($settings['end_panel_background']) ? $settings['end_panel_background'] : '#f9f9f9';
+		$end_panel_background = sanitize_hex_color($settings['end_panel_background']) ?: '#f9f9f9';
+		// Only shortcode-authored overrides may replace the configured server-side URL.
+		$endpoint_signature = $endpoint ? wp_hash($page_id . '|' . $endpoint, 'auth') : '';
 
 		ob_start();
 		?>
 		<div class="ttg-gallery-shell" data-page-id="<?php echo esc_attr($page_id); ?>"
 			data-endpoint="<?php echo esc_url($endpoint); ?>" data-limit="<?php echo esc_attr($limit); ?>"
+			data-endpoint-signature="<?php echo esc_attr($endpoint_signature); ?>"
 			data-columns="<?php echo esc_attr($columns); ?>" data-gap="<?php echo esc_attr($gap); ?>"
-			style="--ttg-end-panel-background: <?php echo esc_attr($end_panel_background); ?>;">
-			<div class="ttg-gallery"
-				style="--ttg-columns: <?php echo esc_attr($columns); ?>; --ttg-gap: <?php echo esc_attr($gap); ?>px;"></div>
+			data-min-width="<?php echo esc_attr($min_width); ?>"
+			style="--ttg-min-width: <?php echo esc_attr($min_width); ?>px; --ttg-gap: <?php echo esc_attr($gap); ?>px; --ttg-radius: <?php echo esc_attr($radius); ?>px; --ttg-end-panel-background: <?php echo esc_attr($end_panel_background); ?>;">
+			<div class="ttg-gallery" role="list" aria-label="<?php esc_attr_e('แกลเลอรีรูปภาพ', 'tumtook-gallery'); ?>"></div>
 			<div class="ttg-end-panel" aria-hidden="true"></div>
 			<div class="ttg-loader" aria-live="polite"><?php esc_html_e('Loading images...', 'tumtook-gallery'); ?></div>
 			<div class="ttg-sentinel" aria-hidden="true"></div>
+			<noscript><?php esc_html_e('กรุณาเปิด JavaScript เพื่อดูแกลเลอรีรูปภาพ', 'tumtook-gallery'); ?></noscript>
 		</div>
 		<?php
 
 		return ob_get_clean();
+	}
+
+	public function can_view_gallery(WP_REST_Request $request)
+	{
+		$page_id = absint($request->get_param('page_id'));
+		$post = get_post($page_id);
+		if (!$page_id || !$post) {
+			return false;
+		}
+
+		return current_user_can('edit_post', $page_id) || (is_post_publicly_viewable($post) && !post_password_required($post));
 	}
 
 	public function rest_get_items(WP_REST_Request $request)
@@ -589,6 +588,15 @@ final class Tumtook_Gallery_Plugin
 		$limit = $this->normalize_gallery_limit($request->get_param('limit'));
 		$page = max(1, absint($request->get_param('page')));
 		$per_page = min(24, max(1, absint($request->get_param('per_page'))));
+
+		if ($endpoint && $endpoint !== $settings['api_url']) {
+			$signature = (string) $request->get_param('endpoint_signature');
+			if (!hash_equals(wp_hash($page_id . '|' . $endpoint, 'auth'), $signature)) {
+				return new WP_Error('ttg_invalid_endpoint', __('Invalid gallery endpoint.', 'tumtook-gallery'), array('status' => 403));
+			}
+		} else {
+			$endpoint = $settings['api_url'];
+		}
 
 		if (empty($endpoint)) {
 			return new WP_Error('ttg_missing_endpoint', __('Missing gallery endpoint.', 'tumtook-gallery'), array('status' => 400));
@@ -632,9 +640,9 @@ final class Tumtook_Gallery_Plugin
 		}
 
 		if (class_exists('Tumtook_AIO_API_Cache')) {
-			$response = Tumtook_AIO_API_Cache::get($endpoint, max(1, absint($settings['cache_minutes'])) * MINUTE_IN_SECONDS, false);
+			$response = Tumtook_AIO_API_Cache::get($endpoint, max(1, absint($settings['cache_minutes'])) * MINUTE_IN_SECONDS, true);
 		} else {
-			$response = wp_remote_get(
+			$response = wp_safe_remote_get(
 				$endpoint,
 				array(
 					'headers' => array(
@@ -784,7 +792,7 @@ final class Tumtook_Gallery_Plugin
 			return;
 		}
 
-		$candidates = $this->collect_gallery_item_candidates($items, $endpoint, $settings, $group, $max_items, $randomize_images, $match_code);
+		$candidates = $this->collect_gallery_item_candidates($items, $endpoint, $settings, $group, $max_items, $randomize_images, $match_code, $seen_images);
 
 		foreach ($candidates as $gallery_item) {
 			$item_key = isset($gallery_item['key']) ? (string) $gallery_item['key'] : '';
@@ -803,7 +811,7 @@ final class Tumtook_Gallery_Plugin
 		}
 	}
 
-	private function collect_gallery_item_candidates($items, $endpoint, $settings, $group, $max_items, $randomize_images, $match_code = '')
+	private function collect_gallery_item_candidates($items, $endpoint, $settings, $group, $max_items, $randomize_images, $match_code = '', $seen_images = array())
 	{
 		$candidates = array();
 		$candidate_keys = array();
@@ -836,13 +844,14 @@ final class Tumtook_Gallery_Plugin
 				}
 
 				$item_key = $this->get_gallery_item_key($image);
-				if (isset($candidate_keys[$item_key])) {
+				// Exclude prior groups before sampling so duplicates do not consume their quota.
+				if (isset($candidate_keys[$item_key]) || isset($seen_images[$item_key])) {
 					continue;
 				}
 
 				$item_alt = isset($alts[$index]) && is_scalar($alts[$index]) ? $alts[$index] : $alt;
 				$item_title = $this->extract_filename_title($raw_image);
-				$item_dimensions = $this->get_item_image_dimensions($item, $index);
+				$item_dimensions = $this->get_item_image_dimensions($item, $index, $settings['image_key']);
 
 				$candidate = array(
 					'key' => $item_key,
@@ -892,11 +901,49 @@ final class Tumtook_Gallery_Plugin
 
 	private function get_gallery_item_key($image)
 	{
-		return md5(trim((string) $image));
+		$parts = wp_parse_url(trim((string) $image));
+		if (empty($parts['host'])) {
+			return md5(trim((string) $image));
+		}
+
+		$host = strtolower($parts['host']);
+		if (!empty($parts['port']) && !in_array((int) $parts['port'], array(80, 443), true)) {
+			$host .= ':' . $parts['port'];
+		}
+		$path = isset($parts['path']) ? $parts['path'] : '/';
+		// WordPress thumbnails and scaled originals refer to the same source image.
+		$path = preg_replace('/(?:-\d+x\d+|-scaled)(?=\.(?:jpe?g|png|webp|gif|avif)$)/i', '', $path);
+		$query = array();
+		foreach (explode('&', isset($parts['query']) ? $parts['query'] : '') as $pair) {
+			if ('' === $pair) {
+				continue;
+			}
+			$parameter = explode('=', $pair, 2);
+			$name = urldecode($parameter[0]);
+			// Keep selectors such as id/file/path; only drop known rendering/signing noise.
+			if (preg_match('/^(?:w|h|width|height|q|quality|fit|crop|fm|format|auto|dpr|resize|v|ver|cb|cachebust|_|expires|signature|sig|utm_.*|x-amz-.*|x-goog-.*)$/i', $name)) {
+				continue;
+			}
+			$query[] = rawurlencode($name) . '=' . rawurlencode(urldecode(isset($parameter[1]) ? $parameter[1] : ''));
+		}
+		sort($query, SORT_STRING);
+
+		return md5($host . $path . ($query ? '?' . implode('&', $query) : ''));
 	}
 
-	private function get_item_image_dimensions($item, $index)
+	private function get_item_image_dimensions($item, $index, $image_key = '')
 	{
+		// API galleries commonly keep dimensions beside images.fileUrl.
+		$separator = strrpos($image_key, '.');
+		if (false !== $separator) {
+			$prefix = substr($image_key, 0, $separator) . '.';
+			$nested_width = $this->get_indexed_dimension_value($item, array($prefix . 'width', $prefix . 'dimensions.width'), $index);
+			$nested_height = $this->get_indexed_dimension_value($item, array($prefix . 'height', $prefix . 'dimensions.height'), $index);
+			if ($nested_width && $nested_height) {
+				return array('width' => $nested_width, 'height' => $nested_height);
+			}
+		}
+
 		$width = $this->get_indexed_dimension_value(
 			$item,
 			array(
@@ -984,6 +1031,9 @@ final class Tumtook_Gallery_Plugin
 
 		if ($page_id > 0) {
 			$stored = get_post_meta($page_id, self::META_KEY, true);
+			if (!metadata_exists('post', $page_id, self::META_KEY)) {
+				$stored = get_post_meta($page_id, '_tumtook_gallery_auto_settings', true);
+			}
 		}
 
 		return wp_parse_args(is_array($stored) ? $stored : array(), self::get_default_settings());

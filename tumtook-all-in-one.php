@@ -1,8 +1,8 @@
 <?php
 /**
  * Plugin Name: Tumtook All-in-One Modules
- * Description: Combined Tumtook page modules: API catalog viewer, brand showcase, comparison table, PDF catalog, gallery, auto Pinterest gallery, article recommendations, Card Products  ทั้งหมด, product recommendations, Home product recommendations, video how-to slider, and Contact Map with three GLB branch models.
- * Version: 1.0.112
+ * Description: Combined Tumtook page modules: API catalog viewer, brand showcase, comparison table, PDF catalog, Pinterest gallery, article recommendations, Card Products  ทั้งหมด, product recommendations, Home product recommendations, video how-to slider, and Contact Map with three GLB branch models.
+ * Version: 1.0.113
  * Author: Tumtook
  * Text Domain: tumtook-all-in-one
  */
@@ -12,7 +12,7 @@ if (!defined('ABSPATH')) {
 }
 
 if (!defined('TUMTOOK_AIO_VERSION')) {
-	define('TUMTOOK_AIO_VERSION', '1.0.112');
+	define('TUMTOOK_AIO_VERSION', '1.0.113');
 }
 
 if (!defined('TUMTOOK_AIO_PLUGIN_FILE')) {
@@ -94,11 +94,6 @@ function tumtook_aio_get_modules()
 			'name' => 'Tumtook Gallery',
 			'file' => 'tumtook-gallery/tumtook-gallery.php',
 			'guard' => array('type' => 'class', 'name' => 'Tumtook_Gallery_Plugin'),
-		),
-		array(
-			'name' => 'Tumtook Gallery Auto',
-			'file' => 'tumtook-gallery-auto/tumtook-gallery-auto.php',
-			'guard' => array('type' => 'class', 'name' => 'Tumtook_Gallery_Auto_Plugin'),
 		),
 		// Temporarily disabled. Keep module files in place for later re-enable.
 		// array(
@@ -208,9 +203,6 @@ function tumtook_aio_activate()
 		Tumtook_Gallery_Plugin::activate();
 	}
 
-	if (class_exists('Tumtook_Gallery_Auto_Plugin', false) && method_exists('Tumtook_Gallery_Auto_Plugin', 'activate')) {
-		Tumtook_Gallery_Auto_Plugin::activate();
-	}
 }
 register_activation_hook(__FILE__, 'tumtook_aio_activate');
 

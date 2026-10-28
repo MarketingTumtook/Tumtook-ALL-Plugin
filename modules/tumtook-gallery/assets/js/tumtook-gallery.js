@@ -1,10 +1,11 @@
 function initTumtookGallery() {
 	var shells = document.querySelectorAll('.ttg-gallery-shell');
-	if (!shells.length || typeof TumtookGalleryData === 'undefined') return;
+	if (!shells.length) return;
 	var lightboxState = {
 		items: [],
 		index: 0,
-		closeTimer: null
+		closeTimer: null,
+		returnFocus: null
 	};
 	var lightbox = createLightbox();
 
@@ -20,6 +21,9 @@ function initTumtookGallery() {
 		overlay.className = 'ttg-lightbox';
 		overlay.hidden = true;
 		dialog.className = 'ttg-lightbox-dialog';
+		dialog.setAttribute('role', 'dialog');
+		dialog.setAttribute('aria-modal', 'true');
+		dialog.setAttribute('aria-label', 'ดูรูปภาพ');
 		stage.className = 'ttg-lightbox-stage';
 		close.className = 'ttg-lightbox-close';
 		close.type = 'button';
@@ -65,6 +69,14 @@ function initTumtookGallery() {
 				return;
 			}
 
+			if (event.key === 'Tab') {
+				var buttons = [close, prev, next].filter(function (button) { return !button.hidden; });
+				var position = buttons.indexOf(document.activeElement);
+				event.preventDefault();
+				buttons[(position + (event.shiftKey ? -1 : 1) + buttons.length) % buttons.length].focus();
+				return;
+			}
+
 			if (event.key === 'Escape') {
 				closeLightbox();
 			} else if (event.key === 'ArrowLeft') {
@@ -83,7 +95,8 @@ function initTumtookGallery() {
 			image: image,
 			stage: stage,
 			prev: prev,
-			next: next
+			next: next,
+			close: close
 		};
 	}
 
@@ -118,6 +131,7 @@ function initTumtookGallery() {
 		lightbox.image.classList.remove('is-loaded');
 		lightbox.image.src = item.src;
 		lightbox.image.alt = item.alt || '';
+		if (lightbox.image.complete && lightbox.image.naturalWidth) lightbox.image.classList.add('is-loaded');
 		updateLightboxNavOffset();
 		var hasMultiple = lightboxState.items.length > 1;
 		lightbox.prev.hidden = !hasMultiple;
@@ -130,10 +144,12 @@ function initTumtookGallery() {
 			lightboxState.closeTimer = null;
 		}
 
+		lightboxState.returnFocus = document.activeElement;
 		lightboxState.items = items;
 		lightboxState.index = index;
 		renderLightbox();
 		lightbox.overlay.hidden = false;
+		lightbox.close.focus();
 		window.requestAnimationFrame(function () {
 			lightbox.overlay.classList.add('ttg-lightbox-visible');
 		});
@@ -150,395 +166,297 @@ function initTumtookGallery() {
 			lightbox.overlay.hidden = true;
 			lightbox.image.removeAttribute('src');
 			lightboxState.closeTimer = null;
+			if (lightboxState.returnFocus && lightboxState.returnFocus.isConnected) {
+				lightboxState.returnFocus.focus({ preventScroll: true });
+			}
 		}, 240);
 		document.body.classList.remove('ttg-lightbox-open');
 	}
 
-	function createCard(item, options) {
-		var article = document.createElement('article');
-		var media = document.createElement('div');
-		var noImage = document.createElement('div');
-		var noImageIcon = document.createElement('span');
-		var noImageText = document.createElement('span');
-		var image = document.createElement('img');
-		var itemKey = getItemKey(item);
-		var imageWidth = getPositiveNumber(item.width);
-		var imageHeight = getPositiveNumber(item.height);
-		var priority = !!(options && options.priority);
+	function positiveNumber(value, fallback) {
+		value = Number(value);
+		return Number.isFinite(value) && value > 0 ? value : fallback;
+	}
 
-		article.className = 'ttg-card';
-		article.setAttribute('data-ttg-key', itemKey);
-		media.className = 'ttg-media';
-		noImage.className = 'ttg-noimage';
-		noImage.hidden = true;
-		noImageIcon.className = 'ttg-noimage-icon';
-		noImageIcon.setAttribute('aria-hidden', 'true');
-		noImageText.className = 'ttg-noimage-text';
-		noImageText.textContent = 'No image';
-
-		noImage.appendChild(noImageIcon);
-		noImage.appendChild(noImageText);
-
-		image.alt = item.alt || item.title || '';
-		image.loading = priority ? 'eager' : 'lazy';
-		image.decoding = 'async';
-		image.tabIndex = 0;
-		if (priority) {
-			image.fetchPriority = 'high';
-			image.setAttribute('fetchpriority', 'high');
+	function getColumns(shell, width, gap) {
+		var requested = parseInt(shell.dataset.columns, 10) || 0;
+		var minWidth = positiveNumber(shell.dataset.minWidth, 220);
+		var capacity = Math.max(1, Math.floor((width + gap) / (140 + gap)));
+		if (requested) {
+			return Math.min(12, requested, capacity);
 		}
-		if (imageWidth && imageHeight) {
-			image.width = Math.round(imageWidth);
-			image.height = Math.round(imageHeight);
+		if (width <= 600) {
+			return Math.min(2, capacity);
 		}
-		image.addEventListener('click', function () {
-			var parentGallery = article.closest('.ttg-gallery');
-			var galleryImages = Array.prototype.slice.call(parentGallery.querySelectorAll('.ttg-media img:not([hidden])'));
-			var items = galleryImages.map(function (galleryImage) {
-				return {
-					src: galleryImage.currentSrc || galleryImage.src,
-					alt: galleryImage.alt || ''
-				};
+		return Math.min(12, Math.max(1, Math.floor((width + gap) / (minWidth + gap))));
+	}
+
+	function imageIdentity(source) {
+		try {
+			var url = new URL(source, window.location.href);
+			var path = url.pathname.replace(/(?:-\d+x\d+|-scaled)(?=\.(?:jpe?g|png|webp|gif|avif)$)/i, '');
+			var query = [];
+			url.searchParams.forEach(function (value, name) {
+				// Keep source selectors; sizing, cache and signature changes are still one image.
+				if (!/^(?:w|h|width|height|q|quality|fit|crop|fm|format|auto|dpr|resize|v|ver|cb|cachebust|_|expires|signature|sig|utm_.*|x-amz-.*|x-goog-.*)$/i.test(name)) {
+					query.push(encodeURIComponent(name) + '=' + encodeURIComponent(value));
+				}
 			});
-			var currentIndex = galleryImages.indexOf(image);
-			openLightbox(items, currentIndex >= 0 ? currentIndex : 0);
-		});
-		image.addEventListener('keydown', function (event) {
-			if (event.key === 'Enter' || event.key === ' ') {
-				event.preventDefault();
-				image.click();
-			}
-		});
+			return url.host.toLowerCase() + path + (query.length ? '?' + query.sort().join('&') : '');
+		} catch (error) {
+			return String(source).trim();
+		}
+	}
+
+	function createCard(item, index, eager, priority) {
+		var article = document.createElement('article');
+		var media = document.createElement('button');
+		var image = document.createElement('img');
+		var fallback = document.createElement('span');
+		// Assign once per unique card, independently of source dimensions or viewport size.
+		var ratios = ['1 / 1', '16 / 9', '5 / 4', '16 / 9', '5 / 4', '1 / 1', '5 / 4', '1 / 1', '16 / 9'];
+		article.className = 'ttg-card';
+		article.setAttribute('role', 'listitem');
+		article.dataset.ttgKey = String(item.key || item.image);
+		media.className = 'ttg-media';
+		media.style.setProperty('--ttg-ratio', ratios[index % ratios.length]);
+		media.type = 'button';
+		media.setAttribute('aria-label', item.alt || item.title || 'เปิดรูปภาพ');
+		media.setAttribute('aria-haspopup', 'dialog');
+		fallback.className = 'ttg-noimage';
+		fallback.textContent = 'ไม่สามารถโหลดรูปภาพได้';
+		fallback.hidden = true;
+		image.alt = item.alt || item.title || '';
+		image.decoding = 'async';
+		image.dataset.src = item.image;
+		if (eager) image.dataset.ttgEager = '1';
+		if (priority) image.setAttribute('fetchpriority', 'high');
 		image.addEventListener('load', function () {
-			image.hidden = false;
-			noImage.hidden = true;
-			var parentGallery = article.closest('.ttg-gallery');
-			media.classList.add('ttg-media--loaded');
-			if (parentGallery) {
-				scheduleMasonryResize(parentGallery, [article]);
-			}
+			media.classList.add('is-loaded');
 		});
 		image.addEventListener('error', function () {
-			var parentGallery = article.closest('.ttg-gallery');
 			image.hidden = true;
-			media.classList.add('ttg-media--loaded');
-			noImage.hidden = false;
-			if (parentGallery) {
-				scheduleMasonryResize(parentGallery, [article]);
-			}
+			fallback.hidden = false;
+			media.disabled = true;
+			media.classList.add('is-loaded');
 		});
-		image.src = item.image;
-
-		media.appendChild(noImage);
+		media.addEventListener('click', function () {
+			var gallery = article.closest('.ttg-gallery');
+			var images = Array.prototype.slice.call(gallery.querySelectorAll('.ttg-media img:not([hidden])'));
+			openLightbox(images.map(function (entry) {
+				return { src: entry.dataset.src || entry.currentSrc || entry.src, alt: entry.alt };
+			}), Math.max(0, images.indexOf(image)));
+		});
 		media.appendChild(image);
+		media.appendChild(fallback);
 		article.appendChild(media);
-
 		return article;
 	}
 
-	function getItemKey(item) {
-		if (item && item.key) {
-			return String(item.key);
-		}
-
-		return item && item.image ? String(item.image).trim() : '';
-	}
-
-	function getPositiveNumber(value) {
-		value = parseFloat(value);
-
-		return value > 0 ? value : 0;
-	}
-
-	function resizeMasonryItems(gallery, cards) {
-		var galleryStyles = window.getComputedStyle(gallery);
-		var rowGap = parseFloat(galleryStyles.getPropertyValue('row-gap')) || parseFloat(galleryStyles.getPropertyValue('gap')) || 0;
-		var rowSize = parseFloat(galleryStyles.getPropertyValue('grid-auto-rows')) || 4;
-
-		cards.forEach(function (card) {
-			card.style.gridRowEnd = '';
-			var span = Math.ceil((card.getBoundingClientRect().height + rowGap) / (rowSize + rowGap));
-			card.style.gridRowEnd = 'span ' + Math.max(span, 1);
-		});
-	}
-
-	function scheduleMasonryResize(gallery, cards) {
-		if (!gallery) {
-			return;
-		}
-
-		gallery.__ttgResizeCards = (gallery.__ttgResizeCards || []).concat(cards || []);
-		if (gallery.__ttgResizeFrame) {
-			return;
-		}
-
-		gallery.__ttgResizeFrame = window.requestAnimationFrame(function () {
-			var queuedCards = gallery.__ttgResizeCards || [];
-			gallery.__ttgResizeCards = [];
-			gallery.__ttgResizeFrame = null;
-			resizeMasonryItems(gallery, queuedCards);
-		});
-	}
-
-	function showEndPanel(shell) {
-		shell.classList.add('is-complete');
-	}
-
-	function animateCards(gallery, cards) {
-		var shell = gallery.closest('.ttg-gallery-shell');
-		var columns = Math.max(1, getColumns(shell || gallery));
-		var now = Date.now();
-			var itemDelay = 42;
-			var revealDuration = 560;
-			var rowPause = 20;
-		var rowStartDelay = shell ? Math.max(0, parseFloat(shell.dataset.ttgRevealReadyAt || '0') - now) : 0;
-		var rows = [];
-
-		resizeMasonryItems(gallery, cards);
-
-		cards.forEach(function (card, index) {
-			var rowIndex = Math.floor(index / columns);
-			if (!rows[rowIndex]) {
-				rows[rowIndex] = [];
-			}
-
-			rows[rowIndex].push(card);
-		});
-
-		rows.forEach(function (row) {
-			row.forEach(function (card, index) {
-				card.style.setProperty('--ttg-delay', (rowStartDelay + index * itemDelay) + 'ms');
-				window.requestAnimationFrame(function () {
-					card.classList.add('ttg-card-visible');
-				});
-			});
-
-				rowStartDelay += Math.max(0, row.length - 1) * itemDelay + revealDuration + rowPause;
-		});
-
-		if (shell) {
-			shell.dataset.ttgRevealReadyAt = String(now + rowStartDelay);
-		}
-	}
-
-	function getColumns(shell) {
-		var columns = parseInt(shell.dataset.columns || '4', 10);
-		if (window.innerWidth <= 479) {
-			return Math.min(columns, 2);
-		}
-		if (window.innerWidth <= 767) {
-			return Math.min(columns, 2);
-		}
-		if (window.innerWidth <= 1024) {
-			return Math.min(columns, 3);
-		}
-
-		return columns;
-	}
-
-	function getInitialPerPage(shell) {
-		var columns = Math.max(1, getColumns(shell));
-		return Math.min(Math.max(columns * 2, 6), 12);
-	}
-
 	shells.forEach(function (shell) {
-		if (shell.__ttgInitialized) return;
-		shell.__ttgInitialized = true;
+		if (shell.dataset.ttgInitialized) return;
+		shell.dataset.ttgInitialized = '1';
 		var gallery = shell.querySelector('.ttg-gallery');
 		var loader = shell.querySelector('.ttg-loader');
 		var sentinel = shell.querySelector('.ttg-sentinel');
-		var pageId = parseInt(shell.dataset.pageId || '0', 10);
-		var endpoint = shell.dataset.endpoint || '';
-		var limit = parseInt(shell.dataset.limit || '0', 10);
+		var gap = Math.max(0, Number(shell.dataset.gap) || 0);
 		var page = 1;
+		// Keep the batch size fixed: changing it on resize would skip API offsets.
+		var perPage = 24;
 		var loading = false;
 		var complete = false;
-		var pendingLoad = false;
 		var failed = false;
-		var batchSize = getInitialPerPage(shell);
+		var layoutFrame = null;
 		var observer;
-		var resizeFrame;
-		var scrollFrame;
-		var seenItems = {};
+		var imageObserver;
+		var scrollFrame = null;
+		var preloadDistance = Math.max(1000, Math.round(window.innerHeight * 1.5));
+		var seen = new Set();
+		var seenUrls = new Set();
+		var config = window.TumtookGalleryData;
+		if (!gallery || !loader || !sentinel || !config) return;
 
-		function setLoaderState(message, hidden) {
-			loader.textContent = message;
-			loader.hidden = hidden;
+		function startImage(image) {
+			if (!image.dataset.src) return;
+			// The observer already delays distant images; avoid a second native lazy-load delay.
+			image.loading = 'eager';
+			image.src = image.dataset.src;
+			delete image.dataset.src;
+			if (imageObserver) imageObserver.unobserve(image);
 		}
 
-		function buildUrl(perPage) {
-			var url = new URL(TumtookGalleryData.restUrl, window.location.origin);
-
-			url.searchParams.set('page_id', pageId);
-			url.searchParams.set('endpoint', endpoint);
-			url.searchParams.set('page', page);
-			url.searchParams.set('per_page', batchSize);
-			url.searchParams.set('limit', limit);
-
-			return url.toString();
-		}
-
-		function isSentinelNearViewport() {
-			if (!sentinel) {
-				return false;
-			}
-
-			var rect = sentinel.getBoundingClientRect();
-			var preloadDistance = Math.max(window.innerHeight * 0.75, 420);
-
-			return rect.top <= preloadDistance;
-		}
-
-			function requestLoad(perPage) {
-				if (loading || complete || failed) {
-					if (loading && !complete) {
-					pendingLoad = true;
+		function loadNearbyImages() {
+			if (!shell.getClientRects().length || !gallery.clientWidth) return;
+			gallery.querySelectorAll('img[data-src]').forEach(function (image) {
+				var bounds = image.getBoundingClientRect();
+				if (image.dataset.ttgEager || (bounds.top <= window.innerHeight + preloadDistance && bounds.bottom >= -preloadDistance)) {
+					startImage(image);
+				} else if (imageObserver && !image.dataset.ttgObserved) {
+					image.dataset.ttgObserved = '1';
+					imageObserver.observe(image);
 				}
-				return;
-			}
-
-			loadPage(perPage);
+			});
 		}
 
-		function loadPage(perPage) {
-			if (loading || complete || failed) {
-				return;
-			}
+		function scheduleLayout() {
+			if (layoutFrame !== null) return;
+			layoutFrame = window.requestAnimationFrame(function () {
+				layoutFrame = null;
+				layout();
+			});
+		}
 
+		function layout() {
+			var width = gallery.clientWidth;
+			if (!width) return; // A hidden tab will be laid out by ResizeObserver when shown.
+			var cards = Array.prototype.slice.call(gallery.children);
+			var columns = getColumns(shell, width, gap);
+			var cardWidth = (width - gap * (columns - 1)) / columns;
+			var heights = Array(columns).fill(0);
+			var rtl = window.getComputedStyle(gallery).direction === 'rtl';
+			gallery.classList.add('is-masonry');
+			shell.dataset.activeColumns = String(columns);
+			// Batch width writes before measuring so every height reflects the new width.
+			cards.forEach(function (card) { card.style.width = cardWidth + 'px'; });
+			var cardHeights = cards.map(function (card) { return card.getBoundingClientRect().height; });
+			cards.forEach(function (card, index) {
+				var column = heights.indexOf(Math.min.apply(Math, heights));
+				var left = column * (cardWidth + gap);
+				card.style.left = (rtl ? width - cardWidth - left : left) + 'px';
+				card.style.top = heights[column] + 'px';
+				heights[column] += cardHeights[index] + gap;
+			});
+			gallery.style.height = Math.max(0, Math.max.apply(Math, heights) - gap) + 'px';
+			loadNearbyImages();
+			maybeLoad();
+		}
+
+		function setStatus(message) {
+			loader.textContent = message;
+			loader.hidden = !message;
+		}
+
+		function nearViewport() {
+			if (!shell.getClientRects().length) return false;
+			var bounds = sentinel.getBoundingClientRect();
+			return bounds.top <= window.innerHeight + preloadDistance && bounds.bottom >= -preloadDistance;
+		}
+
+		function maybeLoad() {
+			if (!loading && !complete && !failed && nearViewport()) loadPage();
+		}
+
+		function loadPage() {
+			if (loading || complete || failed) return;
 			loading = true;
+			gallery.setAttribute('aria-busy', 'true');
+			setStatus(config.strings.loading);
+			var url = new URL(config.restUrl, window.location.origin);
+			url.searchParams.set('page_id', shell.dataset.pageId || '0');
+			url.searchParams.set('limit', shell.dataset.limit || '50');
+			url.searchParams.set('page', page);
+			url.searchParams.set('per_page', perPage);
+			if (shell.dataset.endpoint) {
+				url.searchParams.set('endpoint', shell.dataset.endpoint);
+				url.searchParams.set('endpoint_signature', shell.dataset.endpointSignature || '');
+			}
 			var controller = new AbortController();
 			var timeout = window.setTimeout(function () { controller.abort(); }, 10000);
-			setLoaderState(TumtookGalleryData.strings.loading, false);
-
-			fetch(buildUrl(perPage), {
-				method: 'GET',
+			fetch(url.toString(), {
+				signal: controller.signal,
 				credentials: 'same-origin',
-				signal: controller.signal
+				headers: config.nonce ? { 'X-WP-Nonce': config.nonce } : {}
 			})
 				.then(function (response) {
-					if (!response.ok) {
-						throw new Error('Request failed');
-					}
-
+					if (!response.ok) throw new Error('Gallery request failed');
 					return response.json();
 				})
 				.then(function (data) {
-					if (!data || !Array.isArray(data.items)) throw new Error('Invalid gallery response');
-					var items = data.items;
-					var uniqueItems = items.filter(function (item) {
-						var itemKey = getItemKey(item);
-
-						if (!itemKey || seenItems[itemKey]) {
-							return false;
-						}
-
-						seenItems[itemKey] = true;
-						return true;
-					});
-
-					if (!uniqueItems.length && page === 1) {
-						complete = true;
-						setLoaderState(TumtookGalleryData.strings.empty, false);
-						return;
-					}
-
-					var priorityCount = page === 1 ? Math.min(uniqueItems.length, getColumns(shell) * 2) : 0;
-					var newCards = uniqueItems.map(function (item, index) {
-						return createCard(item, {
-							priority: index < priorityCount
-						});
-					});
+					if (!Array.isArray(data.items)) throw new Error('Invalid gallery response');
 					var fragment = document.createDocumentFragment();
-
-					newCards.forEach(function (card) {
-						fragment.appendChild(card);
+					var columns = getColumns(shell, gallery.clientWidth, gap);
+					var shellBounds = shell.getBoundingClientRect();
+					var eager = page === 1 && shellBounds.top < window.innerHeight && shellBounds.bottom >= 0;
+					var added = 0;
+					data.items.forEach(function (item) {
+						if (!item || !item.image) return;
+						var key = item.key ? String(item.key) : '';
+						var source = imageIdentity(item.image);
+						if ((key && seen.has(key)) || seenUrls.has(source)) return;
+						if (key) seen.add(key);
+						seenUrls.add(source);
+						fragment.appendChild(createCard(item, seenUrls.size - 1, eager && added < columns * 2, eager && added < columns));
+						added += 1;
 					});
-
 					gallery.appendChild(fragment);
-
-					complete = !data.has_more || !items.length;
+					complete = !data.has_more || !data.items.length;
 					page += 1;
-					setLoaderState('', true);
-
-						window.requestAnimationFrame(function () {
-							animateCards(gallery, newCards);
-							if (complete) {
-								showEndPanel(shell);
-							}
-						});
-
-					if (complete && observer) {
-						observer.disconnect();
+					setStatus(seenUrls.size ? '' : config.strings.empty);
+					if (complete) {
+						shell.classList.add('is-complete');
+						if (observer) observer.disconnect();
 					}
 				})
 				.catch(function () {
 					failed = true;
-					pendingLoad = false;
-					setLoaderState(TumtookGalleryData.strings.error, false);
+					setStatus(config.strings.error);
 				})
 				.finally(function () {
 					window.clearTimeout(timeout);
 					loading = false;
-					if (!failed && !complete && (pendingLoad || isSentinelNearViewport())) {
-						pendingLoad = false;
-						window.requestAnimationFrame(function () {
-							requestLoad(batchSize);
-						});
-					}
+					gallery.setAttribute('aria-busy', 'false');
+					scheduleLayout();
 				});
 		}
 
+		if ('ResizeObserver' in window) {
+			var lastWidth = -1;
+			var resizeObserver = new ResizeObserver(function () {
+				var width = gallery.clientWidth;
+				if (width !== lastWidth) {
+					lastWidth = width;
+					scheduleLayout();
+				}
+			});
+			resizeObserver.observe(gallery);
+		}
+		window.addEventListener('resize', scheduleLayout);
+		if ('IntersectionObserver' in window) {
+			imageObserver = new IntersectionObserver(function (entries) {
+				entries.forEach(function (entry) {
+					if (entry.isIntersecting) startImage(entry.target);
+				});
+			}, { rootMargin: preloadDistance + 'px 0px' });
+			observer = new IntersectionObserver(function (entries) {
+				if (entries.some(function (entry) { return entry.isIntersecting; })) maybeLoad();
+			}, { rootMargin: preloadDistance + 'px 0px' });
+			observer.observe(sentinel);
+		}
+		window.addEventListener('scroll', function () {
+			if (scrollFrame !== null) return;
+			scrollFrame = window.requestAnimationFrame(function () {
+				scrollFrame = null;
+				loadNearbyImages();
+				maybeLoad();
+			});
+		}, { passive: true });
+		// Do not fetch offscreen galleries during the initial page load.
 		if ('IntersectionObserver' in window) {
 			var startObserver = new IntersectionObserver(function (entries) {
 				if (entries.some(function (entry) { return entry.isIntersecting; })) {
 					startObserver.disconnect();
-					requestLoad(batchSize);
+					loadPage();
 				}
-			}, { rootMargin: '600px 0px' });
+			}, { rootMargin: preloadDistance + 'px 0px' });
 			startObserver.observe(shell);
 		} else {
-			requestLoad(batchSize);
+			loadPage();
 		}
-
-		window.addEventListener('resize', function () {
-			window.cancelAnimationFrame(resizeFrame);
-			resizeFrame = window.requestAnimationFrame(function () {
-				resizeMasonryItems(gallery, Array.prototype.slice.call(gallery.querySelectorAll('.ttg-card')));
-			});
-		});
-
-		if ('IntersectionObserver' in window) observer = new IntersectionObserver(
-			function (entries) {
-				entries.forEach(function (entry) {
-					if (entry.isIntersecting) {
-						requestLoad(batchSize);
-					}
-				});
-			},
-			{
-				rootMargin: '420px 0px'
-			}
-		);
-
-		if (observer) observer.observe(sentinel);
-
-		window.addEventListener('scroll', function () {
-			if (scrollFrame) {
-				return;
-			}
-
-			scrollFrame = window.requestAnimationFrame(function () {
-				scrollFrame = null;
-				if (!complete && isSentinelNearViewport()) {
-					requestLoad(batchSize);
-				}
-			});
-		}, { passive: true });
 	});
 }
 
 if (document.readyState === 'loading') {
-	document.addEventListener('DOMContentLoaded', initTumtookGallery, { once: true });
+	document.addEventListener('DOMContentLoaded', initTumtookGallery);
 } else {
 	initTumtookGallery();
 }

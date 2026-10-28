@@ -11,6 +11,7 @@ function element() {
     addEventListener(k, fn) { handlers[k] = fn; }, handlers,
     appendChild(x) { this.children.push(x); }, insertBefore(x) { this.children.push(x); },
     querySelector() { return null; }, querySelectorAll() { return []; },
+    getClientRects() { return [this.getBoundingClientRect()]; },
     getBoundingClientRect() { return { top: 5000, bottom: 5100, left: 0, width: 100, height: 100 }; }
   };
 }
@@ -45,7 +46,7 @@ async function galleryTest(mode) {
   shell.querySelector = selector => ({ '.ttg-gallery': gallery, '.ttg-loader': loader, '.ttg-sentinel': sentinel }[selector] || null);
   const env = environment([shell]);
   const urls = [];
-  env.context.TumtookGalleryData = { restUrl: 'https://example.test/wp-json/gallery', strings: { loading: 'loading', empty: 'empty', error: 'error' } };
+  env.context.window.TumtookGalleryData = { restUrl: 'https://example.test/wp-json/gallery', strings: { loading: 'loading', empty: 'empty', error: 'error' } };
   env.context.fetch = (url, options) => {
     urls.push(String(url));
     if (mode === 'error') return Promise.reject(new Error('Simulated transport failure'));
@@ -55,21 +56,23 @@ async function galleryTest(mode) {
   vm.runInNewContext(source('tumtook-gallery'), env.context);
   assert.equal(urls.length, 0, 'Below-fold Gallery must not start a network request');
   assert.equal(shell.children.length, 0, 'Initialization must not insert retry buttons');
-  env.observers[0].enter(shell);
+  env.observers.find(observer => observer.targets.includes(shell)).enter(shell);
   if (mode === 'timeout') Array.from(env.timers.values()).forEach(fn => fn());
   await flush();
   assert.equal(urls.length, 1);
   if (mode !== 'success') {
     for (let i = 0; i < 8; i++) {
       const next = env.frames.shift(); if (next) next();
-      env.observers[1].enter(sentinel);
+      sentinel.getBoundingClientRect = () => ({ top: 500, bottom: 600 });
+      env.observers.find(observer => observer.targets.includes(sentinel)).enter(sentinel);
       await flush();
     }
     assert.equal(urls.length, 1, 'Failures must not loop or restart on scrolling');
     assert.equal(shell.children.length, 0, 'Failures must not insert public controls');
   } else {
     env.context.window.innerWidth = 375;
-    env.observers[1].enter(sentinel);
+    sentinel.getBoundingClientRect = () => ({ top: 500, bottom: 600 });
+      env.observers.find(observer => observer.targets.includes(sentinel)).enter(sentinel);
     await flush();
     assert.equal(urls.length, 2);
     assert.equal(new URL(urls[0]).searchParams.get('per_page'), new URL(urls[1]).searchParams.get('per_page'), 'Breakpoint changes must not change pagination size');

@@ -1,5 +1,5 @@
 <?php
-/** Run: php modules/tumtook-gallery-auto/tests/smoke.php (no database or external API). */
+/** Run: php modules/tumtook-gallery/tests/smoke.php (no database or external API). */
 if (PHP_SAPI !== 'cli') {
 	exit;
 }
@@ -16,6 +16,7 @@ $GLOBALS['shortcodes'] = array();
 $GLOBALS['routes'] = array();
 $GLOBALS['can_edit'] = false;
 $GLOBALS['requests'] = 0;
+$GLOBALS['meta_boxes'] = array();
 class WP_REST_Server { const READABLE = 'GET'; }
 class WP_REST_Request {
 	private $params;
@@ -27,6 +28,7 @@ class WP_Error {
 	function __construct($code, $message, $data = array()) { $this->code = $code; }
 }
 function add_action(...$args) {}
+function add_meta_box($id, $title, ...$args) { $GLOBALS['meta_boxes'][$id] = $title; }
 function add_shortcode($name, $callback) { $GLOBALS['shortcodes'][$name] = $callback; }
 function register_activation_hook(...$args) {}
 function register_rest_route($namespace, $path, $args) { $GLOBALS['routes'][$namespace . $path] = $args; }
@@ -83,18 +85,21 @@ function check($value, $message) {
 function request($params = array()) {
 	return new WP_REST_Request(array_merge(array('page_id' => 42, 'endpoint' => '', 'endpoint_signature' => '', 'limit' => 50, 'page' => 1, 'per_page' => 12), $params));
 }
-require dirname(__DIR__, 2) . '/tumtook-gallery/tumtook-gallery.php';
-require dirname(__DIR__) . '/tumtook-gallery-auto.php';
-$plugin = $GLOBALS['shortcodes']['tumtook_gallery_auto'][0];
+require dirname(__DIR__) . '/tumtook-gallery.php';
+$plugin = $GLOBALS['shortcodes']['tumtook_gallery'][0];
+check($GLOBALS['shortcodes']['tumtook_gallery_auto'][0] === $plugin, 'Legacy Auto shortcode uses the same Gallery instance');
 check(isset($GLOBALS['shortcodes']['tumtook_gallery']), 'Legacy and auto shortcodes coexist');
+$plugin->register_meta_box();
+check(array_values($GLOBALS['meta_boxes']) === array('Tumtook Gallery'), 'Only one Gallery admin box is registered');
 $plugin->register_rest_routes();
-check(isset($GLOBALS['routes']['tumtook-gallery-auto/v1/items']), 'New REST namespace is registered');
+check(isset($GLOBALS['routes']['tumtook-gallery-auto/v1/items']), 'Legacy Auto REST clients use the canonical callback');
+check(isset($GLOBALS['routes']['tumtook-gallery/v1/items']), 'New REST namespace is registered');
 $legacy = array('api_url' => 'https://example.test/gallery?x-api-key=secret', 'items_path' => 'items', 'image_key' => 'images.fileUrl', 'alt_key' => 'images.altText', 'match_code' => 'A,B,C');
 $GLOBALS['meta'][42]['_tumtook_gallery_settings'] = $legacy;
 $html = $plugin->render_shortcode(array());
-check(strpos($html, 'ttga-gallery-shell') !== false && strpos($html, 'data-columns="0"') !== false, 'New shortcode inherits existing page configuration and defaults to auto columns');
+check(strpos($html, 'ttg-gallery-shell') !== false && strpos($html, 'data-columns="0"') !== false, 'New shortcode inherits existing page configuration and defaults to auto columns');
 check(strpos($html, 'secret') === false, 'Configured API URL stays on the server');
-check(strpos($html, 'ttga-retry') === false, 'Public gallery markup contains no retry button');
+check(strpos($html, 'ttg-retry') === false, 'Public gallery markup contains no retry button');
 $html = $plugin->render_shortcode(array('columns' => 99, 'gap' => 999, 'min_width' => 1, 'radius' => 999));
 check(strpos($html, 'data-columns="12"') !== false && strpos($html, 'data-gap="64"') !== false && strpos($html, 'data-min-width="140"') !== false, 'Layout settings stay within supported bounds');
 ob_start(); $plugin->render_field(array('key' => 'cache_minutes')); $field = ob_get_clean();
@@ -123,6 +128,8 @@ for ($page = 1; $page <= 5; $page++) {
 check(count($all) === 50 && count(array_unique(array_column($all, 'key'))) === 50 && !$result['has_more'], 'Pagination returns 50 distinct images without omissions');
 check(array_count_values(array_column($all, 'group')) == array('filter-1' => 25, 'filter-2' => 15, 'filter-3' => 10), 'Three Item Codes retain the 25/15/10 allocation');
 check($GLOBALS['requests'] === 1, 'Subsequent pages use cached API data');
+$cached_client = $plugin->rest_get_items(request(array('endpoint' => $legacy['api_url'])));
+check(!is_wp_error($cached_client) && $cached_client['total'] === 50 && $GLOBALS['requests'] === 1, 'Cached original Gallery requests accept the configured endpoint without another API call');
 foreach ($all as $item) {
 	preg_match('/-(\d+)\.jpg$/', $item['image'], $match);
 	if ($item['width'] != 300 || $item['height'] != 200 + (int) $match[1]) throw new RuntimeException('Image dimensions do not match image');
@@ -173,14 +180,21 @@ $GLOBALS['api_data'] = array('items' => array(array('code' => 'A', 'images' => a
 $result = $plugin->rest_get_items(request());
 check($result['total'] === 4, 'Distinct source ids and directories remain distinct images');
 $GLOBALS['meta'][42]['_tumtook_gallery_settings'] = $legacy;
-$_POST = array('tumtook_gallery_auto_nonce' => 'invalid', '_tumtook_gallery_auto_settings' => array('api_url' => 'https://example.test/new'));
+$settings_method = new ReflectionMethod($plugin, 'get_page_settings');
+unset($GLOBALS['meta'][42]['_tumtook_gallery_settings']);
+$GLOBALS['meta'][42]['_tumtook_gallery_auto_settings'] = $legacy;
+check($settings_method->invoke($plugin, 42)['api_url'] === $legacy['api_url'], 'Auto-only pages inherit their saved settings');
+$GLOBALS['meta'][42]['_tumtook_gallery_settings'] = array('api_url' => 'https://example.test/canonical');
+check($settings_method->invoke($plugin, 42)['api_url'] === 'https://example.test/canonical', 'Canonical Gallery settings take precedence when both exist');
+$GLOBALS['meta'][42]['_tumtook_gallery_settings'] = $legacy;
+$_POST = array('tumtook_gallery_nonce' => 'invalid', '_tumtook_gallery_settings' => array('api_url' => 'https://example.test/new'));
 $plugin->save_page_settings(42);
-check(!metadata_exists('post', 42, '_tumtook_gallery_auto_settings'), 'Invalid nonce cannot change page settings');
+check($GLOBALS['meta'][42]['_tumtook_gallery_settings'] === $legacy, 'Invalid nonce cannot change page settings');
 $GLOBALS['can_edit'] = true;
-$_POST['tumtook_gallery_auto_nonce'] = 'valid';
+$_POST['tumtook_gallery_nonce'] = 'valid';
 $plugin->save_page_settings(42);
-check($GLOBALS['meta'][42]['_tumtook_gallery_settings'] === $legacy && $GLOBALS['meta'][42]['_tumtook_gallery_auto_settings']['api_url'] === 'https://example.test/new', 'Saving auto settings does not change the original gallery');
-$GLOBALS['meta'][42]['_tumtook_gallery_auto_settings'] = array();
+check($GLOBALS['meta'][42]['_tumtook_gallery_settings']['api_url'] === 'https://example.test/new', 'Single admin form saves canonical Gallery settings');
+$GLOBALS['meta'][42]['_tumtook_gallery_settings'] = array();
 $html = $plugin->render_shortcode(array());
-check(strpos($html, 'ttga-gallery-shell') === false, 'Explicitly cleared new settings do not fall back to legacy');
+check(strpos($html, 'ttg-gallery-shell') === false, 'Explicitly cleared canonical settings do not resurrect Auto settings');
 echo "All smoke checks passed.\n";

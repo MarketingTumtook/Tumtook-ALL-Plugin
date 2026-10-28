@@ -13,9 +13,8 @@
 7. Tumtook Page Product Recommendations
 8. Tumtook Job Working Cards
 9. Tumtook Video How To Slider
-10. Tumtook Gallery Auto
-11. Tumtook Home Product Recommendations
-12. Tumtook Contact Map
+10. Tumtook Home Product Recommendations
+11. Tumtook Contact Map
 
 ## Shortcodes Included
 
@@ -25,7 +24,7 @@
 - `[tumtook_catalog code="PDF"]`
 - `[gallery_pdf code="PDF" text="ดาวน์โหลด PDF"]`
 - `[tumtook_gallery]`
-- `[tumtook_gallery_auto]`
+- `[tumtook_gallery_auto]` (alias เดิมของ Tumtook Gallery)
 - `[tumtook_comparison]`
 - `[tumtook_recommended_articles]`
 - `[tumtook_product_cards]`
@@ -102,18 +101,18 @@
 
 ตรวจการทำงานฝั่ง PHP ด้วย `php modules/tumtook-home-product-recommendations/tests/smoke.php` จากโฟลเดอร์ปลั๊กอิน ชุดทดสอบใช้ข้อมูลจำลองและไม่เชื่อมต่อฐานข้อมูล
 
-## Tumtook Gallery Auto
+## Tumtook Gallery
 
-โมดูล `modules/tumtook-gallery-auto/` แยกจาก Tumtook Gallery สำหรับแสดงภาพแบบ Pinterest: คอลัมน์กว้างเท่ากัน สลับกรอบภาพ 16:9, 1:1 และ 5:4 อัตโนมัติ และเติมภาพถัดไปในคอลัมน์ที่สั้นที่สุด โดยครอปภาพกึ่งกลางให้เต็มกรอบ ระบบคำนวณใหม่เมื่อพื้นที่แสดงผลเปลี่ยน รวมถึง container ใน page builder และคงสัดส่วนของการ์ดแต่ละใบไว้ระหว่างโหลดรูปและปรับหน้าจอ
+โมดูล `modules/tumtook-gallery/` รวมความสามารถ Gallery Auto ไว้ใน Gallery เดียว สำหรับแสดงภาพแบบ Pinterest: คอลัมน์กว้างเท่ากัน สลับกรอบภาพ 16:9, 1:1 และ 5:4 อัตโนมัติ และเติมภาพถัดไปในคอลัมน์ที่สั้นที่สุด โดยครอปภาพกึ่งกลางให้เต็มกรอบ ระบบคำนวณใหม่เมื่อพื้นที่แสดงผลเปลี่ยน รวมถึง container ใน page builder และคงสัดส่วนของการ์ดแต่ละใบไว้ระหว่างโหลดรูปและปรับหน้าจอ
 
-1. ในหน้าแก้ไข Page เปิดกล่อง **Tumtook Gallery Auto** แล้วตั้ง API URL, ตำแหน่งรายการรูป, Item Code Filter, ตำแหน่ง URL รูป และ Alt เช่นเดียวกับ Gallery เดิม
-2. หากยังไม่เคยบันทึกโมดูลใหม่ จะใช้ค่าจาก Tumtook Gallery เดิมของหน้านั้นเป็นค่าเริ่มต้น หลังบันทึกแล้วจะใช้ meta `_tumtook_gallery_auto_settings` แยกจากเดิม
-3. วาง `[tumtook_gallery_auto]` ในเนื้อหา หรือ widget Shortcode ของ page builder
+1. ในหน้าแก้ไข Page เปิดกล่อง **Tumtook Gallery** แล้วตั้ง API URL, ตำแหน่งรายการรูป, Item Code Filter, ตำแหน่ง URL รูป และ Alt เช่นเดียวกับ Gallery เดิม
+2. ใช้ค่าจาก `_tumtook_gallery_settings` เป็นหลัก หากยังไม่มีจะอ่านค่าเดิมจาก `_tumtook_gallery_auto_settings` และบันทึกครั้งถัดไปลง Gallery ชุดเดียว
+3. วาง `[tumtook_gallery]` ในเนื้อหา หรือ widget Shortcode ของ page builder
 
 ```text
-[tumtook_gallery_auto]
-[tumtook_gallery_auto min_width="220" gap="16" radius="16"]
-[tumtook_gallery_auto columns="6" gap="12" limit="30"]
+[tumtook_gallery]
+[tumtook_gallery min_width="220" gap="16" radius="16"]
+[tumtook_gallery columns="6" gap="12" limit="30"]
 ```
 
 - `columns`: ค่าเริ่มต้น `auto` คำนวณตามความกว้างของ container หรือระบุ 1–12 เป็นจำนวนคอลัมน์สูงสุดที่ต้องการ โดยลดลงเมื่อพื้นที่แคบ
@@ -123,15 +122,15 @@
 - `limit`: จำนวนรูปสูงสุด ค่าเริ่มต้นและเพดาน 50 รูป ใช้การแบ่ง Item Code สูงสุด 3 โค้ดแบบเดียวกับ Gallery เดิม
 - `endpoint`: ใช้แทน API URL ของหน้านี้เฉพาะ shortcode นั้น โดยปกติให้กำหนด API URL ในกล่องตั้งค่าเพื่อเก็บ URL ไว้ฝั่งเซิร์ฟเวอร์
 
-รองรับ lazy loading โดยโหลดภาพล่วงหน้าอย่างน้อย 1,000px ก่อนเลื่อนถึง พร้อมดึงข้อมูลครั้งละ 24 รูป ภาพสองแถวแรกใน Gallery ที่อยู่บนหน้าจอเริ่มโหลดทันที และให้ความสำคัญกับแถวแรก ส่วนรูปที่อยู่ไกลยังรอโหลดเพื่อไม่แย่งแบนด์วิดท์ กรอบภาพกำหนดสัดส่วนไว้ล่วงหน้าจึงไม่ขยับระหว่างโหลด มีปุ่มลองใหม่เมื่อ API ผิดพลาด และเปิดรูปขยายเต็มภาพพร้อมปุ่มก่อนหน้า/ถัดไปและคีย์บอร์ด
+รองรับ lazy loading โดยโหลดภาพล่วงหน้าอย่างน้อย 1,000px ก่อนเลื่อนถึง พร้อมดึงข้อมูลครั้งละ 24 รูป ภาพสองแถวแรกใน Gallery ที่อยู่บนหน้าจอเริ่มโหลดทันที และให้ความสำคัญกับแถวแรก ส่วนรูปที่อยู่ไกลยังรอโหลดเพื่อไม่แย่งแบนด์วิดท์ กรอบภาพกำหนดสัดส่วนไว้ล่วงหน้าจึงไม่ขยับระหว่างโหลด เปิดรูปขยายเต็มภาพพร้อมปุ่มก่อนหน้า/ถัดไปและคีย์บอร์ด
 
 ตัดรูปซ้ำทั้งก่อนแบ่งหน้าฝั่ง API และก่อนแสดงการ์ด โดยเทียบแหล่งรูปเดียวกัน รวม URL ที่ต่างเฉพาะขนาด thumbnail ของ WordPress, พารามิเตอร์ปรับขนาด, แคช หรือ signature และยังแยกรูปที่มี `id`/`file`/`path` ต่างกัน การตรวจนี้อาศัย URL ของไฟล์ ไม่ใช่การเปรียบเทียบภาพที่อัปโหลดเป็นคนละไฟล์
 
-โมดูลใช้ class, CSS/JS, REST route, AJAX action และ shortcode แยกกัน สามารถวางร่วมกับ `[tumtook_gallery]` ได้
+เหลือกล่องตั้งค่า Tumtook Gallery เพียงกล่องเดียว โดย `[tumtook_gallery_auto]` เดิมเป็น alias ที่ใช้ค่าตั้งค่าและ assets ชุดเดียวกัน
 
-เมื่อโหลดรูปครบแล้ว จะแสดง fade ปิดท้ายแบบ Gallery เดิมผ่าน `ttga-end-panel` และใช้ fade สีขาวบนมือถือ ตั้งสีพื้นหลังท้าย Gallery ได้ในกล่อง **Tumtook Gallery Auto** (ค่าเริ่มต้น `#f9f9f9`)
+เมื่อโหลดรูปครบแล้ว จะแสดง fade ปิดท้ายแบบ Gallery เดิมผ่าน `ttg-end-panel` และใช้ fade สีขาวบนมือถือ ตั้งสีพื้นหลังท้าย Gallery ได้ในกล่อง **Tumtook Gallery** (ค่าเริ่มต้น `#f9f9f9`)
 
-ตรวจการทำงานฝั่ง PHP ด้วย `php modules/tumtook-gallery-auto/tests/smoke.php` จากโฟลเดอร์ปลั๊กอิน ชุดทดสอบใช้ข้อมูลจำลองและไม่เชื่อมต่อฐานข้อมูลหรือ API จริง
+ตรวจการทำงานฝั่ง PHP ด้วย `php modules/tumtook-gallery/tests/smoke.php` จากโฟลเดอร์ปลั๊กอิน ชุดทดสอบใช้ข้อมูลจำลองและไม่เชื่อมต่อฐานข้อมูลหรือ API จริง
 
 ## Tumtook Job Working Cards
 
@@ -271,3 +270,7 @@ Regression checks: `node tests/frontend-resilience.js`, `node tests/image-recove
 Removes the Gallery, Gallery Auto and individual-image retry buttons from the public website. No retry controls are generated on initial load or on error. Failed Gallery requests still stop without an automatic retry loop; timeouts, stale API fallback, viewport loading and backend caches remain in place. The image-recovery dependency is no longer enqueued. Its old URL remains as a compatibility asset for cached HTML and only restores a successfully loaded image; it creates no controls and sends no requests.
 
 Purge FlyingPress and CDN HTML/optimized asset caches after pulling this version so older cached JavaScript cannot continue inserting the removed controls.
+
+## 1.0.113
+
+รวม Gallery Auto เข้า Tumtook Gallery และถอดโมดูล/กล่องตั้งค่า Auto แยกออก คง shortcode และ REST URL เดิมไว้เพื่อรองรับหน้าที่ใช้อยู่ หลังอัปเดตให้ล้าง page cache ของ FlyingPress/CDN เพื่อรับ HTML และ CSS/JS ชุดใหม่

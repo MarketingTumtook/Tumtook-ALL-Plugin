@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Tumtook Video How To Slider
  * Description: Add page-level promo media fields and display a rounded promo slider with one video plus six image slides.
- * Version: 1.3.17
+ * Version: 1.3.18
  * Author: Tumtook
  * Text Domain: tumtook-video-rollup-slider
  */
@@ -16,7 +16,7 @@ final class Video_Howtoknow_Slider_Plugin
 	const META_KEY = '_tumtook_video_howtoknow_data';
 	const PRODUCT_PRICE_META_KEY = '_tumtook_recommended_price';
 	const PRODUCT_RECOMMENDED_META_KEY = '_tumtook_recommended_enabled';
-	const VERSION = '1.3.17';
+	const VERSION = '1.3.18';
 	const FONT_HANDLE = 'tumtook-kanit-font';
 
 	private $rendered_page_ids = array();
@@ -43,14 +43,6 @@ final class Video_Howtoknow_Slider_Plugin
 			'default'
 		);
 
-		add_meta_box(
-			'tumtook-video-rollup-slider-youtube',
-			__('ส่วนที่ 2: คลิป YouTube', 'tumtook-video-rollup-slider'),
-			array($this, 'render_youtube_meta_box'),
-			'page',
-			'normal',
-			'default'
-		);
 	}
 
 	public function enqueue_admin_assets($hook)
@@ -693,51 +685,6 @@ final class Video_Howtoknow_Slider_Plugin
 		<?php
 	}
 
-	public function render_youtube_meta_box($post)
-	{
-		$data = $this->get_page_data($post->ID);
-
-		wp_nonce_field('tumtook_video_howtoknow_page_save', 'tumtook_video_howtoknow_page_nonce');
-		$this->render_admin_meta_styles();
-		?>
-		<div class="video-rollup-page-wrap">
-			<p class="video-rollup-page-intro">
-				<?php esc_html_e('จัดการลิงก์ YouTube สำหรับ section แยกของคลิปวิดีโอได้ที่นี่', 'tumtook-video-rollup-slider'); ?>
-			</p>
-
-			<details class="video-rollup-page-section" open>
-				<summary class="video-rollup-page-section__summary">
-					<span class="video-rollup-page-section__summary-main">
-						<span
-							class="video-rollup-page-section__title"><?php esc_html_e('ส่วนที่ 2: คลิป YouTube', 'tumtook-video-rollup-slider'); ?></span>
-						<span
-							class="video-rollup-page-section__meta"><?php esc_html_e('กรอกลิงก์ YouTube ได้สูงสุด 5 รายการ', 'tumtook-video-rollup-slider'); ?></span>
-					</span>
-				</summary>
-				<div class="video-rollup-page-section__body">
-					<div class="video-rollup-page-grid">
-						<div class="video-rollup-admin-field video-rollup-admin-field--full">
-							<label><?php esc_html_e('ชื่อหัวข้อ section', 'tumtook-video-rollup-slider'); ?></label>
-							<input type="text" name="tumtook_video_howtoknow_data[youtube][title]"
-								value="<?php echo esc_attr($data['youtube']['title']); ?>" />
-						</div>
-
-						<?php for ($index = 0; $index < 5; $index++): ?>
-							<div class="video-rollup-admin-field video-rollup-admin-field--full">
-								<label><?php echo esc_html(sprintf(__('ลิงก์ YouTube %d', 'tumtook-video-rollup-slider'), $index + 1)); ?></label>
-								<input type="url"
-									name="tumtook_video_howtoknow_data[youtube][items][<?php echo esc_attr($index); ?>]"
-									value="<?php echo esc_url(isset($data['youtube']['items'][$index]) ? $data['youtube']['items'][$index] : ''); ?>"
-									placeholder="https://www.youtube.com/watch?v=..." />
-							</div>
-						<?php endfor; ?>
-					</div>
-				</div>
-			</details>
-		</div>
-		<?php
-	}
-
 	public function save_page_meta($post_id)
 	{
 		if (!isset($_POST['tumtook_video_howtoknow_page_nonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['tumtook_video_howtoknow_page_nonce'])), 'tumtook_video_howtoknow_page_save')) {
@@ -780,6 +727,9 @@ final class Video_Howtoknow_Slider_Plugin
 			return;
 		}
 
+		// The retired YouTube box no longer submits fields. Preserve existing content.
+		$existing_data = $this->get_page_data($post_id);
+		$raw_data['youtube'] = $existing_data['youtube'];
 		$defaults = $this->get_default_data();
 		$raw_data = wp_parse_args($raw_data, $defaults);
 		$video = wp_parse_args(is_array($raw_data['video']) ? $raw_data['video'] : array(), $defaults['video']);

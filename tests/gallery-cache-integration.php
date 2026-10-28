@@ -1,6 +1,6 @@
 <?php
 // Reuse the existing WordPress test doubles and gallery media fixtures.
-require dirname(__DIR__) . '/modules/tumtook-gallery-auto/tests/smoke.php';
+require dirname(__DIR__) . '/modules/tumtook-gallery/tests/smoke.php';
 function get_option($key, $default = false) { return $GLOBALS['options'][$key] ?? $default; }
 function delete_option($key) { unset($GLOBALS['options'][$key]); }
 function add_option($key, $value, ...$args) { if (isset($GLOBALS['options'][$key])) return false; $GLOBALS['options'][$key] = $value; return true; }
@@ -8,7 +8,7 @@ function wp_next_scheduled($hook, $args) { return isset($GLOBALS['events'][json_
 function wp_schedule_single_event($time, $hook, $args) { $GLOBALS['events'][json_encode($args)] = true; }
 function wp_remote_get($url, $args) { return wp_safe_remote_get($url, $args); }
 require dirname(__DIR__) . '/includes/class-tumtook-api-cache.php';
-foreach (array(new Tumtook_Gallery_Plugin(), new Tumtook_Gallery_Auto_Plugin()) as $plugin) {
+foreach (array(new Tumtook_Gallery_Plugin()) as $plugin) {
     $GLOBALS['cache'] = $GLOBALS['options'] = $GLOBALS['events'] = array();
     $GLOBALS['requests'] = 0;
     $settings = array_merge($plugin::get_default_settings(), array('api_url' => 'https://example.test/gallery', 'match_code' => 'A', 'items_path' => 'items', 'image_key' => 'images.fileUrl', 'alt_key' => 'images.altText'));
