@@ -88,8 +88,8 @@ async function galleryTest(mode, layout = 'natural', home = false, width = 0, re
     if (!mixed) assert.equal(env.frames.length, 1, 'Image dimension updates share one scheduled masonry layout');
     if (width) {
       env.frames.shift()();
-      const expected = requested !== '0' ? Number(requested) : width <= 767 ? 2 : width <= 1024 ? 3 : 6;
-      assert.equal(Number(shell.dataset.activeColumns), expected, 'Ordinary Gallery restores 6 desktop, 3 tablet and 2 mobile columns, with explicit overrides respected');
+      const expected = width <= 767 ? 2 : width <= 1024 ? 3 : 6;
+      assert.equal(Number(shell.dataset.activeColumns), expected, 'All galleries share responsive 6/3/2 columns, ignoring old overrides');
     }
     env.context.window.innerWidth = 375;
     sentinel.getBoundingClientRect = () => ({ top: 500, bottom: 600 });
@@ -130,7 +130,9 @@ async function recommendationsTest(module, prefix) {
   await galleryTest('success', 'mixed');
   await galleryTest('success', '', true);
   await galleryTest('success', '', false);
-  for (const width of [1440, 1140, 1024, 768, 767, 375]) await galleryTest('success', 'natural', false, width);
+  for (const layout of ['natural', 'mixed']) {
+    for (const width of [1440, 1140, 1024, 768, 767, 375]) await galleryTest('success', layout, false, width);
+  }
   await galleryTest('success', 'natural', false, 1440, '5');
   for (const [module, prefix] of [['tumtook-page-article-recommendations','ttar'],['tumtook-page-product-recommendations','ttpr'],['tumtook-job-working-cards','ttwc']]) await recommendationsTest(module, prefix);
   for (const state of ['loading','complete']) {

@@ -177,7 +177,7 @@
 .ttg-gallery-shell .ttg-gallery {
 	position: relative;
 	display: grid;
-	grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--ttg-min-width, 220px)), 1fr));
+	grid-template-columns: repeat(6, minmax(0, 1fr));
 	gap: var(--ttg-gap, 16px);
 }
 

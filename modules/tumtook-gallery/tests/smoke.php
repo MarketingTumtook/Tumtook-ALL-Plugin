@@ -98,7 +98,7 @@ check(isset($GLOBALS['routes']['tumtook-gallery/v1/items']), 'New REST namespace
 $legacy = array('api_url' => 'https://example.test/gallery?x-api-key=secret', 'items_path' => 'items', 'image_key' => 'images.fileUrl', 'alt_key' => 'images.altText', 'match_code' => 'A,B,C');
 $GLOBALS['meta'][42]['_tumtook_gallery_settings'] = $legacy;
 $html = $plugin->render_shortcode(array());
-check(strpos($html, 'ttg-gallery-shell') !== false && strpos($html, 'data-columns="0"') !== false, 'New shortcode inherits existing page configuration and defaults to auto columns');
+check(strpos($html, 'ttg-gallery-shell') !== false && strpos($html, 'data-columns=') === false, 'Gallery inherits page configuration without per-shortcode column controls');
 check(strpos($html, 'secret') === false, 'Configured API URL stays on the server');
 check(strpos($html, 'data-layout="natural"') !== false, 'Regular galleries preserve original image proportions');
 $GLOBALS['front_page'] = true;
@@ -107,7 +107,8 @@ check(strpos($home_html, 'data-layout="mixed"') !== false, 'Home retains mixed f
 $GLOBALS['front_page'] = false;
 check(strpos($html, 'ttg-retry') === false, 'Public gallery markup contains no retry button');
 $html = $plugin->render_shortcode(array('columns' => 99, 'gap' => 999, 'min_width' => 1, 'radius' => 999));
-check(strpos($html, 'data-columns="12"') !== false && strpos($html, 'data-gap="64"') !== false && strpos($html, 'data-min-width="140"') !== false, 'Layout settings stay within supported bounds');
+check(strpos($html, 'data-columns=') === false && strpos($html, 'data-min-width=') === false && strpos($html, '--ttg-min-width') === false, 'Legacy columns and min_width attributes no longer affect Gallery markup');
+check(strpos($html, 'data-gap="64"') !== false, 'Remaining layout settings stay within supported bounds');
 ob_start(); $plugin->render_field(array('key' => 'cache_minutes')); $field = ob_get_clean();
 check(strpos($field, 'type="number"') !== false, 'Cache duration field remains numeric');
 check($plugin->can_view_gallery(request()), 'Published page is available to anonymous visitors');

@@ -173,26 +173,10 @@ function initTumtookGallery() {
 		document.body.classList.remove('ttg-lightbox-open');
 	}
 
-	function positiveNumber(value, fallback) {
-		value = Number(value);
-		return Number.isFinite(value) && value > 0 ? value : fallback;
-	}
-
-	function getColumns(shell, width, gap) {
-		var requested = parseInt(shell.dataset.columns, 10) || 0;
-		var minWidth = positiveNumber(shell.dataset.minWidth, 220);
+	function getColumns(width, gap) {
 		var capacity = Math.max(1, Math.floor((width + gap) / (140 + gap)));
-		if (requested) {
-			return Math.min(12, requested, capacity);
-		}
-		// Restore the original Gallery defaults without requiring a columns attribute.
-		if (shell.dataset.layout === 'natural') {
-			return Math.min(width <= 767 ? 2 : width <= 1024 ? 3 : 6, capacity);
-		}
-		if (width <= 600) {
-			return Math.min(2, capacity);
-		}
-		return Math.min(12, Math.max(1, Math.floor((width + gap) / (minWidth + gap))));
+		// Every Gallery uses the same responsive columns, including old cached markup.
+		return Math.min(width <= 767 ? 2 : width <= 1024 ? 3 : 6, capacity);
 	}
 
 	function imageIdentity(source) {
@@ -327,7 +311,7 @@ function initTumtookGallery() {
 			var width = gallery.clientWidth;
 			if (!width) return; // A hidden tab will be laid out by ResizeObserver when shown.
 			var cards = Array.prototype.slice.call(gallery.children);
-			var columns = getColumns(shell, width, gap);
+			var columns = getColumns(width, gap);
 			var cardWidth = (width - gap * (columns - 1)) / columns;
 			var heights = Array(columns).fill(0);
 			var rtl = window.getComputedStyle(gallery).direction === 'rtl';
@@ -391,7 +375,7 @@ function initTumtookGallery() {
 				.then(function (data) {
 					if (!Array.isArray(data.items)) throw new Error('Invalid gallery response');
 					var fragment = document.createDocumentFragment();
-					var columns = getColumns(shell, gallery.clientWidth, gap);
+					var columns = getColumns(gallery.clientWidth, gap);
 					var shellBounds = shell.getBoundingClientRect();
 					var eager = page === 1 && shellBounds.top < window.innerHeight && shellBounds.bottom >= 0;
 					var added = 0;

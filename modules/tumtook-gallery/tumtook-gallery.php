@@ -16,7 +16,7 @@ final class Tumtook_Gallery_Plugin
 	const OPTION_KEY = 'tumtook_gallery_settings';
 	const SHORTCODE = 'tumtook_gallery';
 	const META_KEY = '_tumtook_gallery_settings';
-	const VERSION = '1.1.1';
+	const VERSION = '1.1.2';
 	const DEFAULT_LIMIT = 50;
 	const FONT_HANDLE = 'tumtook-kanit-font';
 
@@ -523,8 +523,6 @@ final class Tumtook_Gallery_Plugin
 		$atts = shortcode_atts(
 			array(
 				'limit' => self::DEFAULT_LIMIT,
-				'columns' => 'auto',
-				'min_width' => 220,
 				'gap' => 16,
 				'radius' => 16,
 				'endpoint' => '',
@@ -541,8 +539,6 @@ final class Tumtook_Gallery_Plugin
 
 		wp_enqueue_script('tumtook-gallery');
 
-		$columns = 'auto' === strtolower(trim((string) $atts['columns'])) || !absint($atts['columns']) ? 0 : min(12, max(1, absint($atts['columns'])));
-		$min_width = min(640, max(140, absint($atts['min_width'])));
 		$gap = min(64, absint($atts['gap']));
 		$radius = min(100, absint($atts['radius']));
 		$limit = $this->normalize_gallery_limit($atts['limit']);
@@ -555,9 +551,8 @@ final class Tumtook_Gallery_Plugin
 		<div class="ttg-gallery-shell" data-layout="<?php echo is_front_page() ? 'mixed' : 'natural'; ?>" data-page-id="<?php echo esc_attr($page_id); ?>"
 			data-endpoint="<?php echo esc_url($endpoint); ?>" data-limit="<?php echo esc_attr($limit); ?>"
 			data-endpoint-signature="<?php echo esc_attr($endpoint_signature); ?>"
-			data-columns="<?php echo esc_attr($columns); ?>" data-gap="<?php echo esc_attr($gap); ?>"
-			data-min-width="<?php echo esc_attr($min_width); ?>"
-			style="--ttg-min-width: <?php echo esc_attr($min_width); ?>px; --ttg-gap: <?php echo esc_attr($gap); ?>px; --ttg-radius: <?php echo esc_attr($radius); ?>px; --ttg-end-panel-background: <?php echo esc_attr($end_panel_background); ?>;">
+			data-gap="<?php echo esc_attr($gap); ?>"
+			style="--ttg-gap: <?php echo esc_attr($gap); ?>px; --ttg-radius: <?php echo esc_attr($radius); ?>px; --ttg-end-panel-background: <?php echo esc_attr($end_panel_background); ?>;">
 			<div class="ttg-gallery" role="list" aria-label="<?php esc_attr_e('แกลเลอรีรูปภาพ', 'tumtook-gallery'); ?>"></div>
 			<div class="ttg-end-panel" aria-hidden="true"></div>
 			<div class="ttg-loader" aria-live="polite"><?php esc_html_e('Loading images...', 'tumtook-gallery'); ?></div>
