@@ -274,3 +274,9 @@ Purge FlyingPress and CDN HTML/optimized asset caches after pulling this version
 ## 1.0.113
 
 รวม Gallery Auto เข้า Tumtook Gallery และถอดโมดูล/กล่องตั้งค่า Auto แยกออก คง shortcode และ REST URL เดิมไว้เพื่อรองรับหน้าที่ใช้อยู่ หลังอัปเดตให้ล้าง page cache ของ FlyingPress/CDN เพื่อรับ HTML และ CSS/JS ชุดใหม่
+
+## FAQ schema (1.0.114)
+
+`[tumtook_faq]` emits one FAQPage JSON-LD block in the WordPress footer using only complete question/answer pairs actually rendered by this module. Repeated shortcode instances deduplicate identical pairs. Disabled, empty and editor/example FAQ content do not emit schema. No external requests are made. If another SEO integration owns FAQ markup, disable this module's output with `add_filter('tumtook_faq_schema_enabled', '__return_false');`. This does not automatically detect third-party schema.
+
+Google retired FAQ rich results on May 7, 2026; this markup describes the content and does not guarantee a search feature or ranking improvement. After deployment purge page caches so the HTML includes the new JSON-LD. Test locally with `php modules/tumtook-page-faq/tests/smoke.php`.

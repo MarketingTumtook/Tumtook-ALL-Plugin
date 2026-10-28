@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Tumtook Page FAQ
  * Description: Adds a page-based FAQ section with accordion answers.
- * Version: 1.0.3
+ * Version: 1.0.5
  * Author: Tumtook
  * Text Domain: tumtook-page-faq
  */
@@ -13,16 +13,20 @@ if (!defined('ABSPATH')) {
 
 final class Tumtook_Page_FAQ
 {
-	const VERSION = '1.0.3';
+	const VERSION = '1.0.5';
 	const META_KEY = '_tt_page_faq';
 	const SHORTCODE = 'tumtook_faq';
 	const FONT_HANDLE = 'tumtook-kanit-font';
+
+	private $schema_questions = array();
+	private $schema_printed = false;
 
 	public function __construct()
 	{
 		add_action('add_meta_boxes', array($this, 'register_meta_box'));
 		add_action('save_post_page', array($this, 'save_meta'));
 		add_action('admin_enqueue_scripts', array($this, 'enqueue_admin_assets'));
+		add_action('wp_footer', array($this, 'render_faq_schema'));
 		add_shortcode(self::SHORTCODE, array($this, 'render_shortcode'));
 	}
 
@@ -77,10 +81,6 @@ final class Tumtook_Page_FAQ
 			'auto_display' => '0',
 			'title' => __('คำถามที่พบบ่อย', 'tumtook-page-faq'),
 			'subtitle' => __('คำตอบก่อนสั่งผลิต กระชับ อ่านง่าย ตัดสินใจไว', 'tumtook-page-faq'),
-			'empty_title' => __('สนใจสั่งสินค้า', 'tumtook-page-faq'),
-			'empty_text' => __('ติดต่อแอดไลน์เพื่อสั่งสินค้าได้เลย', 'tumtook-page-faq'),
-			'contact_button_label' => __('พูดคุยกับฝ่ายขาย', 'tumtook-page-faq'),
-			'contact_button_url' => '',
 			'support_actions_shortcode' => '',
 			'items' => array(),
 		);
@@ -125,10 +125,6 @@ final class Tumtook_Page_FAQ
 		$settings['auto_display'] = '0';
 		$settings['title'] = sanitize_text_field($settings['title']);
 		$settings['subtitle'] = sanitize_text_field($settings['subtitle']);
-		$settings['empty_title'] = sanitize_text_field($settings['empty_title']);
-		$settings['empty_text'] = sanitize_textarea_field($settings['empty_text']);
-		$settings['contact_button_label'] = sanitize_text_field($settings['contact_button_label']);
-		$settings['contact_button_url'] = esc_url_raw($settings['contact_button_url']);
 		$settings['support_actions_shortcode'] = sanitize_textarea_field($settings['support_actions_shortcode']);
 		$settings['items'] = $this->sanitize_items(isset($settings['items']) ? $settings['items'] : array());
 
@@ -161,7 +157,7 @@ final class Tumtook_Page_FAQ
 
 			$question = sanitize_text_field(isset($item['question']) ? $item['question'] : '');
 			$answer = sanitize_textarea_field(isset($item['answer']) ? $item['answer'] : '');
-			$item_id = $this->sanitize_item_id(isset($item['item_id']) ? $item['item_id'] : '');
+			$item_id = $this->sanitize_item_id(isset($item['item_id']) ? $item['item_id'] : (isset($item['id']) ? $item['id'] : ''));
 			$deleted = !empty($item['deleted']);
 
 			if ($deleted) {
@@ -372,7 +368,7 @@ final class Tumtook_Page_FAQ
 			<div class="ttfq-admin-panel">
 				<h3><?php esc_html_e('Section FAQ ของหน้านี้', 'tumtook-page-faq'); ?></h3>
 				<p class="ttfq-admin-note">
-					<?php esc_html_e('ใส่คำถามและคำตอบจากหลังบ้านของหน้า page ได้เลย ระบบจะแสดงเป็น accordion ด้านหน้าเว็บให้อัตโนมัติ', 'tumtook-page-faq'); ?>
+					<?php esc_html_e('ใส่คำถามและคำตอบ แล้ววาง [tumtook_faq] ในเนื้อหาหรือ widget Shortcode เพื่อแสดง FAQ', 'tumtook-page-faq'); ?>
 				</p>
 
 				<div class="ttfq-admin-checklist" style="margin-top:16px">
@@ -390,34 +386,14 @@ final class Tumtook_Page_FAQ
 						<input id="ttfq-subtitle" type="text" name="ttfq_settings[subtitle]"
 							value="<?php echo esc_attr($settings['subtitle']); ?>" />
 					</div>
-					<div class="ttfq-admin-field">
-						<label for="ttfq-contact-button-label"><?php esc_html_e('ปุ่มขวา', 'tumtook-page-faq'); ?></label>
-						<input id="ttfq-contact-button-label" type="text" name="ttfq_settings[contact_button_label]"
-							value="<?php echo esc_attr($settings['contact_button_label']); ?>" />
-					</div>
-					<div class="ttfq-admin-field">
-						<label for="ttfq-contact-button-url"><?php esc_html_e('ลิงก์ปุ่มขวา', 'tumtook-page-faq'); ?></label>
-						<input id="ttfq-contact-button-url" type="url" name="ttfq_settings[contact_button_url]"
-							value="<?php echo esc_attr($settings['contact_button_url']); ?>" />
-					</div>
 					<div class="ttfq-admin-field ttfq-admin-field--full">
 						<label
 							for="ttfq-support-actions-shortcode"><?php esc_html_e('Shortcode ปุ่มจาก Elementor Template', 'tumtook-page-faq'); ?></label>
 						<textarea id="ttfq-support-actions-shortcode" rows="2" name="ttfq_settings[support_actions_shortcode]"
 							placeholder='[elementor-template id="123"]'><?php echo esc_textarea($settings['support_actions_shortcode']); ?></textarea>
 						<p class="ttfq-admin-hint">
-							<?php esc_html_e('ถ้าใส่ shortcode ตรงนี้ ระบบจะแสดงผลใน ttfaq-support-actions แทนปุ่มขวาเดิม', 'tumtook-page-faq'); ?>
+							<?php esc_html_e('ใส่ shortcode เพื่อแสดง Elementor Template ใต้รายการคำถาม', 'tumtook-page-faq'); ?>
 						</p>
-					</div>
-					<div class="ttfq-admin-field">
-						<label for="ttfq-empty-title"><?php esc_html_e('หัวข้อกล่องช่วยเหลือ', 'tumtook-page-faq'); ?></label>
-						<input id="ttfq-empty-title" type="text" name="ttfq_settings[empty_title]"
-							value="<?php echo esc_attr($settings['empty_title']); ?>" />
-					</div>
-					<div class="ttfq-admin-field ttfq-admin-field--full">
-						<label for="ttfq-empty-text"><?php esc_html_e('ข้อความกล่องช่วยเหลือ', 'tumtook-page-faq'); ?></label>
-						<textarea id="ttfq-empty-text" rows="3"
-							name="ttfq_settings[empty_text]"><?php echo esc_textarea($settings['empty_text']); ?></textarea>
 					</div>
 				</div>
 			</div>
@@ -615,10 +591,6 @@ final class Tumtook_Page_FAQ
 		$clean['auto_display'] = '0';
 		$clean['title'] = sanitize_text_field(isset($settings['title']) ? $settings['title'] : '');
 		$clean['subtitle'] = sanitize_text_field(isset($settings['subtitle']) ? $settings['subtitle'] : '');
-		$clean['empty_title'] = sanitize_text_field(isset($settings['empty_title']) ? $settings['empty_title'] : '');
-		$clean['empty_text'] = sanitize_textarea_field(isset($settings['empty_text']) ? $settings['empty_text'] : '');
-		$clean['contact_button_label'] = sanitize_text_field(isset($settings['contact_button_label']) ? $settings['contact_button_label'] : '');
-		$clean['contact_button_url'] = esc_url_raw(isset($settings['contact_button_url']) ? $settings['contact_button_url'] : '');
 		$clean['support_actions_shortcode'] = sanitize_textarea_field(isset($settings['support_actions_shortcode']) ? $settings['support_actions_shortcode'] : '');
 		$clean['items'] = $this->sanitize_items(isset($settings['items']) ? $settings['items'] : array());
 
@@ -719,13 +691,27 @@ final class Tumtook_Page_FAQ
 			return '';
 		}
 
-		if (empty($items) || $force_placeholder) {
+		if (empty($items) && $force_placeholder) {
 			$items = $this->get_placeholder_items();
 			$using_placeholders = true;
 		}
 
 		if (empty($items)) {
 			return '';
+		}
+
+		// Collect only real FAQ content rendered for visitors, never editor examples.
+		if (!$using_placeholders && !$this->is_editor_preview_context() && '1' === $settings['enabled']) {
+			foreach ($items as $item) {
+				$question = trim($item['question']);
+				$answer = trim($item['answer']);
+				if ('' === $question || '' === $answer) continue;
+				$this->schema_questions[hash('sha256', $question . "\n" . $answer)] = array(
+					'@type' => 'Question',
+					'name' => $question,
+					'acceptedAnswer' => array('@type' => 'Answer', 'text' => $answer),
+				);
+			}
 		}
 
 		$first_item_key = isset($items[0]['id']) ? $items[0]['id'] : '';
@@ -779,6 +765,22 @@ final class Tumtook_Page_FAQ
 		<?php
 
 		return ob_get_clean();
+	}
+
+	public function render_faq_schema()
+	{
+		if ($this->schema_printed || !$this->schema_questions || $this->is_editor_preview_context()) return;
+		// Allow a site's SEO integration to own FAQ markup instead.
+		if (!apply_filters('tumtook_faq_schema_enabled', true)) return;
+		$schema = array(
+			'@context' => 'https://schema.org',
+			'@type' => 'FAQPage',
+			'mainEntity' => array_values($this->schema_questions),
+		);
+		$json = wp_json_encode($schema, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE);
+		if (false === $json) return;
+		$this->schema_printed = true;
+		echo '<script type="application/ld+json" class="tumtook-faq-schema">' . $json . '</script>' . "\n";
 	}
 
 	private function get_placeholder_items()
