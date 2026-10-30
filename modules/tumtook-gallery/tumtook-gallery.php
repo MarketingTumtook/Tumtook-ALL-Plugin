@@ -1,8 +1,8 @@
 <?php
 /**
  * Plugin Name: Tumtook Gallery
- * Description: Pinterest-style gallery with mixed aspect ratios, unique images and early lazy loading. Derived from Tumtook Gallery.
- * Version: 1.1.0
+ * Description: Pinterest-style gallery with original image proportions on regular pages and mixed frames on Home.
+ * Version: 1.1.3
  * Author: Tumtook
  * Text Domain: tumtook-gallery
  */
@@ -16,7 +16,7 @@ final class Tumtook_Gallery_Plugin
 	const OPTION_KEY = 'tumtook_gallery_settings';
 	const SHORTCODE = 'tumtook_gallery';
 	const META_KEY = '_tumtook_gallery_settings';
-	const VERSION = '1.1.2';
+	const VERSION = '1.1.3';
 	const DEFAULT_LIMIT = 50;
 	const FONT_HANDLE = 'tumtook-kanit-font';
 

@@ -203,7 +203,7 @@ function initTumtookGallery() {
 		var fallback = document.createElement('span');
 		// Only Home crops images into a fixed mix; other pages preserve source proportions.
 		var ratios = ['1 / 1', '16 / 9', '5 / 4', '16 / 9', '5 / 4', '1 / 1', '5 / 4', '1 / 1', '16 / 9'];
-		article.className = 'ttg-card';
+		article.className = 'ttg-card is-layout-pending';
 		article.setAttribute('role', 'listitem');
 		article.dataset.ttgKey = String(item.key || item.image);
 		media.className = 'ttg-media';
@@ -226,17 +226,15 @@ function initTumtookGallery() {
 		if (eager) image.dataset.ttgEager = '1';
 		if (priority) image.setAttribute('fetchpriority', 'high');
 		image.addEventListener('load', function () {
-			if (!mixed && image.naturalWidth > 0 && image.naturalHeight > 0) {
-				media.style.setProperty('--ttg-ratio', image.naturalWidth + ' / ' + image.naturalHeight);
-				onResize();
-			}
-			media.classList.add('is-loaded');
+			var ratio = !mixed && image.naturalWidth > 0 && image.naturalHeight > 0
+				? image.naturalWidth + ' / ' + image.naturalHeight : '';
+			onResize(media, ratio);
 		});
 		image.addEventListener('error', function () {
 			image.hidden = true;
 			fallback.hidden = false;
 			media.disabled = true;
-			media.classList.add('is-loaded');
+			onResize(media, '');
 		});
 		media.addEventListener('click', function () {
 			var gallery = article.closest('.ttg-gallery');
@@ -268,6 +266,9 @@ function initTumtookGallery() {
 		var complete = false;
 		var failed = false;
 		var layoutFrame = null;
+		var cardSizes = new WeakMap();
+		var cardResizeObserver;
+		var pendingMedia = new Map();
 		var observer;
 		var imageObserver;
 		var scrollFrame = null;
@@ -307,9 +308,20 @@ function initTumtookGallery() {
 			});
 		}
 
+		function imageReady(media, ratio) {
+			pendingMedia.set(media, ratio);
+			scheduleLayout();
+		}
+
 		function layout() {
 			var width = gallery.clientWidth;
 			if (!width) return; // A hidden tab will be laid out by ResizeObserver when shown.
+			// Reveal natural dimensions and reposition all cards in the same frame.
+			pendingMedia.forEach(function (ratio, media) {
+				if (ratio) media.style.setProperty('--ttg-ratio', ratio);
+				media.classList.add('is-loaded');
+			});
+			pendingMedia.clear();
 			var cards = Array.prototype.slice.call(gallery.children);
 			var columns = getColumns(width, gap);
 			var cardWidth = (width - gap * (columns - 1)) / columns;
@@ -319,13 +331,17 @@ function initTumtookGallery() {
 			shell.dataset.activeColumns = String(columns);
 			// Batch width writes before measuring so every height reflects the new width.
 			cards.forEach(function (card) { card.style.width = cardWidth + 'px'; });
-			var cardHeights = cards.map(function (card) { return card.getBoundingClientRect().height; });
+			// Use layout height so page-builder entrance transforms cannot shrink the spacing.
+			var cardHeights = cards.map(function (card) { return card.offsetHeight; });
 			cards.forEach(function (card, index) {
+				if (cardResizeObserver && !cardSizes.has(card)) cardResizeObserver.observe(card);
+				cardSizes.set(card, { width: cardWidth, height: cardHeights[index] });
 				var column = heights.indexOf(Math.min.apply(Math, heights));
 				var left = column * (cardWidth + gap);
 				card.style.left = (rtl ? width - cardWidth - left : left) + 'px';
 				card.style.top = heights[column] + 'px';
 				heights[column] += cardHeights[index] + gap;
+				card.classList.remove('is-layout-pending');
 			});
 			gallery.style.height = Math.max(0, Math.max.apply(Math, heights) - gap) + 'px';
 			loadNearbyImages();
@@ -386,7 +402,7 @@ function initTumtookGallery() {
 						if ((key && seen.has(key)) || seenUrls.has(source)) return;
 						if (key) seen.add(key);
 						seenUrls.add(source);
-						fragment.appendChild(createCard(item, seenUrls.size - 1, eager && added < columns * 2, eager && added < columns, mixed, scheduleLayout));
+						fragment.appendChild(createCard(item, seenUrls.size - 1, eager && added < columns * 2, eager && added < columns, mixed, imageReady));
 						added += 1;
 					});
 					gallery.appendChild(fragment);
@@ -411,6 +427,14 @@ function initTumtookGallery() {
 		}
 
 		if ('ResizeObserver' in window) {
+			// Image dimensions can change after lazy loading, without changing gallery width.
+			// Correct positions in the observer phase before paint, rather than a frame later.
+			cardResizeObserver = new ResizeObserver(function (entries) {
+				if (entries.some(function (entry) {
+					var previous = cardSizes.get(entry.target);
+					return previous && (Math.abs(previous.width - entry.contentRect.width) > 0.5 || Math.abs(previous.height - entry.contentRect.height) > 0.5);
+				})) layout();
+			});
 			var lastWidth = -1;
 			var resizeObserver = new ResizeObserver(function () {
 				var width = gallery.clientWidth;

@@ -12,6 +12,7 @@ function element() {
     appendChild(x) { this.children.push(x); }, insertBefore(x) { this.children.push(x); },
     querySelector() { return null; }, querySelectorAll() { return []; },
     getClientRects() { return [this.getBoundingClientRect()]; },
+    get offsetHeight() { return 100; },
     getBoundingClientRect() { return { top: 5000, bottom: 5100, left: 0, width: 100, height: 100 }; }
   };
 }
@@ -45,6 +46,8 @@ async function galleryTest(mode, layout = 'natural', home = false, width = 0, re
   shell.dataset = { pageId: '42', columns: '6', limit: '50', endpoint: 'https://example.test/api' };
   shell.querySelector = selector => ({ '.ttg-gallery': gallery, '.ttg-loader': loader, '.ttg-sentinel': sentinel }[selector] || null);
   const env = environment([shell]);
+  gallery.clientWidth = width || 1140;
+  env.context.window.getComputedStyle = () => ({ direction: 'ltr' });
   if (width) {
     shell.dataset.columns = requested;
     gallery.clientWidth = width;
@@ -84,10 +87,11 @@ async function galleryTest(mode, layout = 'natural', home = false, width = 0, re
     image.naturalWidth = 400;
     image.naturalHeight = 1000;
     image.handlers.load();
+    assert.equal(media.style['--ttg-ratio'], mixed ? '1 / 1' : '300 / 600', 'Image load must not change height before the masonry frame is positioned');
+    assert.equal(env.frames.length, 1, 'Image dimension updates share one scheduled masonry layout');
+    env.frames.shift()();
     assert.equal(media.style['--ttg-ratio'], mixed ? '1 / 1' : '400 / 1000', 'Natural galleries correct dimensions after image load while Home keeps its frame');
-    if (!mixed) assert.equal(env.frames.length, 1, 'Image dimension updates share one scheduled masonry layout');
     if (width) {
-      env.frames.shift()();
       const expected = width <= 767 ? 2 : width <= 1024 ? 3 : 6;
       assert.equal(Number(shell.dataset.activeColumns), expected, 'All galleries share responsive 6/3/2 columns, ignoring old overrides');
     }

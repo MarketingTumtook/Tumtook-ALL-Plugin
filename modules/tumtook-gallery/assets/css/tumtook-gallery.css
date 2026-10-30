@@ -201,6 +201,11 @@
 	position: absolute;
 }
 
+/* New batches must be positioned before they can appear during fast scrolling. */
+.ttg-gallery-shell .ttg-card.is-layout-pending {
+	visibility: hidden;
+}
+
 .ttg-gallery-shell .ttg-media {
 	position: relative;
 	display: block;
@@ -238,9 +243,18 @@
 	object-position: center;
 }
 
-/* Show the complete source image on ordinary pages. */
+/* Let the loaded image determine the card height instead of fitting it inside a frame. */
+.ttg-gallery-shell[data-layout="natural"] .ttg-media.is-loaded:not(:disabled) {
+	aspect-ratio: auto;
+}
+
 .ttg-gallery-shell[data-layout="natural"] .ttg-media img {
 	object-fit: contain;
+}
+
+.ttg-gallery-shell[data-layout="natural"] .ttg-media.is-loaded:not(:disabled) img {
+	position: static;
+	height: auto;
 }
 
 .ttg-gallery-shell .ttg-media:focus-visible {
