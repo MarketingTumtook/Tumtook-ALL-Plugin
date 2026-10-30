@@ -196,22 +196,18 @@ function initTumtookGallery() {
 		}
 	}
 
-	function createCard(item, index, eager, priority, mixed, onResize) {
+	function createCard(item, eager, priority, onResize) {
 		var article = document.createElement('article');
 		var media = document.createElement('button');
 		var image = document.createElement('img');
 		var fallback = document.createElement('span');
-		// Only Home crops images into a fixed mix; other pages preserve source proportions.
-		var ratios = ['1 / 1', '16 / 9', '5 / 4', '16 / 9', '5 / 4', '1 / 1', '5 / 4', '1 / 1', '16 / 9'];
 		article.className = 'ttg-card is-layout-pending';
 		article.setAttribute('role', 'listitem');
 		article.dataset.ttgKey = String(item.key || item.image);
 		media.className = 'ttg-media';
 		var width = Number(item.width);
 		var height = Number(item.height);
-		if (mixed) {
-			media.style.setProperty('--ttg-ratio', ratios[index % ratios.length]);
-		} else if (width > 0 && height > 0 && Number.isFinite(width) && Number.isFinite(height)) {
+		if (width > 0 && height > 0 && Number.isFinite(width) && Number.isFinite(height)) {
 			media.style.setProperty('--ttg-ratio', width + ' / ' + height);
 		}
 		media.type = 'button';
@@ -226,7 +222,7 @@ function initTumtookGallery() {
 		if (eager) image.dataset.ttgEager = '1';
 		if (priority) image.setAttribute('fetchpriority', 'high');
 		image.addEventListener('load', function () {
-			var ratio = !mixed && image.naturalWidth > 0 && image.naturalHeight > 0
+			var ratio = image.naturalWidth > 0 && image.naturalHeight > 0
 				? image.naturalWidth + ' / ' + image.naturalHeight : '';
 			onResize(media, ratio);
 		});
@@ -255,9 +251,8 @@ function initTumtookGallery() {
 		var gallery = shell.querySelector('.ttg-gallery');
 		var loader = shell.querySelector('.ttg-loader');
 		var sentinel = shell.querySelector('.ttg-sentinel');
-		// Support previously cached markup without data-layout as well.
-		var mixed = shell.dataset.layout ? shell.dataset.layout === 'mixed' : document.body.classList.contains('home');
-		shell.dataset.layout = mixed ? 'mixed' : 'natural';
+		// Also normalize old cached Home markup that still requests mixed frames.
+		shell.dataset.layout = 'natural';
 		var gap = Math.max(0, Number(shell.dataset.gap) || 0);
 		var page = 1;
 		// Keep the batch size fixed: changing it on resize would skip API offsets.
@@ -268,6 +263,7 @@ function initTumtookGallery() {
 		var layoutFrame = null;
 		var cardSizes = new WeakMap();
 		var cardResizeObserver;
+		var revealObserver;
 		var pendingMedia = new Map();
 		var observer;
 		var imageObserver;
@@ -334,6 +330,7 @@ function initTumtookGallery() {
 			// Use layout height so page-builder entrance transforms cannot shrink the spacing.
 			var cardHeights = cards.map(function (card) { return card.offsetHeight; });
 			cards.forEach(function (card, index) {
+				var firstLayout = !cardSizes.has(card);
 				if (cardResizeObserver && !cardSizes.has(card)) cardResizeObserver.observe(card);
 				cardSizes.set(card, { width: cardWidth, height: cardHeights[index] });
 				var column = heights.indexOf(Math.min.apply(Math, heights));
@@ -342,6 +339,10 @@ function initTumtookGallery() {
 				card.style.top = heights[column] + 'px';
 				heights[column] += cardHeights[index] + gap;
 				card.classList.remove('is-layout-pending');
+				if (firstLayout) {
+					if (revealObserver) revealObserver.observe(card);
+					else card.classList.add('ttg-card-visible');
+				}
 			});
 			gallery.style.height = Math.max(0, Math.max.apply(Math, heights) - gap) + 'px';
 			loadNearbyImages();
@@ -402,7 +403,7 @@ function initTumtookGallery() {
 						if ((key && seen.has(key)) || seenUrls.has(source)) return;
 						if (key) seen.add(key);
 						seenUrls.add(source);
-						fragment.appendChild(createCard(item, seenUrls.size - 1, eager && added < columns * 2, eager && added < columns, mixed, imageReady));
+						fragment.appendChild(createCard(item, eager && added < columns * 2, eager && added < columns, imageReady));
 						added += 1;
 					});
 					gallery.appendChild(fragment);
@@ -447,6 +448,15 @@ function initTumtookGallery() {
 		}
 		window.addEventListener('resize', scheduleLayout);
 		if ('IntersectionObserver' in window) {
+			// Reveal once near the viewport, after masonry has assigned a position.
+			revealObserver = new IntersectionObserver(function (entries) {
+				var columns = getColumns(gallery.clientWidth, gap);
+				entries.filter(function (entry) { return entry.isIntersecting; }).forEach(function (entry, index) {
+					entry.target.style.setProperty('--ttg-reveal-delay', Math.min(420, Math.floor(index / columns) * 100 + (index % columns) * 42) + 'ms');
+					entry.target.classList.add('ttg-card-visible');
+					revealObserver.unobserve(entry.target);
+				});
+			}, { rootMargin: '60px 0px' });
 			imageObserver = new IntersectionObserver(function (entries) {
 				entries.forEach(function (entry) {
 					if (entry.isIntersecting) startImage(entry.target);

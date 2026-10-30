@@ -80,17 +80,24 @@ async function galleryTest(mode, layout = 'natural', home = false, width = 0, re
     assert.equal(urls.length, 1, 'Failures must not loop or restart on scrolling');
     assert.equal(shell.children.length, 0, 'Failures must not insert public controls');
   } else {
-    const mixed = layout === 'mixed' || (!layout && home);
     const media = gallery.children[0].children[0].children[0];
     const image = media.children[0];
-    assert.equal(media.style['--ttg-ratio'], mixed ? '1 / 1' : '300 / 600', 'Only Home uses mixed frames; ordinary galleries reserve the API image ratio');
+    assert.equal(shell.dataset.layout, 'natural', 'Home and old mixed cached markup use natural proportions');
+    assert.equal(media.style['--ttg-ratio'], '300 / 600', 'Every Gallery reserves the API image ratio');
     image.naturalWidth = 400;
     image.naturalHeight = 1000;
     image.handlers.load();
-    assert.equal(media.style['--ttg-ratio'], mixed ? '1 / 1' : '300 / 600', 'Image load must not change height before the masonry frame is positioned');
+    assert.equal(media.style['--ttg-ratio'], '300 / 600', 'Image load must not change height before the masonry frame is positioned');
     assert.equal(env.frames.length, 1, 'Image dimension updates share one scheduled masonry layout');
     env.frames.shift()();
-    assert.equal(media.style['--ttg-ratio'], mixed ? '1 / 1' : '400 / 1000', 'Natural galleries correct dimensions after image load while Home keeps its frame');
+    const positionedCard = gallery.children[0];
+    assert.equal(positionedCard.classList.contains('ttg-card-visible'), false, 'Preloaded offscreen cards must wait for viewport reveal');
+    const revealObserver = env.observers.find(observer => observer.targets.includes(positionedCard));
+    assert(revealObserver, 'Positioned cards are observed for viewport reveal');
+    revealObserver.enter(positionedCard);
+    assert.equal(positionedCard.classList.contains('ttg-card-visible'), true, 'Entering the viewport reveals the card after positioning');
+    assert.equal(revealObserver.targets.includes(positionedCard), false, 'Reveals run once rather than replaying on every scroll');
+    assert.equal(media.style['--ttg-ratio'], '400 / 1000', 'Every Gallery corrects dimensions after image load, including Home');
     if (width) {
       const expected = width <= 767 ? 2 : width <= 1024 ? 3 : 6;
       assert.equal(Number(shell.dataset.activeColumns), expected, 'All galleries share responsive 6/3/2 columns, ignoring old overrides');

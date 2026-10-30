@@ -1,8 +1,8 @@
 <?php
 /**
  * Plugin Name: Tumtook Gallery
- * Description: Pinterest-style gallery with original image proportions on regular pages and mixed frames on Home.
- * Version: 1.1.3
+ * Description: Pinterest-style gallery with original image proportions and progressive reveal on every page.
+ * Version: 1.1.4
  * Author: Tumtook
  * Text Domain: tumtook-gallery
  */
@@ -16,7 +16,7 @@ final class Tumtook_Gallery_Plugin
 	const OPTION_KEY = 'tumtook_gallery_settings';
 	const SHORTCODE = 'tumtook_gallery';
 	const META_KEY = '_tumtook_gallery_settings';
-	const VERSION = '1.1.3';
+	const VERSION = '1.1.4';
 	const DEFAULT_LIMIT = 50;
 	const FONT_HANDLE = 'tumtook-kanit-font';
 
@@ -252,7 +252,6 @@ final class Tumtook_Gallery_Plugin
 	public function render_meta_box($post)
 	{
 		$settings = $this->get_page_settings($post->ID);
-		$mixed_preview = 'page' === get_option('show_on_front') && (int) get_option('page_on_front') === (int) $post->ID;
 		$fields = array(
 			'api_url',
 			'cache_minutes',
@@ -273,7 +272,7 @@ final class Tumtook_Gallery_Plugin
 		);
 
 		wp_nonce_field('tumtook_gallery_save_page_settings', 'tumtook_gallery_nonce');
-		echo '<p>' . esc_html__('ใช้ shortcode [tumtook_gallery] เพื่อจัดภาพแบบ Pinterest: หน้า Home ใช้กรอบผสมขนาด ส่วนหน้าทั่วไปแสดงตามสัดส่วนภาพจริง', 'tumtook-gallery') . '</p>';
+		echo '<p>' . esc_html__('ใช้ shortcode [tumtook_gallery] เพื่อจัดภาพแบบ Pinterest ตามสัดส่วนภาพจริง ทั้งหน้า Home และหน้าทั่วไป', 'tumtook-gallery') . '</p>';
 		echo '<p>' . esc_html__('แนะนำให้ใส่ API URL แบบเต็มที่มี x-api-key อยู่ใน query string แล้ว ไม่ต้องใส่ Bearer token หรือ custom header เพิ่ม', 'tumtook-gallery') . '</p>';
 		echo '<table class="form-table" role="presentation"><tbody>';
 
@@ -373,7 +372,7 @@ final class Tumtook_Gallery_Plugin
 						image.src = item.image;
 						image.alt = item.alt || item.title || '';
 						image.loading = 'lazy';
-						image.style.aspectRatio = <?php echo $mixed_preview ? "['1 / 1', '16 / 9', '5 / 4', '16 / 9', '5 / 4', '1 / 1', '5 / 4', '1 / 1', '16 / 9'][index % 9]" : "'auto'"; ?>;
+						image.style.aspectRatio = 'auto';
 						image.style.objectFit = 'cover';
 						title.className = 'ttg-admin-preview-title';
 						title.textContent = item.title || '';
@@ -548,7 +547,7 @@ final class Tumtook_Gallery_Plugin
 
 		ob_start();
 		?>
-		<div class="ttg-gallery-shell" data-layout="<?php echo is_front_page() ? 'mixed' : 'natural'; ?>" data-page-id="<?php echo esc_attr($page_id); ?>"
+		<div class="ttg-gallery-shell" data-layout="natural" data-page-id="<?php echo esc_attr($page_id); ?>"
 			data-endpoint="<?php echo esc_url($endpoint); ?>" data-limit="<?php echo esc_attr($limit); ?>"
 			data-endpoint-signature="<?php echo esc_attr($endpoint_signature); ?>"
 			data-gap="<?php echo esc_attr($gap); ?>"

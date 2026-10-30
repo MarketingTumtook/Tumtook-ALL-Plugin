@@ -103,7 +103,7 @@ check(strpos($html, 'secret') === false, 'Configured API URL stays on the server
 check(strpos($html, 'data-layout="natural"') !== false, 'Regular galleries preserve original image proportions');
 $GLOBALS['front_page'] = true;
 $home_html = $plugin->render_shortcode(array());
-check(strpos($home_html, 'data-layout="mixed"') !== false, 'Home retains mixed frames with the same shortcode');
+check(strpos($home_html, 'data-layout="natural"') !== false, 'Home preserves original image proportions with the same shortcode');
 $GLOBALS['front_page'] = false;
 check(strpos($html, 'ttg-retry') === false, 'Public gallery markup contains no retry button');
 $html = $plugin->render_shortcode(array('columns' => 99, 'gap' => 999, 'min_width' => 1, 'radius' => 999));
