@@ -26,6 +26,7 @@
 	let timer = null;
 	let requestId = 0;
 	let previewController = null;
+	let pendingPayload = null;
 
 	const getPayload = () => ({
 		api_url: fields.api_url ? fields.api_url.value.trim() : "",
@@ -39,8 +40,9 @@
 
 	const renderMessage = (message, isError) => {
 		previewContent.innerHTML = isError
-			? '<div class="notice notice-error inline aiv-preview-message"><p>' + message + "</p></div>"
-			: '<p class="aiv-preview-message">' + message + "</p>";
+			? '<div class="notice notice-error inline aiv-preview-message"><p></p></div>'
+			: '<p class="aiv-preview-message"></p>';
+		previewContent.querySelector("p").textContent = message;
 	};
 
 	const renderLoading = () => {
@@ -159,13 +161,18 @@
 	};
 
 	const loadPreview = async () => {
-		const currentRequestId = ++requestId;
 		const payload = getPayload();
+		const payloadKey = JSON.stringify(payload);
+		if (previewController && pendingPayload === payloadKey) {
+			return;
+		}
+		const currentRequestId = ++requestId;
 
 		if (previewController) {
 			previewController.abort();
 		}
 		previewController = new AbortController();
+		pendingPayload = payloadKey;
 		const currentController = previewController;
 
 		if (!payload.api_url) {
@@ -194,25 +201,27 @@
 			});
 			const data = await response.json();
 
-			if (!response.ok || !data.success || !data.data || !data.data.html) {
-				renderMessage(TumtookApiImageViewerAdmin.failureText, true);
+			if (currentRequestId !== requestId) {
 				return;
 			}
 
-			if (currentRequestId !== requestId) {
+			if (!response.ok || !data.success || !data.data || !data.data.html) {
+				renderMessage(data.data && typeof data.data.message === "string"
+					? data.data.message : TumtookApiImageViewerAdmin.failureText, true);
 				return;
 			}
 
 			previewContent.innerHTML = data.data.html;
 			initCustomEditors(previewContent);
 		} catch (error) {
-			if (error.name === "AbortError") {
+			if (error.name === "AbortError" || currentRequestId !== requestId) {
 				return;
 			}
 			renderMessage(TumtookApiImageViewerAdmin.failureText, true);
 		} finally {
 			if (previewController === currentController) {
 				previewController = null;
+				pendingPayload = null;
 			}
 		}
 	};

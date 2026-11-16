@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Tumtook Catalog Image Data
  * Description: Fetch and display image catalog data from API inside WordPress pages.
- * Version: 1.1.21
+ * Version: 1.1.22
  * Author: Tumtook
  * Text Domain: api-catalog-images-viewer
  */
@@ -18,7 +18,7 @@ final class API_Catalog_Images_Plugin
 	const META_KEY = '_tumtook_catalog_images_page_settings';
 	const ITEM_CONTENT_META_KEY = '_tumtook_catalog_images_item_content';
 	const SHORTCODE = 'catalog_images';
-	const VERSION = '1.1.21';
+	const VERSION = '1.1.22';
 	const NONCE_KEY = 'tumtook_catalog_images_nonce';
 	const FONT_HANDLE = 'tumtook-kanit-font';
 
@@ -399,7 +399,17 @@ final class API_Catalog_Images_Plugin
 		$response = $this->request_catalog($settings, $force_refresh);
 
 		if (is_wp_error($response)) {
-			$error = new WP_Error('aiv_request_failed', __('Could not connect to the configured API.', 'api-catalog-images-viewer'), array('upstream_code' => $response->get_error_code(), 'upstream_message' => $response->get_error_message()));
+			$message = __('Could not connect to the configured API. Check the server connection and API URL.', 'api-catalog-images-viewer');
+			$code = $response->get_error_code();
+			if ('tt_aio_api_http' === $code || 'tt_aio_api_json' === $code) {
+				// The shared cache constructs these messages without URLs or credentials.
+				$message = $response->get_error_message();
+			} elseif ('tt_aio_api_busy' === $code || 'aiv_busy' === $code) {
+				$message = __('Catalog refresh is already in progress. Please try again shortly.', 'api-catalog-images-viewer');
+			} elseif (preg_match('/timed?\s*out|timeout|cURL error 28/i', $response->get_error_message())) {
+				$message = __('The API request timed out. Please try again or check the API server.', 'api-catalog-images-viewer');
+			}
+			$error = new WP_Error('aiv_request_failed', $message);
 			return $this->cache_fetch_failure($cache_key, $error, $force_refresh, $last_key);
 		}
 
@@ -476,6 +486,10 @@ final class API_Catalog_Images_Plugin
 	private function request_catalog($settings, $force_refresh)
 	{
 		if (class_exists('Tumtook_AIO_API_Cache')) {
+			if ($force_refresh) {
+				// An explicit admin preview can wait for a slow API; public requests stay bounded.
+				return Tumtook_AIO_API_Cache::refresh($settings['api_url'], max(1, absint($settings['cache_minutes'])) * MINUTE_IN_SECONDS, false, 15);
+			}
 			return Tumtook_AIO_API_Cache::get($settings['api_url'], max(1, absint($settings['cache_minutes'])) * MINUTE_IN_SECONDS, false, $force_refresh);
 		}
 		// Share the upstream response across pages, filters and shortcode limits.
@@ -498,7 +512,7 @@ final class API_Catalog_Images_Plugin
 		try {
 			$response = wp_remote_get($settings['api_url'], array(
 				'headers' => array('Accept' => 'application/json'),
-				'timeout' => 5,
+				'timeout' => $force_refresh ? 15 : 5,
 				'redirection' => 2,
 			));
 			$status = is_wp_error($response) ? 0 : wp_remote_retrieve_response_code($response);
@@ -1138,8 +1152,11 @@ final class API_Catalog_Images_Plugin
 
 		$result = $this->fetch_images($settings, 0, true, $post_id);
 
-		if (is_wp_error($result) || empty($result)) {
-			wp_send_json_error(array('message' => __('ดึงไม่สําเร็จ', 'api-catalog-images-viewer')), 400);
+		if (is_wp_error($result)) {
+			wp_send_json_error(array('message' => $result->get_error_message()), 400);
+		}
+		if (empty($result)) {
+			wp_send_json_error(array('message' => __('No catalog items match the configured item code filter.', 'api-catalog-images-viewer')), 400);
 		}
 
 		wp_send_json_success(

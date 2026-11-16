@@ -2,7 +2,13 @@
 // Run: php tests/api-cache.php. No database or external network.
 define('ABSPATH', __DIR__);
 define('DAY_IN_SECONDS', 86400);
-class WP_Error { public $code; function __construct($code, $message) { $this->code = $code; } }
+class WP_Error {
+    public $code;
+    public $message;
+    function __construct($code, $message) { $this->code = $code; $this->message = $message; }
+    function get_error_code() { return $this->code; }
+    function get_error_message() { return $this->message; }
+}
 function add_action(...$args) {}
 function wp_json_encode($v) { return json_encode($v); }
 function is_wp_error($v) { return $v instanceof WP_Error; }
