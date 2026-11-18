@@ -103,6 +103,8 @@
 
 ## Tumtook Gallery
 
+สำหรับ Gallery อีกชุดที่ใส่แค่ code ใน shortcode ใช้โมดูลแยก [Tumtook Gallery Code](modules/tumtook-gallery-code/README.md): `[tumtook_gallery_code code="VN"]` และตั้ง API ครั้งเดียวใน Settings → Tumtook Gallery Code
+
 โมดูล `modules/tumtook-gallery/` รวมความสามารถ Gallery Auto ไว้ใน Gallery เดียว สำหรับแสดงภาพแบบ Pinterest: คอลัมน์กว้างเท่ากัน และเติมภาพถัดไปในคอลัมน์ที่สั้นที่สุด ทุกหน้ารวมถึง Home แสดงเต็มภาพตามสัดส่วนจริง เช่น 4:5, 9:16 และ 1:1 พร้อมค่อย ๆ เผยภาพเมื่อเลื่อนมาถึง ระบบจัดตำแหน่งก่อนแสดงการ์ด และคำนวณใหม่เมื่อขนาดรูปหรือพื้นที่แสดงผลเปลี่ยน รวมถึง container ใน page builder
 
 1. ในหน้าแก้ไข Page เปิดกล่อง **Tumtook Gallery** แล้วตั้ง API URL, ตำแหน่งรายการรูป, Item Code Filter, ตำแหน่ง URL รูป และ Alt เช่นเดียวกับ Gallery เดิม
