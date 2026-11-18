@@ -4,7 +4,7 @@ if (!defined('ABSPATH')) exit;
 
 final class Tumtook_Gallery_Code
 {
-    const VERSION = '1.0.3';
+    const VERSION = '1.0.4';
     const OPTION = 'tumtook_gallery_code_settings';
     const SHORTCODE = 'tumtook_gallery_code';
     const LIMIT = 50;

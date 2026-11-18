@@ -30,7 +30,18 @@
     object-fit: contain;
 }
 
-.ttgc-link { display: block; }
+.ttgc .ttgc-link {
+    display: block;
+    width: 100%;
+    padding: 0;
+    margin: 0;
+    border: 0;
+    border-radius: inherit;
+    background: transparent;
+    box-shadow: none;
+    line-height: 0;
+    cursor: zoom-in;
+}
 
 .ttgc-link:focus-visible {
     outline: 2px solid #2563eb;
@@ -57,12 +68,70 @@
     display: none;
 }
 
+.ttgc-lightbox {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    max-width: none;
+    max-height: none;
+    margin: 0;
+    padding: 24px;
+    border: 0;
+    box-sizing: border-box;
+    background: rgba(0, 0, 0, 0.94);
+    color: #fff;
+    z-index: 2147483647;
+}
+
+.ttgc-lightbox:not([open]) { display: none; }
+.ttgc-lightbox[open] {
+    display: grid;
+    grid-template-columns: 48px minmax(0, 1fr) 48px;
+    align-items: center;
+    gap: 16px;
+}
+.ttgc-lightbox::backdrop { background: transparent; }
+.ttgc-lightbox .ttgc-lightbox-stage { margin: 0; min-width: 0; text-align: center; }
+.ttgc-lightbox .ttgc-lightbox-image {
+    display: block;
+    width: auto;
+    height: auto;
+    max-width: 100%;
+    max-height: calc(100dvh - 112px);
+    object-fit: contain;
+    margin: 0 auto;
+}
+.ttgc-lightbox [hidden] { display: none !important; }
+.ttgc-lightbox .ttgc-lightbox-count,
+.ttgc-lightbox .ttgc-lightbox-error { font-family: inherit; font-size: 14px; line-height: 20px; font-weight: 400; margin: 12px 0 0; color: #fff; }
+.ttgc-lightbox button {
+    width: 48px;
+    height: 48px;
+    padding: 0;
+    border: 0;
+    border-radius: 9999px;
+    background: #272727;
+    color: #fff;
+    font: inherit;
+    font-size: 24px;
+    line-height: 32px;
+    cursor: pointer;
+}
+.ttgc-lightbox button:hover { background: #313131; }
+.ttgc-lightbox button:disabled { opacity: 0.35; cursor: default; }
+.ttgc-lightbox button:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+.ttgc-lightbox .ttgc-lightbox-close { position: absolute; top: 16px; right: 16px; }
+
 @media (max-width: 1024px) {
     .ttgc-items { column-count: 3; }
 }
 
 @media (max-width: 767px) {
     .ttgc-items { column-count: 2; column-width: auto; }
+    .ttgc-lightbox { padding: 12px; }
+    .ttgc-lightbox[open] { grid-template-columns: 40px minmax(0, 1fr) 40px; gap: 8px; }
+    .ttgc-lightbox button { width: 40px; height: 40px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
